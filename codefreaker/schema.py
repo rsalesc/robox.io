@@ -1,3 +1,4 @@
+import itertools
 from typing import List
 from pydantic import BaseModel
 
@@ -19,3 +20,9 @@ class Problem(BaseModel):
   tests: List[Testcase]
   testType: str
   batch: Batch
+
+  def get_file_basename(self):
+    name = name.replace(' ', '_')
+    name = name.replace('.', '_')
+    name = name.strip('_')
+    return ''.join(i for i, _ in itertools.groupby(name))

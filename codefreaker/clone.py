@@ -1,3 +1,4 @@
+from typing import List, Optional
 import rich.status
 import rich
 import fastapi
@@ -17,7 +18,11 @@ def clear_loggers():
     logging.getLogger(logger_name).handlers.clear()
     logging.getLogger(logger_name).propagate = False
 
-def main():
+
+def process_problems(problems: List[Problem], lang: Optional[Problem] = None):
+  pass
+
+def main(lang: Optional[str] = None):
   app = fastapi.FastAPI()
 
   async def shutdown():
@@ -27,6 +32,7 @@ def main():
   batch_to_left = {}
   ignored = set()
   saved_status = None
+  problems_to_process = []
 
   def process_batch_item(problem: Problem):
     batch_to_left_lock.acquire()
@@ -35,24 +41,25 @@ def main():
       return True
     if problem.batch.id not in batch_to_left:
       if len(batch_to_left) > 0:
-        console.print(f'[error]Ignoring extra batch [item]{problem.batch.id}[/item] since other batch is being processed.[/error]')
+        console.print(f'[error]Ignoring extra batch [item]{problem.batch.id}[/item] since other batch is being parsed.[/error]')
         ignored.add(problem.batch.id)
         batch_to_left_lock.release()
         return True
       if problem.batch.size > 1:
-        saved_status.update(f'[cfk]Codefreaker[/cfk] is cloning problems from group [item]{problem.group}[/item]')
+        saved_status.update(f'[cfk]Codefreaker[/cfk] is parsing problems from group [item]{problem.group}[/item]')
       else:
-        saved_status.update(f'[cfk]Codefreaker[/cfk] is cloning problems...')
-      console.print(f'Started processing batch [item]{problem.batch.id}[/item] with size [item]{problem.batch.size}[/item].')
+        saved_status.update(f'[cfk]Codefreaker[/cfk] is parsing problems...')
+      console.print(f'Started parsing batch [item]{problem.batch.id}[/item] with size [item]{problem.batch.size}[/item].')
       batch_to_left[problem.batch.id] = problem.batch.size
-    console.print(f'Processing problem [item]{problem.name}[/item]...')
+    console.print(f'Parsing problem [item]{problem.name}[/item]...')
+    problems_to_process.append(problem)
     finished = False
     if batch_to_left[problem.batch.id] == 1:
       finished = True
       if problem.batch.size > 1:
-        console.print(f'[status][cfk]Codefreaker[/cfk] cloned all problems from group [item]{problem.group}[/item].[/status]')
+        console.print(f'[status][cfk]Codefreaker[/cfk] parsed all problems from group [item]{problem.group}[/item].[/status]')
       else:
-        console.print(f'[status][cfk]Codefreaker[/cfk] cloned problem from [item]{problem.url}[/item].[/status]')
+        console.print(f'[status][cfk]Codefreaker[/cfk] parsed problem from [item]{problem.url}[/item].[/status]')
     else:
       batch_to_left[problem.batch.id] -= 1
     batch_to_left_lock.release()
@@ -70,3 +77,6 @@ def main():
   with console.status('Waiting for Competitive Companion request...') as status:
     saved_status = status
     server.run()
+
+  with console.status('Processing parsed problems...') as status:
+    process_problems(problems_to_process, lang=lang)
