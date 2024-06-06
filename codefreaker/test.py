@@ -17,7 +17,7 @@ def hydrate(problem: annotations.ProblemOption = None):
     hydration.main(problem=problem)
 
 
-@app.command()
+@app.command("add, a")
 def add(problem: annotations.Problem):
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
@@ -32,8 +32,11 @@ def add(problem: annotations.Problem):
     )
 
 
-@app.command()
-def remove(problem: annotations.Problem, i: Annotated[int, typer.Option("--index", "-i")]):
+@app.command("delete, d")
+def delete(
+    problem: annotations.Problem,
+    i: Annotated[int, typer.Option("--index", "--idx", "-i")],
+):
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")

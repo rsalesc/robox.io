@@ -12,18 +12,18 @@ from . import hydration
 from . import test
 from . import create as create_pkg
 
-app = typer.Typer(no_args_is_help=True)
-app.add_typer(config.app, name="config")
-app.add_typer(test.app, name="test")
+app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
+app.add_typer(config.app, name="config, cfg", cls=annotations.AliasGroup)
+app.add_typer(test.app, name="test, t", cls=annotations.AliasGroup)
 
 
-@app.command()
+@app.command("clone, c")
 def clone(lang: annotations.Language):
     clone_pkg.main(lang=lang)
 
 
-@app.command()
-def create(
+@app.command("new, n")
+def new(
     name: str,
     language: annotations.Language,
     timelimit: annotations.Timelimit = 1000,

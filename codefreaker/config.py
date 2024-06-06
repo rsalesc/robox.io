@@ -104,7 +104,7 @@ def path():
     console.print(get_config_path())
 
 
-@app.command()
+@app.command("list, ls")
 def list():
     console.print_json(utils.model_json(get_config()))
 
