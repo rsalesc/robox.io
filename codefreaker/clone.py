@@ -34,6 +34,7 @@ def create_problem_structure(
     problem: Problem,
     lang: Language,
     status: Optional[rich.status.Status],
+    should_simplify: bool = False,
     verbose: bool = False,
 ) -> Optional[DumpedProblem]:
     # Create directory structure.
@@ -41,7 +42,7 @@ def create_problem_structure(
 
     problem_to_dump = DumpedProblem.from_problem(
         problem,
-        code=providers.get_code(problem),
+        code=providers.get_code(problem, simplify=should_simplify),
         aliases=providers.get_aliases(problem),
     )
 
@@ -82,10 +83,23 @@ def process_problems(
     console.print(
         f"Creating problem structure for [item]{len(problems)}[/item] problems..."
     )
+
+    should_simplify = False
+    if providers.should_simplify_contest_problems(problems):
+        console.print(f"Detected the parsed problems are from a contest.")
+        if utils.confirm_on_status(
+            status,
+            "Do you want to identify these problems by their letters?",
+            default=True,
+        ):
+            should_simplify = True
+
     root = pathlib.Path()
     dumped_problems = []
     for problem in problems:
-        dumped_problem = create_problem_structure(root, problem, lang, status)
+        dumped_problem = create_problem_structure(
+            root, problem, lang, status, should_simplify=should_simplify
+        )
         if dumped_problem:
             dumped_problems.append(dumped_problem)
     console.print(f"Hydrating [item]{len(dumped_problems)}[/item] problems...")

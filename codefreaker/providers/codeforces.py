@@ -50,6 +50,12 @@ class CodeforcesProvider(ProviderInterface):
     def should_handle(self, url: str) -> bool:
         return "codeforces.com/" in url
 
+    def should_simplify_contest_problems(self) -> bool:
+        return True
+
+    def get_problem_code_within_contest(self, problem: Problem) -> str:
+        return self.get_aliases(problem)[-1]
+
     def get_code(self, problem: Problem) -> str:
         code_tuple = get_code_tuple(problem.url)
         if not code_tuple:
