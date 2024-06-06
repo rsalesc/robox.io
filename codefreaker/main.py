@@ -13,12 +13,25 @@ from . import test
 from . import create as create_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
-app.add_typer(config.app, name="config, cfg", cls=annotations.AliasGroup)
-app.add_typer(test.app, name="test, t", cls=annotations.AliasGroup)
+app.add_typer(
+    config.app,
+    name="config, cfg",
+    cls=annotations.AliasGroup,
+    help="Manage the configuration of the tool.",
+)
+app.add_typer(
+    test.app,
+    name="test, t",
+    cls=annotations.AliasGroup,
+    help="Commands to manage the testcases of a problem.",
+)
 
 
 @app.command("clone, c")
 def clone(lang: annotations.Language):
+    """
+    Clones by waiting for a set of problems to be sent through Competitive Companion.
+    """
     clone_pkg.main(lang=lang)
 
 
@@ -29,6 +42,9 @@ def new(
     timelimit: annotations.Timelimit = 1000,
     memorylimit: annotations.Memorylimit = 256,
 ):
+    """
+    Create a new problem from scratch.
+    """
     create_pkg.main(name, language, timelimit, memorylimit)
 
 

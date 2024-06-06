@@ -14,11 +14,17 @@ app = typer.Typer()
 
 @app.command()
 def hydrate(problem: annotations.ProblemOption = None):
+    """
+    Populate all samples of a problem (or of all problems in the folder).
+    """
     hydration.main(problem=problem)
 
 
 @app.command("add, a")
 def add(problem: annotations.Problem):
+    """
+    Add a testcase to a problem.
+    """
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
@@ -37,6 +43,9 @@ def delete(
     problem: annotations.Problem,
     i: Annotated[int, typer.Option("--index", "--idx", "-i")],
 ):
+    """
+    Remove the i-th testcase from a problem.
+    """
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")

@@ -100,17 +100,26 @@ def get_config() -> Config:
 
 @app.command()
 def path():
+    """
+    Show the absolute path of the config file.
+    """
     get_config()  # Ensure config is created.
     console.print(get_config_path())
 
 
 @app.command("list, ls")
 def list():
+    """
+    Pretty print the config file.
+    """
     console.print_json(utils.model_json(get_config()))
 
 
 @app.command()
 def reset():
+    """
+    Reset the config file to the default one.
+    """
     if not typer.confirm("Do you really want to reset your config to the default one?"):
         return
     cfg_path = get_config_path()
