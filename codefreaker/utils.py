@@ -1,6 +1,10 @@
 import pathlib
 import itertools
 
+import rich
+import rich.prompt
+import rich.status
+
 def create_and_write(path: pathlib.Path, *args, **kwargs):
   path.parent.mkdir(parents=True, exist_ok=True)
   path.write_text(*args, **kwargs)
@@ -16,3 +20,9 @@ def normalize_with_underscores(s: str) -> str:
     last = c
     final.append(c)
   return ''.join(final)
+
+def confirm_on_status(status: rich.status.Status, *args, **kwargs) -> bool:
+  status.stop()
+  res = rich.prompt.Confirm.ask(*args, **kwargs)
+  status.start()
+  return res

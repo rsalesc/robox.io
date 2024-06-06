@@ -1,4 +1,6 @@
+from time import sleep
 from typing import List, Optional
+import rich.prompt
 import rich.status
 import rich
 import fastapi
@@ -8,6 +10,7 @@ import threading
 import pathlib
 import typer
 
+from . import utils
 from . import providers
 from .schema import Problem, DumpedProblem
 from .console import console
@@ -24,7 +27,7 @@ def clear_loggers():
     logging.getLogger(logger_name).handlers.clear()
     logging.getLogger(logger_name).propagate = False
 
-def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Language) -> Optional[DumpedProblem]:
+def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Language, status: rich.status.Status) -> Optional[DumpedProblem]:
   # Create directory structure.
   root.parent.mkdir(parents=True, exist_ok=True)
 
@@ -36,7 +39,7 @@ def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Languag
   existing_problem = metadata.find_problem_by_code(problem_to_dump.code, root)
   if existing_problem:
     console.print(f'[error]Problem with identifier [item]{problem_to_dump.code}[/item] already exists in this folder.[/error]')
-    if not typer.confirm('Do you want to overwrite it?'):
+    if not utils.confirm_on_status(status, 'Do you want to overwrite it?', default=False):
       console.print(f'Skipping problem [item]{problem_to_dump.pretty_name()}[/item].')
       return None
 
@@ -44,15 +47,15 @@ def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Languag
   code_path.write_text(format_vars(lang.get_template(), **problem_to_dump.get_vars()))
   return problem_to_dump
 
-def process_problems(problems: List[Problem], lang: Language):
+def process_problems(problems: List[Problem], lang: Language, status: rich.status.Status):
   console.print(f'Creating problem structure for [item]{len(problems)}[/item] problems...')
   root = pathlib.Path()
   dumped_problems = []
   for problem in problems:
-    dumped_problem = create_problem_structure(root, problem, lang)
+    dumped_problem = create_problem_structure(root, problem, lang, status)
     if dumped_problem:
       dumped_problems.append(dumped_problem)
-  console.print(f'Hydrating [item]{len(problems)}[/item] problems...')
+  console.print(f'Hydrating [item]{len(dumped_problems)}[/item] problems...')
   for problem in dumped_problems:
     hydration.hydrate_problem(root, problem)
                                                                                                                                                                     
@@ -117,4 +120,4 @@ def main(lang: Optional[str] = None):
     server.run()
 
   with console.status('Processing parsed problems...') as status:
-    process_problems(problems_to_process, get_config().get_language(lang))
+    process_problems(problems_to_process, get_config().get_language(lang), status)
