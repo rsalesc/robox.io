@@ -48,6 +48,7 @@ class Language(BaseModel):
 class Config(BaseModel):
     defaultLanguage: str
     languages: Dict[str, Language]
+    editor: Optional[str] = None
 
     def get_default_language(self) -> Optional[Language]:
         return self.languages.get(self.defaultLanguage)

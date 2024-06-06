@@ -54,6 +54,16 @@ Language = Annotated[
         autocompletion=_get_language_options,
     ),
 ]
+LanguageWithDefault = Annotated[
+    str,
+    typer.Option(
+        "--language",
+        "--lang",
+        "-l",
+        help="Language to use.",
+        autocompletion=_get_language_options,
+    ),
+]
 Problem = Annotated[str, typer.Argument(autocompletion=_get_problem_options)]
 
 ProblemOption = Annotated[

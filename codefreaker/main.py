@@ -11,6 +11,7 @@ from . import metadata
 from . import hydration
 from . import test
 from . import create as create_pkg
+from . import edit as edit_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(
@@ -46,6 +47,11 @@ def new(
     Create a new problem from scratch.
     """
     create_pkg.main(name, language, timelimit, memorylimit)
+
+
+@app.command("edit, e")
+def edit(problem: str, language: annotations.LanguageWithDefault = None):
+    edit_pkg.main(problem, language)
 
 
 @app.callback()
