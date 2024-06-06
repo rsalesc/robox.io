@@ -5,9 +5,11 @@ import fastapi
 import uvicorn
 import logging
 import threading
+import pathlib
 
 from .schema import Problem
 from .console import console
+from .config import get_config, Language, format_vars
 
 def clear_loggers():
   for logger_name in [
@@ -18,11 +20,27 @@ def clear_loggers():
     logging.getLogger(logger_name).handlers.clear()
     logging.getLogger(logger_name).propagate = False
 
+def create_problem_structure(problem: Problem, lang: Language):
+  # Create directory structure.
+  root = pathlib.Path()
+  root.parent.mkdir(parents=True, exist_ok=True)
 
-def process_problems(problems: List[Problem], lang: Optional[Problem] = None):
-  pass
+  code_path = root / lang.get_file(problem.get_file_basename())
+  json_path = root / f'{problem.get_file_basename()}.cfk.json'
 
+  json_path.write_text(problem.model_dump_json())
+  code_path.write_text(format_vars(lang.get_template(), **problem.get_vars()))
+
+def process_problems(problems: List[Problem], lang: Language):
+  console.print(f'Creating problem structure for [item]{len(problems)}[/item] problems...')
+  for problem in problems:
+    create_problem_structure(problem, lang)
+                                                                                                                                                                    
 def main(lang: Optional[str] = None):
+  if get_config().get_language(lang) is None:
+    console.print(f'[error]Language {lang or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]')
+    return
+
   app = fastapi.FastAPI()
 
   async def shutdown():
@@ -79,4 +97,4 @@ def main(lang: Optional[str] = None):
     server.run()
 
   with console.status('Processing parsed problems...') as status:
-    process_problems(problems_to_process, lang=lang)
+    process_problems(problems_to_process, get_config().get_language(lang))

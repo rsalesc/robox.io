@@ -15,6 +15,13 @@ APP_NAME = 'codefreaker'
 _RESOURCES_PKG = 'resources'
 _CONFIG_FILE_NAME = 'default_config.json'
 
+def format_vars(template: str, **kwargs) -> str:
+  res = template
+  for key, value in kwargs.items():
+    key = key.replace('_', '-')
+    res = res.replace(f'%{{{key}}}', value)
+  return res
+
 class Language(BaseModel):
   template: str
   file: str
@@ -22,12 +29,43 @@ class Language(BaseModel):
   preprocess: Optional[List[str]] = None
   exec: str
 
+  def get_file(self, basename: str) -> str:
+    return format_vars(self.file, problem_code=basename)
+  
+  def get_submit_file(self, file: str, basename: str) -> str:
+    return format_vars(self.file, file=file, problem_code=basename)
+  
+  def get_template(self) -> str:
+    template_path = get_app_path() / 'templates' / self.template
+    if not template_path.is_file():
+      template_path.parent.mkdir(parents=True, exist_ok=True)
+      template_path.write_text(get_default_template(self.template))
+    return template_path.read_text()
+
+
 class Config(BaseModel):
   defaultLanguage: str
   languages: Dict[str, Language]
   
   def get_default_language(self) -> Optional[Language]:
     return self.languages.get(self.defaultLanguage)
+  
+  def get_language(self, name: Optional[str] = None) -> Optional[Language]:
+    return self.languages.get(name or self.defaultLanguage)
+  
+def get_app_path() -> pathlib.Path:
+  app_dir = typer.get_app_dir(APP_NAME)
+  return pathlib.Path(app_dir)
+
+def get_default_template_path(template: str) -> pathlib.Path:
+  with importlib.resources.as_file(importlib.resources.files(_RESOURCES_PKG) / 'templates' / template) as file:
+    return file
+  
+def get_default_template(template: str) -> str:
+  file = get_default_template_path(template)
+  if file.is_file():
+    return file.read_text()
+  return ''
 
 def get_default_config_path() -> pathlib.Path:
   with importlib.resources.as_file(importlib.resources.files(_RESOURCES_PKG) / _CONFIG_FILE_NAME) as file:
@@ -37,8 +75,7 @@ def get_default_config() -> Config:
   return Config.model_validate_json(get_default_config_path().read_text())
 
 def get_config_path() -> pathlib.Path:
-  app_dir = typer.get_app_dir(APP_NAME)
-  return pathlib.Path(app_dir) / 'config.json'
+  return get_app_path() / 'config.json'
 
 @functools.cache
 def get_config() -> Config:

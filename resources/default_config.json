@@ -3,14 +3,14 @@
   "languages": {
     "cpp":{
       "template": "template.cpp",
-      "file": "%{problem-index}.cpp",
+      "file": "%{problem-code}.cpp",
       "preprocess": ["g++ \"%{file}\" -std=c++17"],
       "exec": "./a.out"
     },
     "exinc":{
       "template": "template.cpp",
-      "file": "%{problem-index}.cpp",
-      "submitFile": "%{problem-index}.pre.cpp",
+      "file": "%{problem-code}.cpp",
+      "submitFile": "%{problem-code}.pre.cpp",
       "preprocess": ["exinc -i \"%{file}\" -o \"%{submit-file}\" -c"],
       "exec": "./a.out"
     }
