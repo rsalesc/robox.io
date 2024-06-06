@@ -4,11 +4,33 @@ from typing import List, Optional, Set, Tuple
 from codefreaker.providers.provider import ProviderInterface
 from codefreaker.schema import Problem
 
+
+def _add_underscores(matches: List[str]) -> List[str]:
+    if len(matches) <= 2:
+        return matches
+    return [f"{x}_" for x in matches[:-2]] + matches[-2:]
+
+
 _PATTERNS = [
-    r"https?://(?:.*\.)?codeforces.com/(contest|gym)/(\d+)/problem/([^/]+)",
+    r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/(?:contest|gym)/(\d+)/problem/([^/]+)",
+    r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemset/problem/(\d+)/([^/]+)",
+    (
+        r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/group/([^/]+)/contest/(\d+)/problem/([^/]+)",
+        _add_underscores,
+    ),
+    r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemset/(gym)Problem/([^/]+)",
+    r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemsets/(acm)sguru/problem/(?:\d+)/([^/]+)",
+    # TODO: add EDU
 ]
 
-_COMPILED_PATTERNS = [re.compile(pattern) for pattern in _PATTERNS]
+
+def _compiled_pattern(pattern):
+    if isinstance(pattern, tuple):
+        return (re.compile(pattern[0]), pattern[1])
+    return re.compile(pattern)
+
+
+_COMPILED_PATTERNS = [_compiled_pattern(pattern) for pattern in _PATTERNS]
 
 
 def get_code_tuple(url: str) -> List[str]:
@@ -20,7 +42,7 @@ def get_code_tuple(url: str) -> List[str]:
             extract = lambda x: x
 
         if match := pattern.match(url):
-            return extract(list(match.groups()[1:]))
+            return extract(list(match.groups()))
     return None
 
 
