@@ -6,6 +6,8 @@ import rich
 import rich.prompt
 import rich.status
 
+from .console import console
+
 def create_and_write(path: pathlib.Path, *args, **kwargs):
   path.parent.mkdir(parents=True, exist_ok=True)
   path.write_text(*args, **kwargs)
@@ -25,7 +27,7 @@ def normalize_with_underscores(s: str) -> str:
 def confirm_on_status(status: Optional[rich.status.Status], *args, **kwargs) -> bool:
   if status:
     status.stop()
-  res = rich.prompt.Confirm.ask(*args, **kwargs)
+  res = rich.prompt.Confirm.ask(*args, **kwargs, console=console)
   if status:
     status.start()
   return res
