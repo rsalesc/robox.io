@@ -6,11 +6,13 @@ import uvicorn
 import logging
 import threading
 import pathlib
+import typer
 
 from . import providers
 from .schema import Problem, DumpedProblem
 from .console import console
 from .config import get_config, Language, format_vars
+from . import metadata
 from . import hydration
 
 def clear_loggers():
@@ -22,7 +24,7 @@ def clear_loggers():
     logging.getLogger(logger_name).handlers.clear()
     logging.getLogger(logger_name).propagate = False
 
-def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Language):
+def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Language) -> Optional[DumpedProblem]:
   # Create directory structure.
   root.parent.mkdir(parents=True, exist_ok=True)
 
@@ -30,6 +32,13 @@ def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Languag
 
   code_path = root / lang.get_file(problem_to_dump.code)
   json_path = root / f'{problem_to_dump.code}.cfk.json'
+
+  existing_problem = metadata.find_problem_by_code(problem_to_dump.code, root)
+  if existing_problem:
+    console.print(f'[error]Problem with identifier [item]{problem_to_dump.code}[/item] already exists in this folder.[/error]')
+    if not typer.confirm('Do you want to overwrite it?'):
+      console.print(f'Skipping problem [item]{problem_to_dump.pretty_name()}[/item].')
+      return None
 
   json_path.write_text(problem_to_dump.model_dump_json())
   code_path.write_text(format_vars(lang.get_template(), **problem_to_dump.get_vars()))
@@ -40,7 +49,9 @@ def process_problems(problems: List[Problem], lang: Language):
   root = pathlib.Path()
   dumped_problems = []
   for problem in problems:
-    dumped_problems.append(create_problem_structure(root, problem, lang))
+    dumped_problem = create_problem_structure(root, problem, lang)
+    if dumped_problem:
+      dumped_problems.append(dumped_problem)
   console.print(f'Hydrating [item]{len(problems)}[/item] problems...')
   for problem in dumped_problems:
     hydration.hydrate_problem(root, problem)
