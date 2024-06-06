@@ -7,17 +7,19 @@ from .provider import ProviderInterface
 
 
 ALL_PROVIDERS: List[ProviderInterface] = [
-  CodeforcesProvider(),
+    CodeforcesProvider(),
 ]
 
+
 def get_code(problem: Problem) -> str:
-  for provider in ALL_PROVIDERS:
-    if provider.should_handle(problem.url):
-      return provider.get_code(problem)
-  return problem.get_normalized_name()
+    for provider in ALL_PROVIDERS:
+        if provider.should_handle(problem.url):
+            return provider.get_code(problem)
+    return problem.get_normalized_name()
+
 
 def get_aliases(problem: Problem) -> List[str]:
-  for provider in ALL_PROVIDERS:
-    if provider.should_handle(problem.url):
-      return provider.get_aliases(problem)
-  return []
+    for provider in ALL_PROVIDERS:
+        if provider.should_handle(problem.url):
+            return provider.get_aliases(problem)
+    return []

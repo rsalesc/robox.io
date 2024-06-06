@@ -4,8 +4,10 @@ from typing_extensions import Annotated
 
 from .config import get_config
 
+
 def _get_language_options():
     return list(get_config().languages.keys())
+
 
 def _get_language_default():
     return get_config().defaultLanguage
