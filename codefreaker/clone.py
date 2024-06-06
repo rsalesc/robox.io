@@ -27,11 +27,14 @@ def clear_loggers():
     logging.getLogger(logger_name).handlers.clear()
     logging.getLogger(logger_name).propagate = False
 
-def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Language, status: rich.status.Status) -> Optional[DumpedProblem]:
+def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Language, status: Optional[rich.status.Status], verbose: bool = False) -> Optional[DumpedProblem]:
   # Create directory structure.
   root.parent.mkdir(parents=True, exist_ok=True)
 
-  problem_to_dump = DumpedProblem(**problem.model_dump(), code=providers.get_code(problem), aliases=providers.get_aliases(problem))
+  problem_to_dump = DumpedProblem.from_problem(problem, code=providers.get_code(problem), aliases=providers.get_aliases(problem))
+
+  if verbose:
+    console.print(f'Creating problem structure for [item]{problem_to_dump.pretty_name()}[/item]...')
 
   code_path = root / lang.get_file(problem_to_dump.code)
   json_path = root / f'{problem_to_dump.code}.cfk.json'
@@ -45,6 +48,9 @@ def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Languag
 
   json_path.write_text(problem_to_dump.model_dump_json())
   code_path.write_text(format_vars(lang.get_template(), **problem_to_dump.get_vars()))
+
+  if verbose:
+    console.print(f'Problem structure for [item]{problem_to_dump.pretty_name()}[/item] created successfully.')
   return problem_to_dump
 
 def process_problems(problems: List[Problem], lang: Language, status: rich.status.Status):

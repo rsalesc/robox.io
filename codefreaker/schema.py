@@ -1,5 +1,6 @@
 import itertools
 from typing import Dict, List, Optional
+import uuid
 from pydantic import BaseModel
 
 from . import utils
@@ -12,15 +13,19 @@ class Batch(BaseModel):
   id: str
   size: int
 
+  @staticmethod
+  def create():
+    return Batch(id=str(uuid.uuid4()), size=1)
+
 class Problem(BaseModel):
   name: str
-  group: str
-  url: str
-  interactive: bool
+  group: Optional[str] = ''
+  url: Optional[str] = ''
+  interactive: Optional[bool] = False
   memoryLimit: int
   timeLimit: int
-  tests: List[Testcase]
-  testType: str
+  tests: Optional[List[Testcase]] = []
+  testType: Optional[str] = 'single'
   batch: Batch
 
   def get_code(self):
@@ -32,6 +37,10 @@ class Problem(BaseModel):
 class DumpedProblem(Problem):
   code: str
   aliases: List[str]
+
+  @staticmethod
+  def from_problem(problem: Problem, **kwargs) -> 'DumpedProblem':
+    return DumpedProblem(**problem.model_dump(), **kwargs)
 
   def pretty_name(self) -> str:
     if self.name == self.code:

@@ -1,5 +1,6 @@
 import pathlib
 import itertools
+from typing import Optional
 
 import rich
 import rich.prompt
@@ -21,8 +22,10 @@ def normalize_with_underscores(s: str) -> str:
     final.append(c)
   return ''.join(final)
 
-def confirm_on_status(status: rich.status.Status, *args, **kwargs) -> bool:
-  status.stop()
+def confirm_on_status(status: Optional[rich.status.Status], *args, **kwargs) -> bool:
+  if status:
+    status.stop()
   res = rich.prompt.Confirm.ask(*args, **kwargs)
-  status.start()
+  if status:
+    status.start()
   return res
