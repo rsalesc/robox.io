@@ -1,4 +1,5 @@
 from typing import Optional
+from typing_extensions import Annotated
 import typer
 import pathlib
 
@@ -26,7 +27,7 @@ def add(problem: str):
   hydration.add_testcase(pathlib.Path(), dumped_problem, Testcase(input=input, output=output))
 
 @app.command()
-def remove(problem: str, i: int):
+def remove(problem: str, i: Annotated[int, typer.Option('--index', '-i')]):
   dumped_problem = metadata.find_problem_by_code(problem)
   if dumped_problem is None:
     console.print(f'[error]Problem [item]{problem}[/item] not found.[/error]')
