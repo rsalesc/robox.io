@@ -3,6 +3,7 @@ from typing_extensions import Annotated
 import typer
 import pathlib
 
+from . import annotations
 from . import hydration
 from . import metadata
 from .console import console, multiline_prompt
@@ -12,12 +13,12 @@ app = typer.Typer()
 
 
 @app.command()
-def hydrate(problem: Optional[str] = None):
+def hydrate(problem: annotations.ProblemOption = None):
     hydration.main(problem=problem)
 
 
 @app.command()
-def add(problem: str):
+def add(problem: annotations.Problem):
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
@@ -32,7 +33,7 @@ def add(problem: str):
 
 
 @app.command()
-def remove(problem: str, i: Annotated[int, typer.Option("--index", "-i")]):
+def remove(problem: annotations.Problem, i: Annotated[int, typer.Option("--index", "-i")]):
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")

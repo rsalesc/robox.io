@@ -3,14 +3,24 @@ import typer
 from typing_extensions import Annotated
 
 from .config import get_config
+from . import metadata
 
 
 def _get_language_options():
-    return list(get_config().languages.keys())
+    return sorted(get_config().languages.keys())
 
 
 def _get_language_default():
     return get_config().defaultLanguage
+
+
+def _get_problem_options():
+    options = set()
+    all_problems = metadata.find_problems()
+    for problem in all_problems:
+        options.add(problem.code)
+        options.update(problem.aliases)
+    return sorted(options)
 
 
 Timelimit = Annotated[
@@ -42,4 +52,13 @@ Language = Annotated[
         default_factory=_get_language_default,
         autocompletion=_get_language_options,
     ),
+]
+Problem = Annotated[
+    str,
+    typer.Argument(autocompletion=_get_problem_options)
+]
+
+ProblemOption = Annotated[
+    Optional[str],
+    typer.Option("--problem", "-p", autocompletion=_get_problem_options)
 ]
