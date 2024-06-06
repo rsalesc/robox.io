@@ -56,7 +56,7 @@ def main(problem: Optional[str] = None):
   if not problem:
     problems_to_hydrate = metadata.find_problems()
   else:
-    dumped_problem = metadata.find_problem_by_code(problem)
+    dumped_problem = metadata.find_problem_by_anything(problem)
     problems_to_hydrate.append(dumped_problem)
 
   root = pathlib.Path()

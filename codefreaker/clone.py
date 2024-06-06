@@ -7,6 +7,7 @@ import logging
 import threading
 import pathlib
 
+from . import providers
 from .schema import Problem, DumpedProblem
 from .console import console
 from .config import get_config, Language, format_vars
@@ -25,13 +26,13 @@ def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Languag
   # Create directory structure.
   root.parent.mkdir(parents=True, exist_ok=True)
 
-  problem_to_dump = DumpedProblem(**problem.model_dump(), code=problem.get_code())
+  problem_to_dump = DumpedProblem(**problem.model_dump(), code=providers.get_code(problem), aliases=providers.get_aliases(problem))
 
   code_path = root / lang.get_file(problem_to_dump.code)
   json_path = root / f'{problem_to_dump.code}.cfk.json'
 
   json_path.write_text(problem_to_dump.model_dump_json())
-  code_path.write_text(format_vars(lang.get_template(), **problem.get_vars()))
+  code_path.write_text(format_vars(lang.get_template(), **problem_to_dump.get_vars()))
   return problem_to_dump
 
 def process_problems(problems: List[Problem], lang: Language):
