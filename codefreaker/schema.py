@@ -33,6 +33,11 @@ class DumpedProblem(Problem):
   code: str
   aliases: List[str]
 
+  def pretty_name(self) -> str:
+    if self.name == self.code:
+      return self.name
+    return f'{self.name} ({self.code})'
+
   def get_vars(self) -> Dict[str, str]:
     return {
       'problem_name': self.name,
