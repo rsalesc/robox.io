@@ -17,7 +17,7 @@ app.add_typer(config.app, name='config')
 app.add_typer(test.app, name='test')
 
 @app.command()
-def clone(lang: Optional[str] = None):
+def clone(lang: annotations.Language):
   clone_pkg.main(lang=lang)
 
 @app.command()
