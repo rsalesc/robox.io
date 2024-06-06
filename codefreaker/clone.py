@@ -7,9 +7,10 @@ import logging
 import threading
 import pathlib
 
-from .schema import Problem
+from .schema import Problem, DumpedProblem
 from .console import console
 from .config import get_config, Language, format_vars
+from . import hydration
 
 def clear_loggers():
   for logger_name in [
@@ -20,21 +21,28 @@ def clear_loggers():
     logging.getLogger(logger_name).handlers.clear()
     logging.getLogger(logger_name).propagate = False
 
-def create_problem_structure(problem: Problem, lang: Language):
+def create_problem_structure(root: pathlib.Path, problem: Problem, lang: Language):
   # Create directory structure.
-  root = pathlib.Path()
   root.parent.mkdir(parents=True, exist_ok=True)
 
-  code_path = root / lang.get_file(problem.get_file_basename())
-  json_path = root / f'{problem.get_file_basename()}.cfk.json'
+  problem_to_dump = DumpedProblem(**problem.model_dump(), code=problem.get_code())
 
-  json_path.write_text(problem.model_dump_json())
+  code_path = root / lang.get_file(problem_to_dump.code)
+  json_path = root / f'{problem_to_dump.code}.cfk.json'
+
+  json_path.write_text(problem_to_dump.model_dump_json())
   code_path.write_text(format_vars(lang.get_template(), **problem.get_vars()))
+  return problem_to_dump
 
 def process_problems(problems: List[Problem], lang: Language):
   console.print(f'Creating problem structure for [item]{len(problems)}[/item] problems...')
+  root = pathlib.Path()
+  dumped_problems = []
   for problem in problems:
-    create_problem_structure(problem, lang)
+    dumped_problems.append(create_problem_structure(root, problem, lang))
+  console.print(f'Hydrating [item]{len(problems)}[/item] problems...')
+  for problem in dumped_problems:
+    hydration.hydrate_problem(root, problem)
                                                                                                                                                                     
 def main(lang: Optional[str] = None):
   if get_config().get_language(lang) is None:
