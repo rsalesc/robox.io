@@ -2,6 +2,7 @@ import pathlib
 import itertools
 from typing import Optional
 
+from pydantic import BaseModel
 import rich
 import rich.prompt
 import rich.status
@@ -25,6 +26,10 @@ def normalize_with_underscores(s: str) -> str:
         last = c
         final.append(c)
     return "".join(final)
+
+
+def model_json(model: BaseModel) -> str:
+    return model.model_dump_json(indent=4)
 
 
 def confirm_on_status(status: Optional[rich.status.Status], *args, **kwargs) -> bool:

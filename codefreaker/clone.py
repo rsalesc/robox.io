@@ -67,7 +67,7 @@ def create_problem_structure(
             )
             return None
 
-    json_path.write_text(problem_to_dump.model_dump_json())
+    json_path.write_text(utils.model_json(problem_to_dump))
     code_path.write_text(format_vars(lang.get_template(), **problem_to_dump.get_vars()))
 
     if verbose:

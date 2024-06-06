@@ -2,6 +2,7 @@ import pathlib
 from typing import Optional, Tuple
 from filelock import FileLock
 
+from . import utils
 from . import metadata
 from . import hydration
 from .schema import DumpedProblem, Problem, Testcase
@@ -35,7 +36,7 @@ def add_testcase(root: pathlib.Path, problem: DumpedProblem, testcase: Testcase)
     out_path.write_text(testcase.output)
     problem.tests.append(testcase)
     metadata.find_problem_path_by_code(problem.code, root).write_text(
-        problem.model_dump_json()
+        utils.model_json(problem),
     )
 
     console.print(
@@ -66,7 +67,7 @@ def remove_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
     else:
         problem.tests.pop(i)
         metadata.find_problem_path_by_code(problem.code, root).write_text(
-            problem.model_dump_json()
+            utils.model_json(problem)
         )
 
     console.print(

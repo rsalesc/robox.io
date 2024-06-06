@@ -94,7 +94,7 @@ def get_config_path() -> pathlib.Path:
 def get_config() -> Config:
     config_path = get_config_path()
     if not config_path.is_file():
-        utils.create_and_write(config_path, get_default_config().model_dump_json())
+        utils.create_and_write(config_path, utils.model_json(get_default_config()))
     return Config.model_validate_json(config_path.read_text())
 
 
@@ -106,7 +106,7 @@ def path():
 
 @app.command()
 def list():
-    console.print_json(get_config().model_dump_json())
+    console.print_json(utils.model_json(get_config()))
 
 
 @app.command()
