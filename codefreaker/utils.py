@@ -24,7 +24,7 @@ def highlight_str(s: str) -> text.Text:
     return txt
 
 
-def highligh_json_obj(obj: Any) -> text.Text:
+def highlight_json_obj(obj: Any) -> text.Text:
     js = json.dumps(obj)
     return highlight_str(js)
 

@@ -1,4 +1,7 @@
 import atexit
+import dataclasses
+import pathlib
+from typing import List
 import typer
 
 from codefreaker import annotations, metadata
@@ -6,6 +9,38 @@ from codefreaker.config import get_config
 from codefreaker.console import console
 from codefreaker.grading import steps
 from codefreaker.grading.judge.sandboxes import stupid_sandbox
+from codefreaker.schema import DumpedProblem
+
+
+def get_testcase_index(path: pathlib.Path) -> int:
+    return int(path.stem.split(".")[-1])
+
+
+def get_testcases_io(
+    problem: DumpedProblem, root: pathlib.Path = pathlib.Path(".")
+) -> List[steps.TestcaseIO]:
+    testcases_per_index = {}
+    for input_file in root.glob(f"{problem.code}.*.in"):
+        try:
+            index = get_testcase_index(input_file)
+        except ValueError:
+            continue
+        testcases_per_index[index] = steps.TestcaseIO(index=index, input=input_file)
+
+    for output_file in root.glob(f"{problem.code}.*.out"):
+        index = get_testcase_index(output_file)
+        try:
+            index = get_testcase_index(output_file)
+        except ValueError:
+            continue
+        if index in testcases_per_index:
+            testcases_per_index[index] = dataclasses.replace(
+                testcases_per_index[index], output=output_file
+            )
+            continue
+        testcases_per_index[index] = steps.TestcaseIO(index=index, output=output_file)
+
+    return sorted(testcases_per_index.values(), key=lambda x: x.index)
 
 
 def main(
@@ -34,3 +69,11 @@ def main(
         console.print(
             f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
         )
+        return
+
+    testcases = get_testcases_io(dumped_problem)
+    persist_root = pathlib.Path("persist")
+
+    testcase_logs = steps.run(lang, box, testcases, persist_root)
+
+    console.print(steps.evaluate(box, testcases, testcase_logs, persist_root))

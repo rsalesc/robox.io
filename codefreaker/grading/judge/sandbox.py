@@ -240,7 +240,9 @@ class SandboxBase(abc.ABC):
         """
         return self.get_root_path() / path
 
-    def create_file(self, path: pathlib.Path, executable: bool = False) -> BinaryIO:
+    def create_file(
+        self, path: pathlib.Path, executable: bool = False, override: bool = False
+    ) -> BinaryIO:
         """Create an empty file in the sandbox and open it in write
         binary mode.
 
@@ -255,6 +257,8 @@ class SandboxBase(abc.ABC):
         else:
             logger.debug("Creating plain file %s in sandbox.", path)
         real_path = self.relative_path(path)
+        if override:
+            real_path.unlink(missing_ok=True)
         try:
             file_fd = os.open(str(real_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             file_ = open(file_fd, "wb")
@@ -275,7 +279,11 @@ class SandboxBase(abc.ABC):
         return file_
 
     def create_file_from_storage(
-        self, path: pathlib.Path, digest: str, executable: bool = False
+        self,
+        path: pathlib.Path,
+        digest: str,
+        executable: bool = False,
+        override: bool = False,
     ):
         """Write a file taken from FS in the sandbox.
 
@@ -284,11 +292,15 @@ class SandboxBase(abc.ABC):
         executable (bool): to set permissions.
 
         """
-        with self.create_file(path, executable) as dest_fobj:
+        with self.create_file(path, executable, override=override) as dest_fobj:
             self.file_cacher.get_file_to_fobj(digest, dest_fobj)
 
     def create_file_from_bytes(
-        self, path: pathlib.Path, content: bytes, executable: bool = False
+        self,
+        path: pathlib.Path,
+        content: bytes,
+        executable: bool = False,
+        override: bool = False,
     ):
         """Write some data to a file in the sandbox.
 
@@ -297,11 +309,15 @@ class SandboxBase(abc.ABC):
         executable (bool): to set permissions.
 
         """
-        with self.create_file(path, executable) as dest_fobj:
+        with self.create_file(path, executable, override=override) as dest_fobj:
             dest_fobj.write(content)
 
     def create_file_from_string(
-        self, path: pathlib.Path, content: str, executable: bool = False
+        self,
+        path: pathlib.Path,
+        content: str,
+        executable: bool = False,
+        override: bool = False,
     ):
         """Write some data to a file in the sandbox.
 
@@ -310,7 +326,9 @@ class SandboxBase(abc.ABC):
         executable (bool): to set permissions.
 
         """
-        return self.create_file_from_bytes(path, content.encode("utf-8"), executable)
+        return self.create_file_from_bytes(
+            path, content.encode("utf-8"), executable, override=override
+        )
 
     def get_file(self, path: pathlib.Path, trunc_len: Optional[int] = None) -> BinaryIO:
         """Open a file in the sandbox given its relative path.
