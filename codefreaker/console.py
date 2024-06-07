@@ -9,6 +9,8 @@ theme = Theme(
         "status": "bright_white",
         "item": "bold blue",
         "error": "bold red",
+        "success": "bold green",
+        "lnumber": "dim cyan",
     }
 )
 console = Console(theme=theme, style="info", highlight=False)
