@@ -10,6 +10,7 @@ python = "^3.10"
 typer = {extras = ["all"], version = "^0.12.3"}
 fastapi = "^0.111.0"
 filelock = "^3.14.0"
+gevent = "^24.2.1"
 
 [tool.poetry.scripts]
 cfk = "codefreaker.main:app"
