@@ -11,7 +11,7 @@ from rich.measure import Measurement, measure_renderables
 import typer
 
 from codefreaker import annotations, metadata, testcase_rendering
-from codefreaker.config import get_config
+from codefreaker.config import Language, get_config
 from codefreaker.console import console
 from codefreaker.grading import steps
 from codefreaker.grading.judge.sandboxes import stupid_sandbox
@@ -108,6 +108,26 @@ def _pretty_print_evaluation_result(
     console.print()
 
 
+def pretty_print_summary(
+    problem: DumpedProblem,
+    lang: Language,
+    results: List[steps.TestcaseEvaluation],
+    root: pathlib.Path = pathlib.Path("."),
+):
+    submission_file = root / lang.get_submit_file(problem.code)
+    passed = sum(1 for result in results if result.outcome == steps.Outcome.ACCEPTED)
+    total = len(results)
+    console.print(f"Summary for problem [item]{problem.pretty_name()}[/item]:")
+
+    # Test summary.
+    text = Text()
+    text.append("Passed tests: ")
+    text.append(f"{passed}/{total}", style="success" if passed == total else "error")
+    console.print(text)
+
+    console.print(f"Submission file: {submission_file.absolute()}")
+
+
 def pretty_print_evaluation_results(
     problem: DumpedProblem, results: List[steps.TestcaseEvaluation]
 ):
@@ -154,6 +174,6 @@ def main(
         )
         return
 
-    pretty_print_evaluation_results(
-        dumped_problem, steps.evaluate(box, testcases, testcase_logs, persist_root)
-    )
+    results = steps.evaluate(box, testcases, testcase_logs, persist_root)
+    pretty_print_evaluation_results(dumped_problem, results)
+    pretty_print_summary(dumped_problem, lang, results)
