@@ -9,9 +9,10 @@ from . import clone as clone_pkg
 from . import config
 from . import metadata
 from . import hydration
-from . import test
+from . import testcase
 from . import create as create_pkg
 from . import edit as edit_pkg
+from . import test as test_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(
@@ -21,8 +22,8 @@ app.add_typer(
     help="Manage the configuration of the tool.",
 )
 app.add_typer(
-    test.app,
-    name="test, t",
+    testcase.app,
+    name="testcase, tc",
     cls=annotations.AliasGroup,
     help="Commands to manage the testcases of a problem.",
 )
@@ -52,6 +53,18 @@ def new(
 @app.command("edit, e")
 def edit(problem: str, language: annotations.LanguageWithDefault = None):
     edit_pkg.main(problem, language)
+
+
+@app.command("test, t")
+def test(
+    problem: str,
+    language: annotations.LanguageWithDefault = None,
+    keep_sandbox: bool = False,
+):
+    """
+    Test a problem using the provided language.
+    """
+    test_pkg.main(problem, language, keep_sandbox=keep_sandbox)
 
 
 @app.callback()

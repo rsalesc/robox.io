@@ -86,7 +86,7 @@ def process_problems(
 
     should_simplify = False
     if providers.should_simplify_contest_problems(problems):
-        console.print(f"Detected the parsed problems are from a contest.")
+        console.print("Detected the parsed problems are from a contest.")
         if utils.confirm_on_status(
             status,
             "Do you want to identify these problems by their letters?",

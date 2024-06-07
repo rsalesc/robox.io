@@ -13,7 +13,7 @@ def main():
     sandbox = stupid_sandbox.StupidSandbox(cache)
     sandbox.create_file_from_storage(pathlib.PosixPath("run.py"), python_file)
 
-    sandbox.stdout_file = "run.out"
+    sandbox.params.stdout_file = "run.out"
 
     sandbox.execute_without_std(["python3", "run.py"], wait=True)
 

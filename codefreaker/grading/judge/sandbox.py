@@ -1,16 +1,87 @@
 import abc
+import dataclasses
 import io
 import os
 import stat
 import pathlib
 import subprocess
 import logging
-import tempfile
 from typing import BinaryIO, Dict, List, Optional, Union
+
+import pydantic
+
+from codefreaker.grading.judge import storage
 
 from . import cacher
 
 logger = logging.getLogger(__name__)
+
+
+class SandboxParams(pydantic.BaseModel):
+    """Parameters for the sandbox.
+
+    box_id (int): the id of the sandbox.
+    fsize (int|None): maximum file size.
+    cgroup (bool): whether to use cgroups.
+    dirs ([string]): directories to mount.
+    preserve_env (bool): whether to preserve the environment.
+    inherit_env ([string]): environment variables to inherit.
+    set_env (Dict[string, string]): environment variables to set.
+    verbosity (int): verbosity level.
+    max_processes (int): maximum number of processes.
+
+    """
+
+    box_id: int = 0
+    chdir: Optional[pathlib.Path] = None
+    fsize: Optional[int] = None
+    cgroup: bool = False
+    dirs: List[str] = []
+    preserve_env: bool = False
+    inherit_env: List[str] = []
+    set_env: Dict[str, str] = {}
+    verbosity: int = 0
+    max_processes: int = 1
+
+    stdin_file: Optional[pathlib.Path] = None
+    stdout_file: Optional[pathlib.Path] = None
+    stderr_file: Optional[pathlib.Path] = None
+    stack_space: Optional[int] = None
+    address_space: Optional[int] = None
+    timeout: Optional[int] = None
+    wallclock_timeout: Optional[int] = None
+    extra_timeout: Optional[int] = None
+
+    def set_stdio(
+        self,
+        stdin: Optional[pathlib.Path] = None,
+        stdout: Optional[pathlib.Path] = None,
+    ):
+        """Set the standard input/output files.
+
+        stdin (Path): standard input file.
+        stdout (Path): standard output file.
+
+        """
+        self.stdin_file = stdin
+        self.stdout_file = stdout
+
+    def set_stdall(
+        self,
+        stdin: Optional[pathlib.Path] = None,
+        stdout: Optional[pathlib.Path] = None,
+        stderr: Optional[pathlib.Path] = None,
+    ):
+        """Set the standard input/output/error files.
+
+        stdin (Path): standard input file.
+        stdout (Path): standard output file.
+        stderr (Path): standard error file.
+
+        """
+        self.stdin_file = stdin
+        self.stdout_file = stdout
+        self.stderr_file = stderr
 
 
 class SandboxBase(abc.ABC):
@@ -31,19 +102,11 @@ class SandboxBase(abc.ABC):
     temp_dir: Optional[pathlib.Path]
     cmd_file: str
 
-    box_id: int
-    fsize: Optional[int]
-    cgroup: bool
-    dirs: List[str]
-    preserve_env: bool
-    inherit_env: List[str]
-    set_env: Dict[str, str]
-    verbosity: int
-    max_processes: int
+    params: SandboxParams
 
     def __init__(
         self,
-        file_cacher: cacher.FileCacher,
+        file_cacher: Optional[cacher.FileCacher] = None,
         name: Optional[str] = None,
         temp_dir: pathlib.Path = None,
     ):
@@ -57,29 +120,18 @@ class SandboxBase(abc.ABC):
             default temporary directory.
 
         """
-        self.file_cacher = file_cacher
+        self.file_cacher = file_cacher or storage.NullStorage()
         self.name = name if name is not None else "unnamed"
         self.temp_dir = temp_dir
 
         self.cmd_file = "commands.log"
 
-        # These are not necessarily used, but are here for API compatibility
-        # TODO: move all other common properties here.
-        self.box_id = 0
-        self.fsize = None
-        self.cgroup = False
-        self.dirs = []
-        self.preserve_env = False
-        self.inherit_env = []
-        self.set_env = {}
-        self.verbosity = 0
-
-        self.max_processes = 1
+        self.params = SandboxParams()
 
         # Set common environment variables.
         # Specifically needed by Python, that searches the home for
         # packages.
-        self.set_env["HOME"] = "./"
+        self.params.set_env["HOME"] = "./"
 
     def set_multiprocess(self, multiprocess: bool):
         """Set the sandbox to (dis-)allow multiple threads and processes.
@@ -89,9 +141,9 @@ class SandboxBase(abc.ABC):
         """
         if multiprocess:
             # Max processes is set to 1000 to limit the effect of fork bombs.
-            self.max_processes = 1000
+            self.params.max_processes = 1000
         else:
-            self.max_processes = 1
+            self.params.max_processes = 1
 
     def get_stats(self) -> str:
         """Return a human-readable string representing execution time
@@ -235,18 +287,30 @@ class SandboxBase(abc.ABC):
         with self.create_file(path, executable) as dest_fobj:
             self.file_cacher.get_file_to_fobj(digest, dest_fobj)
 
+    def create_file_from_bytes(
+        self, path: pathlib.Path, content: bytes, executable: bool = False
+    ):
+        """Write some data to a file in the sandbox.
+
+        path (Path): relative path of the file inside the sandbox.
+        content (bytes): what to write in the file.
+        executable (bool): to set permissions.
+
+        """
+        with self.create_file(path, executable) as dest_fobj:
+            dest_fobj.write(content)
+
     def create_file_from_string(
         self, path: pathlib.Path, content: str, executable: bool = False
     ):
         """Write some data to a file in the sandbox.
 
         path (Path): relative path of the file inside the sandbox.
-        content (string): what to write in the file.
+        content (str): what to write in the file.
         executable (bool): to set permissions.
 
         """
-        with self.create_file(path, executable) as dest_fobj:
-            dest_fobj.write(content)
+        return self.create_file_from_bytes(path, content.encode("utf-8"), executable)
 
     def get_file(self, path: pathlib.Path, trunc_len: Optional[int] = None) -> BinaryIO:
         """Open a file in the sandbox given its relative path.
@@ -286,7 +350,24 @@ class SandboxBase(abc.ABC):
             file_ = Truncator(file_, trunc_len)
         return file_
 
-    def get_file_to_string(self, path: pathlib.Path, maxlen: int = 1024) -> bytes:
+    def get_file_to_bytes(self, path: pathlib.Path, maxlen: int = 1024) -> bytes:
+        """Return the content of a file in the sandbox given its
+        relative path.
+
+        path (Path): relative path of the file inside the sandbox.
+        maxlen (int): maximum number of bytes to read, or None if no
+            limit.
+
+        return (bytes): the content of the file up to maxlen bytes.
+
+        """
+        with self.get_file(path) as file_:
+            if maxlen is None:
+                return file_.read()
+            else:
+                return file_.read(maxlen)
+
+    def get_file_to_string(self, path: pathlib.Path, maxlen: int = 1024) -> str:
         """Return the content of a file in the sandbox given its
         relative path.
 
@@ -297,11 +378,7 @@ class SandboxBase(abc.ABC):
         return (string): the content of the file up to maxlen bytes.
 
         """
-        with self.get_file(path) as file_:
-            if maxlen is None:
-                return file_.read()
-            else:
-                return file_.read(maxlen)
+        return self.get_file_to_bytes(path, maxlen).decode("utf-8")
 
     def get_file_to_storage(
         self, path: pathlib.Path, description: str = "", trunc_len: int = None

@@ -1,54 +1,36 @@
-from typing import Optional
-from typing_extensions import Annotated
+import atexit
 import typer
-import pathlib
 
-from . import annotations
-from . import hydration
-from . import metadata
-from .console import console, multiline_prompt
-from .schema import Testcase
-
-app = typer.Typer()
+from codefreaker import annotations, metadata
+from codefreaker.config import get_config
+from codefreaker.console import console
+from codefreaker.grading import steps
+from codefreaker.grading.judge.sandboxes import stupid_sandbox
 
 
-@app.command()
-def hydrate(problem: annotations.ProblemOption = None):
-    """
-    Populate all samples of a problem (or of all problems in the folder).
-    """
-    hydration.main(problem=problem)
-
-
-@app.command("add, a")
-def add(problem: annotations.Problem):
-    """
-    Add a testcase to a problem.
-    """
-    dumped_problem = metadata.find_problem_by_anything(problem)
-    if dumped_problem is None:
-        console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
-        return
-
-    input = multiline_prompt("Testcase input")
-    output = multiline_prompt("Testcase output")
-
-    hydration.add_testcase(
-        pathlib.Path(), dumped_problem, Testcase(input=input, output=output)
-    )
-
-
-@app.command("delete, d")
-def delete(
+def main(
     problem: annotations.Problem,
-    i: Annotated[int, typer.Option("--index", "--idx", "-i")],
+    language: annotations.LanguageWithDefault = None,
+    keep_sandbox: bool = False,
 ):
-    """
-    Remove the i-th testcase from a problem.
-    """
     dumped_problem = metadata.find_problem_by_anything(problem)
-    if dumped_problem is None:
-        console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
+    if not dumped_problem:
+        console.print(
+            f"[error]Problem with identifier [item]{problem}[/item] not found.[/error]"
+        )
         return
 
-    hydration.remove_testcase(pathlib.Path(), dumped_problem, i)
+    lang = get_config().get_language(language)
+    if not lang:
+        console.print(
+            f"[error]Language {language or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]"
+        )
+        return
+
+    box = stupid_sandbox.StupidSandbox()
+    atexit.register(lambda: box.cleanup(delete=not keep_sandbox))
+
+    if not steps.preprocess(dumped_problem, lang, box):
+        console.print(
+            f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+        )

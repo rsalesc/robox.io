@@ -24,18 +24,32 @@ def format_vars(template: str, **kwargs) -> str:
     return res
 
 
+class Artifact(BaseModel):
+    filename: Optional[str] = None
+    executable: Optional[bool] = False
+    optional: Optional[bool] = False
+
+
 class Language(BaseModel):
     template: str
     file: str
     submitFile: Optional[str] = None
     preprocess: Optional[List[str]] = None
     exec: str
+    artifacts: Optional[Dict[str, Optional[Artifact]]] = {}
 
     def get_file(self, basename: str) -> str:
         return format_vars(self.file, problem_code=basename)
 
-    def get_submit_file(self, file: str, basename: str) -> str:
-        return format_vars(self.file, file=file, problem_code=basename)
+    def has_submit_file(self) -> bool:
+        return self.submitFile is not None
+
+    def get_submit_file(self, basename: str) -> str:
+        if not self.submitFile:
+            return self.get_file(basename)
+        return format_vars(
+            self.submitFile, file=self.get_file(basename), problem_code=basename
+        )
 
     def get_template(self) -> str:
         template_path = get_app_path() / "templates" / self.template

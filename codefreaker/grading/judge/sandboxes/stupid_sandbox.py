@@ -79,11 +79,9 @@ class StupidSandbox(SandboxBase):
     popen_time: Optional[float]
     exec_time: Optional[float]
 
-    chdir: pathlib.Path
-
     def __init__(
         self,
-        file_cacher: FileCacher,
+        file_cacher: Optional[FileCacher] = None,
         name: Optional[str] = None,
         temp_dir: pathlib.Path = None,
     ):
@@ -98,7 +96,7 @@ class StupidSandbox(SandboxBase):
 
         # Make box directory
         self._path = pathlib.Path(
-            tempfile.mkdtemp(dir=str(self.temp_dir), prefix="cms-%s-" % (self.name))
+            tempfile.mkdtemp(dir=str(self.temp_dir), prefix="cfk-%s-" % (self.name))
         )
         self.initialize()
 
@@ -110,15 +108,7 @@ class StupidSandbox(SandboxBase):
         logger.debug("Sandbox in `%s' created, using stupid box.", self._path)
 
         # Box parameters
-        self.chdir = self._path
-        self.stdin_file = None
-        self.stdout_file = None
-        self.stderr_file = None
-        self.stack_space = None
-        self.address_space = None
-        self.timeout = None
-        self.wallclock_timeout = None
-        self.extra_timeout = None
+        self.params.chdir = self._path
 
     def initialize(self):
         self._path.mkdir(parents=True, exist_ok=True)
@@ -291,47 +281,49 @@ class StupidSandbox(SandboxBase):
 
         def preexec_fn(self: "StupidSandbox"):
             """Set limits for the child process."""
-            if self.chdir:
-                os.chdir(self.chdir)
+            if self.params.chdir:
+                os.chdir(self.params.chdir)
 
             # TODO - We're not checking that setrlimit() returns
             # successfully (they may try to set to higher limits than
             # allowed to); anyway, this is just for testing
             # environment, not for real contests, so who cares.
-            if self.timeout:
-                rlimit_cpu = self.timeout
-                if self.extra_timeout:
-                    rlimit_cpu += self.extra_timeout
+            if self.params.timeout:
+                rlimit_cpu = self.params.timeout
+                if self.params.extra_timeout:
+                    rlimit_cpu += self.params.extra_timeout
                 rlimit_cpu = int(rlimit_cpu) + 1
                 resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
 
-            if self.address_space:
-                rlimit_data = self.address_space
+            if self.params.address_space:
+                rlimit_data = self.params.address_space
                 resource.setrlimit(resource.RLIMIT_DATA, (rlimit_data, rlimit_data))
 
-            if self.stack_space:
-                rlimit_stack = self.stack_space
+            if self.params.stack_space:
+                rlimit_stack = self.params.stack_space
                 resource.setrlimit(resource.RLIMIT_STACK, (rlimit_stack, rlimit_stack))
 
             # TODO - Doesn't work as expected
             # resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
 
         # Setup std*** redirection
-        if self.stdin_file:
-            stdin_fd = os.open(os.path.join(self._path, self.stdin_file), os.O_RDONLY)
+        if self.params.stdin_file:
+            stdin_fd = os.open(
+                os.path.join(self._path, self.params.stdin_file), os.O_RDONLY
+            )
         else:
             stdin_fd = subprocess.PIPE
-        if self.stdout_file:
+        if self.params.stdout_file:
             stdout_fd = os.open(
-                os.path.join(self._path, self.stdout_file),
+                os.path.join(self._path, self.params.stdout_file),
                 os.O_WRONLY | os.O_TRUNC | os.O_CREAT,
                 stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR,
             )
         else:
             stdout_fd = subprocess.PIPE
-        if self.stderr_file:
+        if self.params.stderr_file:
             stderr_fd = os.open(
-                os.path.join(self._path, self.stderr_file),
+                os.path.join(self._path, self.params.stderr_file),
                 os.O_WRONLY | os.O_TRUNC | os.O_CREAT,
                 stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR,
             )
@@ -352,14 +344,14 @@ class StupidSandbox(SandboxBase):
         )
 
         # Close file descriptors passed to the child
-        if self.stdin_file:
+        if self.params.stdin_file:
             os.close(stdin_fd)
-        if self.stdout_file:
+        if self.params.stdout_file:
             os.close(stdout_fd)
-        if self.stderr_file:
+        if self.params.stderr_file:
             os.close(stderr_fd)
 
-        if self.wallclock_timeout:
+        if self.params.wallclock_timeout:
             # Kill the process after the wall clock time passed
             def timed_killer(timeout, popen):
                 gevent.sleep(timeout)
@@ -373,9 +365,9 @@ class StupidSandbox(SandboxBase):
                     pass
 
             # Setup the killer
-            full_wallclock_timeout = self.wallclock_timeout
-            if self.extra_timeout:
-                full_wallclock_timeout += self.extra_timeout
+            full_wallclock_timeout = self.params.wallclock_timeout
+            if self.params.extra_timeout:
+                full_wallclock_timeout += self.params.extra_timeout
             gevent.spawn(timed_killer, full_wallclock_timeout, self.popen)
 
         # If the caller wants us to wait for completion, we also avoid

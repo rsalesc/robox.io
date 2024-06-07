@@ -129,6 +129,36 @@ class Storage(ABC):
         pass
 
 
+class NullStorage(Storage):
+    """This backend is always empty, it just drops each file that
+    receives. It looks mostly like /dev/null. It is useful when you
+    want to just rely on the caching capabilities of FileCacher for
+    very short-lived and local storages.
+
+    """
+
+    def get_file(self, digest: str) -> BinaryIO:
+        raise KeyError("File not found.")
+
+    def create_file(self, digest: str) -> BinaryIO:
+        return None
+
+    def commit_file(self, file: PendingFile, desc: str = "") -> bool:
+        return False
+
+    def describe(self, digest: str) -> str:
+        raise KeyError("File not found.")
+
+    def get_size(self, digest: str) -> int:
+        raise KeyError("File not found.")
+
+    def delete(self, digest: str):
+        pass
+
+    def list(self) -> List[FileWithDescription]:
+        return list()
+
+
 class FilesystemStorage(Storage):
     """This class implements a backend for FileCacher that keeps all
     the files in a file system directory, named after their filename.
