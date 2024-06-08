@@ -112,7 +112,7 @@ def _pretty_print_evaluation_result(
     problem: DumpedProblem, result: steps.TestcaseEvaluation
 ):
     console.print(_pretty_print_outcome_panel(problem, result))
-    if result.outcome in [steps.Outcome.WRONG_ANSWER, steps.Outcome.JUDGE_FAILED]:
+    if result.outcome != steps.Outcome.ACCEPTED:
         console.print(_pretty_print_side_by_side(result))
         if result.message:
             console.print(f"[error]Checker message:[/error] {result.message.strip()}")

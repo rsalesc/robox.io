@@ -34,7 +34,7 @@ def add_testcase(root: pathlib.Path, problem: DumpedProblem, testcase: Testcase)
         return
 
     # Pick next number.
-    i = max(tc.index for tc in get_testcases_io(problem, root)) + 1
+    i = max([tc.index for tc in get_testcases_io(problem, root)] + [-1]) + 1
     in_path, out_path = get_testcase_paths(root, problem, i)
     in_path.write_text(testcase.input)
     out_path.write_text(testcase.output)

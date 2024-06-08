@@ -49,7 +49,7 @@ def split_and_truncate_in_lines(
 
 
 def _largest_line_number_length(lines: List[Tuple[int, str]]) -> int:
-    return max(len(str(line[0])) for line in lines)
+    return max([len(str(line[0])) for line in lines] + [1])
 
 
 def render(s: str):

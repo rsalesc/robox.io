@@ -18,7 +18,10 @@ TOMBSTONE = "x"
 
 
 def copyfileobj(
-    source_fobj: IO[T], destination_fobj: IO[T], buffer_size=io.DEFAULT_BUFFER_SIZE
+    source_fobj: IO[T],
+    destination_fobj: IO[T],
+    buffer_size=io.DEFAULT_BUFFER_SIZE,
+    maxlen: Optional[int] = None,
 ):
     """Read all content from one file object and write it to another.
     Repeatedly read from the given source file object, until no content
@@ -30,15 +33,21 @@ def copyfileobj(
     destination_fobj (fileobj): a file object open for writing, in the
         same mode as the source (doesn't need to be buffered).
     buffer_size (int): the size of the read/write buffer.
+    maxlen (int): the maximum number of bytes to copy. If None, copy all.
     """
-    while True:
+    if maxlen is None:
+        maxlen = -1
+    while maxlen:
         buffer = source_fobj.read(buffer_size)
         if len(buffer) == 0:
             break
+        if maxlen > 0 and maxlen < len(buffer):
+            buffer = buffer[:maxlen]
         while len(buffer) > 0:
             gevent.sleep(0)
             written = destination_fobj.write(buffer)
             buffer = buffer[written:]
+            maxlen -= written
         gevent.sleep(0)
 
 

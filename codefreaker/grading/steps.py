@@ -20,6 +20,8 @@ from codefreaker.grading.judge.sandbox import SandboxBase
 from codefreaker.grading.judge.storage import copyfileobj
 from codefreaker.schema import DumpedProblem, Problem
 
+MAX_STDOUT_LEN = 1024 * 1024 * 128  # 128 MB
+
 
 class Outcome(Enum):
     ACCEPTED = "accepted"
@@ -218,10 +220,14 @@ def run(
                 return None
 
             copyfileobj(
-                sandbox.get_file("stdout.txt"), stdout_persisted_path.open("wb")
+                sandbox.get_file("stdout.txt"),
+                stdout_persisted_path.open("wb"),
+                maxlen=MAX_STDOUT_LEN,
             )
             copyfileobj(
-                sandbox.get_file("stderr.txt"), stderr_persisted_path.open("wb")
+                sandbox.get_file("stderr.txt"),
+                stderr_persisted_path.open("wb"),
+                maxlen=MAX_STDOUT_LEN,
             )
 
             log = TestcaseLog(
