@@ -50,9 +50,24 @@ class Session:
                 "Login attempt was not successful. Check your credentials or your internet connection"
             )
 
-    def submit(self, url: str, file: pathlib.Path, typeid: int):
+    def submit_from_contest(self, url: str, file: pathlib.Path, typeid: int):
         filename = os.path.abspath(file)
         self.br.open(url)
+        form = self.select_form_by_class("submit-form", self.br.forms())
+        if form is None:
+            raise Exception("You are not logged in or problem does not exist")
+
+        form["programTypeId"] = [str(typeid)]
+        form.add_file(file.open(), "plain/text", filename)
+        self.br.form = form
+        self.br.submit()
+
+    def submit(self, url: str, file: pathlib.Path, typeid: int):
+        filename = os.path.abspath(file)
+        response = self.br.open(url)
+        if response.geturl().endswith("attachments"):
+            self.submit_from_contest(url.replace("/problem/", "/submit/"), file, typeid)
+            return
         form = self.select_form_by_class("submitForm", self.br.forms())
         if form is None:
             raise Exception("You are not logged in or problem does not exist")
@@ -60,7 +75,7 @@ class Session:
         form["programTypeId"] = [str(typeid)]
         form.add_file(file.open(), "plain/text", filename)
         self.br.form = form
-        response = self.br.submit()
+        self.br.submit()
 
 
 class CodeforcesSubmitor(Submitor):
@@ -90,6 +105,7 @@ class CodeforcesSubmitor(Submitor):
         except Exception as e:
             console.print(f"[error]Failed to log in: {str(e)}[/error]")
             return False
+        console.print("[italic]Possibly[/italic] logged in!")
         try:
             session.submit(problem.url, file, typeid)
         except Exception as e:
