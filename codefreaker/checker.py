@@ -1,6 +1,7 @@
 from pathlib import PosixPath
 import pathlib
 from typing import Optional
+from typing_extensions import Annotated
 import typer
 
 from codefreaker import metadata, utils
@@ -12,9 +13,17 @@ app = typer.Typer(no_args_is_help=True)
 
 
 @app.command()
-def add(problem: str, template: Optional[str] = None):
+def add(
+    problem: str,
+    template: Annotated[
+        Optional[str],
+        typer.Option(
+            "--template", "-t", help="Checker that should be used as template."
+        ),
+    ] = None,
+):
     """
-    Add a new checker.
+    Add a new checker for the problem.
     """
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
@@ -52,6 +61,9 @@ def add(problem: str, template: Optional[str] = None):
 
 @app.command()
 def set(problem: str, checker: str):
+    """
+    Set a checker for the problem.
+    """
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
@@ -69,6 +81,9 @@ def set(problem: str, checker: str):
 
 @app.command()
 def unset(problem: str):
+    """
+    Use the default checker for a problem.
+    """
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")

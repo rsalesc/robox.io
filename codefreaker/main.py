@@ -61,6 +61,9 @@ def new(
 
 @app.command("edit, e")
 def edit(problem: str, language: annotations.LanguageWithDefault = None):
+    """
+    Edit the code of a problem using the provided language.
+    """
     edit_pkg.main(problem, language)
 
 
