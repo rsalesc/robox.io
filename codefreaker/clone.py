@@ -14,7 +14,7 @@ from . import utils
 from . import providers
 from .schema import Problem, DumpedProblem
 from .console import console
-from .config import get_config, Language, format_vars
+from .config import get_config, Language
 from . import metadata
 from . import hydration
 

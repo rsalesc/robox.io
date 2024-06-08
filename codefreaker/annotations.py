@@ -1,10 +1,14 @@
+import importlib
+import importlib.resources
+import pathlib
 import re
-from typing import Optional
+from typing import List, Optional
 import typer
 from typing_extensions import Annotated
 
-from .config import get_config
+from .config import _RESOURCES_PKG, get_config
 from . import metadata
+from codefreaker import config
 
 
 def _get_language_options():
@@ -21,6 +25,25 @@ def _get_problem_options():
     for problem in all_problems:
         options.add(problem.code)
         options.update(problem.aliases)
+    return sorted(options)
+
+
+def _list_files(path: pathlib.Path) -> List[str]:
+    if not path.is_dir():
+        return []
+    return [file.name for file in path.iterdir() if file.is_file()]
+
+
+def _get_checker_options():
+    options = set()
+    with importlib.resources.as_file(
+        importlib.resources.files(_RESOURCES_PKG) / "checkers"
+    ) as file:
+        options.update(_list_files(file))
+
+    options.update(_list_files(config.get_app_path() / "checkers"))
+    options.remove("testlib.h")
+    options.remove("boilerplate.cpp")
     return sorted(options)
 
 
@@ -81,6 +104,13 @@ ProblemOption = Annotated[
 ]
 
 TestcaseIndex = Annotated[int, typer.Option("--index", "--idx", "-i")]
+
+Checker = Annotated[
+    str,
+    typer.Argument(
+        autocompletion=_get_checker_options, help="Path to a testlib checker file."
+    ),
+]
 
 
 class AliasGroup(typer.core.TyperGroup):

@@ -55,7 +55,9 @@ def new(
 
 
 @app.command("edit, e")
-def edit(problem: str, language: annotations.LanguageWithDefault = None):
+def edit(
+    problem: annotations.Problem, language: annotations.LanguageWithDefault = None
+):
     """
     Edit the code of a problem using the provided language.
     """
@@ -64,7 +66,7 @@ def edit(problem: str, language: annotations.LanguageWithDefault = None):
 
 @app.command("test, t")
 def test(
-    problem: str,
+    problem: annotations.Problem,
     language: annotations.LanguageWithDefault = None,
     keep_sandbox: bool = False,
     index: annotations.TestcaseIndex = None,
@@ -77,7 +79,7 @@ def test(
 
 @app.command("submit, s")
 def submit(
-    problem: str,
+    problem: annotations.Problem,
     language: annotations.LanguageWithDefault = None,
     keep_sandbox: bool = False,
 ):

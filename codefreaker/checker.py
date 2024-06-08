@@ -3,7 +3,7 @@ from typing import Optional
 from typing_extensions import Annotated
 import typer
 
-from codefreaker import metadata, utils
+from codefreaker import annotations, metadata, utils
 from codefreaker import config
 from codefreaker.config import get_builtin_checker
 from codefreaker.console import console
@@ -14,7 +14,7 @@ app = typer.Typer(no_args_is_help=True)
 
 @app.command("add, a")
 def add(
-    problem: str,
+    problem: annotations.Problem,
     template: Annotated[
         Optional[str],
         typer.Option(
@@ -60,7 +60,7 @@ def add(
 
 
 @app.command("set, s")
-def set(problem: str, checker: str):
+def set(problem: annotations.Problem, checker: annotations.Checker):
     """
     Set a checker for the problem.
     """
@@ -80,7 +80,7 @@ def set(problem: str, checker: str):
 
 
 @app.command("unset, u")
-def unset(problem: str):
+def unset(problem: annotations.Problem):
     """
     Use the default checker for a problem.
     """
@@ -100,7 +100,7 @@ def unset(problem: str):
 
 
 @app.command("edit, e")
-def edit(problem: str):
+def edit(problem: annotations.Problem):
     """
     Edit the checker for a problem.
     """
