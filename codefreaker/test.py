@@ -140,6 +140,7 @@ def main(
     problem: annotations.Problem,
     language: annotations.LanguageWithDefault = None,
     keep_sandbox: bool = False,
+    index: Optional[annotations.TestcaseIndex] = None,
 ):
     dumped_problem = metadata.find_problem_by_anything(problem)
     if not dumped_problem:
@@ -155,6 +156,17 @@ def main(
         )
         return
 
+    testcases = get_testcases_io(dumped_problem)
+
+    if index is not None:
+        testcases = [tc for tc in testcases if tc.index == index]
+
+    if not testcases:
+        console.print(
+            f"[error]No testcases found for the problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+        )
+        return
+
     box = stupid_sandbox.StupidSandbox()
     atexit.register(lambda: box.cleanup(delete=not keep_sandbox))
 
@@ -167,7 +179,6 @@ def main(
             )
             return
 
-    testcases = get_testcases_io(dumped_problem)
     persist_root = config.get_empty_app_persist_path()
 
     with console.status(

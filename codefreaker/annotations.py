@@ -70,6 +70,8 @@ ProblemOption = Annotated[
     Optional[str], typer.Option("--problem", "-p", autocompletion=_get_problem_options)
 ]
 
+TestcaseIndex = Annotated[int, typer.Option("--index", "--idx", "-i")]
+
 
 class AliasGroup(typer.core.TyperGroup):
 

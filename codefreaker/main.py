@@ -61,11 +61,12 @@ def test(
     problem: str,
     language: annotations.LanguageWithDefault = None,
     keep_sandbox: bool = False,
+    index: annotations.TestcaseIndex = None,
 ):
     """
     Test a problem using the provided language.
     """
-    test_pkg.main(problem, language, keep_sandbox=keep_sandbox)
+    test_pkg.main(problem, language, keep_sandbox=keep_sandbox, index=index)
 
 
 @app.command("submit, s")

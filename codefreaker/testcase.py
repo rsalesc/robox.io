@@ -41,7 +41,7 @@ def add(problem: annotations.Problem):
 @app.command("delete, d")
 def delete(
     problem: annotations.Problem,
-    i: Annotated[int, typer.Option("--index", "--idx", "-i")],
+    i: annotations.TestcaseIndex,
 ):
     """
     Remove the i-th testcase from a problem.
