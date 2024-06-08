@@ -1,6 +1,6 @@
 import dataclasses
 import pathlib
-from typing import List, BinaryIO, IO, Optional, Tuple, TypeVar
+from typing import List, BinaryIO, IO, Optional, TypeVar
 
 import logging
 import io

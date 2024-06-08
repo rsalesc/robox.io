@@ -1,5 +1,4 @@
 import abc
-import dataclasses
 import io
 import os
 import stat

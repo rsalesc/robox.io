@@ -1,5 +1,5 @@
 import abc
-from typing import List, Set
+from typing import List
 
 from codefreaker.schema import Problem
 

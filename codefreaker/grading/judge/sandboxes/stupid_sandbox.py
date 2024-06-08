@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import tempfile
 import logging
-from time import time, monotonic
+from time import monotonic
 from typing import BinaryIO, List, Optional
 
 import gevent

@@ -1,4 +1,3 @@
-from time import sleep
 from typing import List, Optional
 import rich.prompt
 import rich.status
@@ -8,7 +7,7 @@ import uvicorn
 import logging
 import threading
 import pathlib
-import typer
+
 
 from . import utils
 from . import providers
@@ -143,7 +142,7 @@ def main(lang: Optional[str] = None):
                     f"[cfk]Codefreaker[/cfk] is parsing problems from group [item]{problem.group}[/item]"
                 )
             else:
-                saved_status.update(f"[cfk]Codefreaker[/cfk] is parsing problems...")
+                saved_status.update("[cfk]Codefreaker[/cfk] is parsing problems...")
             console.print(
                 f"Started parsing batch [item]{problem.batch.id}[/item] with size [item]{problem.batch.size}[/item]."
             )

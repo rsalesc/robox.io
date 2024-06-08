@@ -1,6 +1,5 @@
 import json
 import pathlib
-import itertools
 from typing import Any, Optional
 
 from pydantic import BaseModel

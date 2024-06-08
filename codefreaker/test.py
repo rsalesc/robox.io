@@ -2,13 +2,9 @@ import atexit
 import dataclasses
 import pathlib
 from typing import List, Optional
-import rich
 from rich.columns import Columns
 from rich.panel import Panel
 from rich.text import Text
-from rich.syntax import Syntax
-from rich.measure import Measurement, measure_renderables
-import typer
 
 from codefreaker import annotations, metadata, testcase_rendering
 from codefreaker import config

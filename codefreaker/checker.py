@@ -1,4 +1,3 @@
-from pathlib import PosixPath
 import pathlib
 from typing import Optional
 from typing_extensions import Annotated

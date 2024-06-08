@@ -1,8 +1,4 @@
-import os
-import pathlib
-import subprocess
-
-from codefreaker import metadata, utils
+from codefreaker import metadata
 from . import console
 from .config import get_config, open_editor
 from . import annotations

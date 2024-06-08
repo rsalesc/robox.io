@@ -1,6 +1,5 @@
 import dataclasses
 from enum import Enum
-import json
 import pathlib
 import shlex
 from typing import Dict, List, Optional
@@ -13,7 +12,6 @@ from codefreaker.config import (
     Artifact,
     Language,
     format_vars,
-    get_app_path,
     get_builtin_checker,
 )
 from codefreaker.grading.judge.sandbox import SandboxBase, MERGE_STDERR

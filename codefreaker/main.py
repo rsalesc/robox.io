@@ -1,16 +1,10 @@
-from typing import Optional
 import typer
-import rich
-import pathlib
 
 from codefreaker import checker
 
-from .console import console
 from . import annotations
 from . import clone as clone_pkg
 from . import config
-from . import metadata
-from . import hydration
 from . import testcase
 from . import create as create_pkg
 from . import edit as edit_pkg

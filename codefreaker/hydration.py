@@ -1,14 +1,12 @@
 import pathlib
 from typing import List, Optional, Tuple
-from filelock import FileLock
 
 from codefreaker import config
 from codefreaker.test import get_testcases_io
 
-from . import utils
 from . import metadata
 from . import hydration
-from .schema import DumpedProblem, Problem, Testcase
+from .schema import DumpedProblem, Testcase
 from .console import console
 
 
