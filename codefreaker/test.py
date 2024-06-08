@@ -69,6 +69,14 @@ def _pretty_print_side_by_side(result: steps.TestcaseEvaluation):
     )
 
 
+def _get_outcome_style(outcome: steps.Outcome) -> str:
+    if outcome == steps.Outcome.ACCEPTED:
+        return "success"
+    if outcome == steps.Outcome.JUDGE_FAILED or outcome == steps.Outcome.INTERNAL_ERROR:
+        return "warning"
+    return "error"
+
+
 def _pretty_print_outcome_panel(
     problem: DumpedProblem, result: steps.TestcaseEvaluation
 ) -> Panel:
@@ -80,7 +88,7 @@ def _pretty_print_outcome_panel(
     text.append("Outcome: ")
     text.append(
         result.outcome.value,
-        style="success" if result.outcome == steps.Outcome.ACCEPTED else "error",
+        style=_get_outcome_style(result.outcome),
     )
     text.append(" " * 4)
     text.append("Time: ")
@@ -106,6 +114,8 @@ def _pretty_print_evaluation_result(
     console.print(_pretty_print_outcome_panel(problem, result))
     if result.outcome != steps.Outcome.ACCEPTED:
         console.print(_pretty_print_side_by_side(result))
+        if result.message:
+            console.print(f"[error]Checker message:[/error] {result.message.strip()}")
     console.print()
 
 
@@ -192,6 +202,16 @@ def main(
         )
         return
 
-    results = steps.evaluate(box, testcases, testcase_logs, persist_root)
+    with console.status(
+        f"Evaluating testcases for problem [item]{dumped_problem.pretty_name()}[/item]..."
+    ):
+        results = steps.evaluate(
+            dumped_problem, box, testcases, testcase_logs, persist_root
+        )
+    if not results:
+        console.print(
+            f"[error]Failed to evaluate testcases for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+        )
+        return
     pretty_print_evaluation_results(dumped_problem, results)
     pretty_print_summary(dumped_problem, lang, results)

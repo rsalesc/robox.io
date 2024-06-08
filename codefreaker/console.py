@@ -11,6 +11,7 @@ theme = Theme(
         "error": "bold red",
         "success": "bold green",
         "lnumber": "dim cyan",
+        "warning": "bold yellow",
     }
 )
 console = Console(theme=theme, style="info", highlight=False)

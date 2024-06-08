@@ -7,6 +7,8 @@ import pathlib
 import importlib
 from pydantic import BaseModel
 
+from codefreaker.grading.judge.storage import copyfileobj
+
 from .console import console
 from . import utils
 
@@ -89,6 +91,20 @@ def get_empty_app_persist_path() -> pathlib.Path:
     shutil.rmtree(str(app_dir), ignore_errors=True)
     app_dir.mkdir(parents=True, exist_ok=True)
     return app_dir
+
+
+def get_builtin_checker(name: str) -> Optional[pathlib.Path]:
+    checker_path = get_app_path() / "checkers" / name
+    if checker_path.is_file():
+        return checker_path
+
+    with importlib.resources.as_file(
+        importlib.resources.files(_RESOURCES_PKG) / "checkers" / name
+    ) as file:
+        if file.is_file():
+            checker_path.parent.mkdir(parents=True, exist_ok=True)
+            copyfileobj(file.open("rb"), checker_path.open("wb"))
+    return checker_path
 
 
 def get_default_template_path(template: str) -> pathlib.Path:

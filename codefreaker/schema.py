@@ -41,6 +41,7 @@ class Problem(BaseModel):
 class DumpedProblem(Problem):
     code: str
     aliases: List[str]
+    checker: Optional[str] = None
 
     @staticmethod
     def from_problem(problem: Problem, **kwargs) -> "DumpedProblem":

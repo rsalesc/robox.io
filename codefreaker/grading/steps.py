@@ -7,15 +7,22 @@ from typing import Dict, List, Optional
 
 from codefreaker import utils
 from codefreaker.console import console
-from codefreaker.config import Artifact, Language, format_vars
+from codefreaker.config import (
+    Artifact,
+    Language,
+    format_vars,
+    get_app_path,
+    get_builtin_checker,
+)
 from codefreaker.grading.judge.sandbox import SandboxBase
 from codefreaker.grading.judge.storage import copyfileobj
-from codefreaker.schema import DumpedProblem
+from codefreaker.schema import DumpedProblem, Problem
 
 
 class Outcome(Enum):
     ACCEPTED = "accepted"
     WRONG_ANSWER = "wrong-answer"
+    JUDGE_FAILED = "judge-failed"
     RUNTIME_ERROR = "runtime-error"
     TIME_LIMIT_EXCEEDED = "time-limit-exceeded"
     MEMORY_LIMIT_EXCEEDED = "memory-limit-exceeded"
@@ -52,6 +59,13 @@ class TestcaseEvaluation:
     testcase: TestcaseIO
     log: TestcaseLog
     outcome: Outcome
+    message: str = ""
+
+
+@dataclasses.dataclass
+class CheckerResult:
+    outcome: Outcome
+    message: str = ""
 
 
 def preprocess(
@@ -207,26 +221,111 @@ def _normalize_checked_words(s: str) -> List[str]:
     return tuple(s.split())
 
 
-def _check(
-    sandbox: SandboxBase, expected_path: pathlib.Path, output_path: pathlib.Path
-) -> Outcome:
-    expected = expected_path.read_text()
-    output = output_path.read_text()
-
+def _wcmp_check(expected: str, output: str) -> Outcome:
     if _normalize_checked_words(expected) == _normalize_checked_words(output):
         return Outcome.ACCEPTED
 
     return Outcome.WRONG_ANSWER
 
 
+def _compile_checker(checker: str, sandbox: SandboxBase) -> bool:
+    sandbox.params.set_stdall(
+        stdin=None,
+        stdout="stdout.txt",
+        stderr="stderr.txt",
+    )
+
+    checker_path = pathlib.Path(checker)
+    if not checker_path.is_file():
+        checker_path = get_builtin_checker(checker)
+    if not checker_path.is_file():
+        console.print(f"[error]Checker {checker_path} does not exist.[/error]")
+        return False
+
+    testlib = get_builtin_checker("testlib.h")
+    if not testlib.is_file():
+        console.print(f"[error]Testlib was not found in {testlib}.[/error]")
+        return False
+
+    sandbox.create_file_from_string(
+        "checker.cpp", checker_path.read_text(), override=True
+    )
+    sandbox.create_file_from_string("testlib.h", testlib.read_text(), override=True)
+
+    cmd = ["g++", "-std=c++17", "-o", "checker", "checker.cpp"]
+    if not sandbox.execute_without_std(cmd, wait=True):
+        console.print(
+            "[error]Sandbox crashed while processing command:[/error]",
+            utils.highlight_json_obj(cmd),
+        )
+        return False
+    if sandbox.get_exit_code() != 0:
+        console.print(
+            "[error]Checker compilation failed with exit code:[/error]",
+            sandbox.get_exit_code(),
+        )
+        print(sandbox.get_file_to_string("stderr.txt", maxlen=None))
+        return False
+    return True
+
+
+def _check(
+    problem: DumpedProblem,
+    sandbox: SandboxBase,
+    testcase: TestcaseIO,
+    output_path: pathlib.Path,
+) -> CheckerResult:
+    if not problem.checker:
+        # Use default wcmp checker.
+        expected = testcase.output.read_text()
+        output = output_path.read_text()
+
+        return CheckerResult(outcome=_wcmp_check(expected, output))
+
+    sandbox.params.set_stdall(
+        stdin=None,
+        stdout="stdout.txt",
+        stderr="stderr.txt",
+    )
+
+    sandbox.create_file_from_string(
+        "expected.txt", testcase.output.read_text(), override=True
+    )
+    sandbox.create_file_from_string(
+        "output.txt", output_path.read_text(), override=True
+    )
+    sandbox.create_file_from_string(
+        "input.txt", testcase.input.read_text(), override=True
+    )
+
+    if not sandbox.execute_without_std(
+        ["./checker", "input.txt", "output.txt", "expected.txt"], wait=True
+    ):
+        console.print(
+            "[error]Sandbox crashed while running checker.[/error]",
+        )
+        return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
+
+    stderr = sandbox.get_file_to_string("stderr.txt", maxlen=None)
+    if sandbox.get_exit_code() in [1, 2]:
+        return CheckerResult(outcome=Outcome.WRONG_ANSWER, message=stderr)
+    if sandbox.get_exit_code() == 3:
+        return CheckerResult(outcome=Outcome.JUDGE_FAILED, message=stderr)
+    return CheckerResult(outcome=Outcome.ACCEPTED, message=stderr)
+
+
 def evaluate(
+    problem: DumpedProblem,
     sandbox: SandboxBase,
     testcases: List[TestcaseIO],
     testcase_logs: Dict[int, TestcaseLog],
     persist_root: pathlib.Path = pathlib.Path("."),
 ) -> List[TestcaseEvaluation]:
-    evaluations = []
+    if problem.checker:
+        if not _compile_checker(problem.checker, sandbox):
+            return []
 
+    evaluations = []
     for testcase in testcases:
         if testcase.index not in testcase_logs:
             continue
@@ -249,11 +348,13 @@ def evaluate(
             )
             continue
 
+        checker_result = _check(problem, sandbox, testcase, log.stdout_absolute_path)
         evaluations.append(
             TestcaseEvaluation(
                 testcase=testcase,
                 log=log,
-                outcome=_check(sandbox, testcase.output, log.stdout_absolute_path),
+                outcome=checker_result.outcome,
+                message=checker_result.message,
             )
         )
 
