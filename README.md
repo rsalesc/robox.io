@@ -8,9 +8,6 @@
 	<!-- local repository, no metadata badges. -->
 <p>
 <p align="center">
-		<em>Developed with the software and tools below.</em>
-</p>
-<p align="center">
 	<img src="https://img.shields.io/badge/Poetry-60A5FA.svg?style=default&logo=Poetry&logoColor=white" alt="Poetry">
 	<img src="https://img.shields.io/badge/Python-3776AB.svg?style=default&logo=Python&logoColor=white" alt="Python">
 	<img src="https://img.shields.io/badge/FastAPI-009688.svg?style=default&logo=FastAPI&logoColor=white" alt="FastAPI">
