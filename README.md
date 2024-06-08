@@ -76,21 +76,21 @@ Although trying to solve the issues of these two audiences seems to be too much 
 
 > [![PyPi](https://badgen.net/badge/icon/pypi?icon=pypi&label)](https://https://pypi.org/)
 > ```console
-> pip install codefreaker
+> $ pip install codefreaker
 > ```
 
 #### From code
 
 > Go to the cloned folder and run:
 > ```console
-> pip install .
+> $ pip install .
 > ```
 
 #### In Poetry venv (while developing)
 
 > Run the following when in the Poetry venv.
 > ```console
-> poetry install
+> $ poetry install
 > ```
 
 
