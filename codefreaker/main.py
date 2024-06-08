@@ -46,11 +46,12 @@ def new(
     language: annotations.Language,
     timelimit: annotations.Timelimit = 1000,
     memorylimit: annotations.Memorylimit = 256,
+    multitest: annotations.Multitest = False,
 ):
     """
     Create a new problem from scratch.
     """
-    create_pkg.main(name, language, timelimit, memorylimit)
+    create_pkg.main(name, language, timelimit, memorylimit, multitest)
 
 
 @app.command("edit, e")

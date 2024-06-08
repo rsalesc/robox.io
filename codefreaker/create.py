@@ -13,6 +13,7 @@ def main(
     lang: annotations.Language,
     timelimit: annotations.Timelimit = 1000,
     memorylimit: annotations.Memorylimit = 256,
+    multitest: annotations.Multitest = False,
 ):
     if get_config().get_language(lang) is None:
         console.print(
@@ -21,7 +22,11 @@ def main(
         return
 
     problem = Problem(
-        name=name, timeLimit=timelimit, memoryLimit=memorylimit, batch=Batch.create()
+        name=name,
+        timeLimit=timelimit,
+        memoryLimit=memorylimit,
+        testType="multiNumber" if multitest else "single",
+        batch=Batch.create(),
     )
     create_problem_structure(
         pathlib.Path(),

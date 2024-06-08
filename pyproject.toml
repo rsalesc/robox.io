@@ -12,6 +12,7 @@ fastapi = "^0.111.0"
 filelock = "^3.14.0"
 gevent = "^24.2.1"
 mechanize = "^0.4.10"
+jinja2 = "^3.1.4"
 
 [tool.poetry.scripts]
 cfk = "codefreaker.main:app"

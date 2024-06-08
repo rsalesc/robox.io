@@ -2,7 +2,7 @@
   "defaultLanguage": "exinc",
   "editor": "vim",
   "languages": {
-    "cpp": {
+    "c++17": {
       "template": "template.cpp",
       "file": "%{problem-code}.cpp",
       "preprocess": [

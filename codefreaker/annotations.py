@@ -42,6 +42,16 @@ Memorylimit = Annotated[
         prompt="Memory limit (MB)",
     ),
 ]
+Multitest = Annotated[
+    Optional[bool],
+    typer.Option(
+        "--multitest",
+        "-m",
+        is_flag=True,
+        help="Whether this problem have multiple tests per file.",
+        prompt="Multitest?",
+    ),
+]
 Language = Annotated[
     str,
     typer.Option(

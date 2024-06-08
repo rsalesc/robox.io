@@ -7,6 +7,7 @@ import uvicorn
 import logging
 import threading
 import pathlib
+import jinja2
 
 
 from . import utils
@@ -67,7 +68,8 @@ def create_problem_structure(
             return None
 
     json_path.write_text(utils.model_json(problem_to_dump))
-    code_path.write_text(format_vars(lang.get_template(), **problem_to_dump.get_vars()))
+    code = jinja2.Template(lang.get_template()).render(**problem_to_dump.get_vars())
+    code_path.write_text(code)
 
     if verbose:
         console.print(
