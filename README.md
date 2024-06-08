@@ -1,13 +1,11 @@
 <p align="center">
-   <font size=10 color="yellow" face=" Roboto, serif">
-   <i>Codefreaker</i>
-  </font>
+   <img src="logo.svg">
 </p>
 <p align="center">
     <em>The go-to CLI tool for competitive programmers and setters.</em>
 </p>
 <p align="center">
-	<!-- local repository, no metadata badges. -->
+	<!-- loscal repository, no metadata badges. -->
 <p>
 <p align="center">
 	<img src="https://img.shields.io/badge/Poetry-60A5FA.svg?style=default&logo=Poetry&logoColor=white" alt="Poetry">
