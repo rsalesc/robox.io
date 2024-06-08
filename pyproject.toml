@@ -2,7 +2,7 @@
 name = "codefreaker"
 version = "0.1.0"
 description = ""
-authors = ["Roberto Sales <rsalescaldeira@gmail.com>"]
+authors = ["Roberto Sales"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
