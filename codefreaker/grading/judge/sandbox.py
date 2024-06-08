@@ -16,6 +16,8 @@ from . import cacher
 
 logger = logging.getLogger(__name__)
 
+MERGE_STDERR = pathlib.PosixPath("/dev/stdout")
+
 
 class SandboxParams(pydantic.BaseModel):
     """Parameters for the sandbox.

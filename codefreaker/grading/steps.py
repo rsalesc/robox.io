@@ -16,7 +16,7 @@ from codefreaker.config import (
     get_app_path,
     get_builtin_checker,
 )
-from codefreaker.grading.judge.sandbox import SandboxBase
+from codefreaker.grading.judge.sandbox import SandboxBase, MERGE_STDERR
 from codefreaker.grading.judge.storage import copyfileobj
 from codefreaker.schema import DumpedProblem, Problem
 
@@ -206,7 +206,7 @@ def run(
             sandbox.params.set_stdall(
                 stdin="stdin.txt" if testcase.input else None,
                 stdout="stdout.txt",
-                stderr="stderr.txt",
+                stderr=MERGE_STDERR,
             )
 
             stdout_persisted_path = persist_root / f"stdout-{testcase.index}.txt"
@@ -222,11 +222,6 @@ def run(
             copyfileobj(
                 sandbox.get_file("stdout.txt"),
                 stdout_persisted_path.open("wb"),
-                maxlen=MAX_STDOUT_LEN,
-            )
-            copyfileobj(
-                sandbox.get_file("stderr.txt"),
-                stderr_persisted_path.open("wb"),
                 maxlen=MAX_STDOUT_LEN,
             )
 

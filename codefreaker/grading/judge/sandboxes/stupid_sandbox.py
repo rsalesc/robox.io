@@ -14,6 +14,7 @@ from typing import BinaryIO, List, Optional
 import gevent
 from ..cacher import FileCacher
 from ..sandbox import SandboxBase
+from codefreaker.grading.judge import sandbox
 
 logger = logging.getLogger(__name__)
 
@@ -322,11 +323,14 @@ class StupidSandbox(SandboxBase):
         else:
             stdout_fd = subprocess.PIPE
         if self.params.stderr_file:
-            stderr_fd = os.open(
-                os.path.join(self._path, self.params.stderr_file),
-                os.O_WRONLY | os.O_TRUNC | os.O_CREAT,
-                stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR,
-            )
+            if self.params.stderr_file == sandbox.MERGE_STDERR:
+                stderr_fd = subprocess.STDOUT
+            else:
+                stderr_fd = os.open(
+                    os.path.join(self._path, self.params.stderr_file),
+                    os.O_WRONLY | os.O_TRUNC | os.O_CREAT,
+                    stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR,
+                )
         else:
             stderr_fd = subprocess.PIPE
 
@@ -348,7 +352,7 @@ class StupidSandbox(SandboxBase):
             os.close(stdin_fd)
         if self.params.stdout_file:
             os.close(stdout_fd)
-        if self.params.stderr_file:
+        if self.params.stderr_file and self.params.stderr_file != sandbox.MERGE_STDERR:
             os.close(stderr_fd)
 
         if self.params.wallclock_timeout:
