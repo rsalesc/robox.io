@@ -32,6 +32,8 @@
 
 ##  Overview
 
+[![Usage video]](https://github.com/rsalesc/codefreaker/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)
+
 [![GitHub license](https://img.shields.io/github/license/rsalesc/codefreaker.svg)](https://github.com/rsalesc/codefreaker/blob/master/LICENSE)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/codefreaker.svg)](https://pypi.python.org/pypi/codefreaker/)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/codefreaker.svg)](https://pypi.python.org/pypi/codefreaker/)
