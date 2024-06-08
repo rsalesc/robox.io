@@ -173,7 +173,7 @@ def main(lang: Optional[str] = None):
             background_tasks.add_task(shutdown)
         return {}
 
-    config = uvicorn.Config(app, port=10045)
+    config = uvicorn.Config(app, port=1327)
     server = uvicorn.Server(config=config)
     clear_loggers()
     with console.status("Waiting for Competitive Companion request...") as status:
