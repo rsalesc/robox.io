@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" width="100%" style="max-width: 300px;" alt="project-logo">
+  <img src="logo.png" style="max-width: 300px; width: 100%;" alt="project-logo">
 </p>
 <p align="center">
     <em>The go-to CLI tool for competitive programmers and setters.</em>
