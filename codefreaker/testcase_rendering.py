@@ -68,6 +68,10 @@ def render(s: str):
         text.append("\n")
 
         last_number = number
+    if truncated.truncate:
+        text.append(f"{'':>{number_len}}", style="lnumber")
+        text.append(" " * 3)
+        text.append("... (truncated)")
     return text
 
 
