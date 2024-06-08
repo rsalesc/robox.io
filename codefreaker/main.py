@@ -1,3 +1,4 @@
+from typing_extensions import Annotated
 import typer
 
 from codefreaker import checker
@@ -70,11 +71,18 @@ def test(
     language: annotations.LanguageWithDefault = None,
     keep_sandbox: bool = False,
     index: annotations.TestcaseIndex = None,
+    interactive: Annotated[bool, typer.Option("--interactive", "--int")] = False,
 ):
     """
     Test a problem using the provided language.
     """
-    test_pkg.main(problem, language, keep_sandbox=keep_sandbox, index=index)
+    test_pkg.main(
+        problem,
+        language,
+        keep_sandbox=keep_sandbox,
+        index=index,
+        interactive=interactive,
+    )
 
 
 @app.command("submit, s")

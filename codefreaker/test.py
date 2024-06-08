@@ -1,7 +1,10 @@
 import atexit
 import dataclasses
 import pathlib
+import tempfile
 from typing import List, Optional
+import typer
+from typing_extensions import Annotated
 from rich.columns import Columns
 from rich.panel import Panel
 from rich.text import Text
@@ -9,7 +12,7 @@ from rich.text import Text
 from codefreaker import annotations, metadata, testcase_rendering
 from codefreaker import config
 from codefreaker.config import Language, get_config
-from codefreaker.console import console
+from codefreaker.console import console, multiline_prompt
 from codefreaker.grading import steps
 from codefreaker.grading.judge.sandboxes import stupid_sandbox
 from codefreaker.schema import DumpedProblem
@@ -105,11 +108,18 @@ def _pretty_print_outcome_panel(
 
 
 def _pretty_print_evaluation_result(
-    problem: DumpedProblem, result: steps.TestcaseEvaluation
+    problem: DumpedProblem,
+    result: steps.TestcaseEvaluation,
+    interactive: bool = False,
 ):
     console.print(_pretty_print_outcome_panel(problem, result))
     if result.outcome != steps.Outcome.ACCEPTED:
-        console.print(_pretty_print_side_by_side(result))
+        if interactive:
+            console.print(
+                _pretty_print_output_on_panel(result.log.stdout_absolute_path, "Output")
+            )
+        else:
+            console.print(_pretty_print_side_by_side(result))
         if result.message:
             console.print(f"[error]Checker message:[/error] {result.message.strip()}")
     console.print()
@@ -136,16 +146,19 @@ def pretty_print_summary(
 
 
 def pretty_print_evaluation_results(
-    problem: DumpedProblem, results: List[steps.TestcaseEvaluation]
+    problem: DumpedProblem,
+    results: List[steps.TestcaseEvaluation],
+    interactive: bool = False,
 ):
     for result in results:
-        _pretty_print_evaluation_result(problem, result)
+        _pretty_print_evaluation_result(problem, result, interactive=interactive)
 
 
 def main(
     problem: annotations.Problem,
     language: annotations.LanguageWithDefault = None,
     keep_sandbox: bool = False,
+    interactive: bool = False,
     index: Optional[annotations.TestcaseIndex] = None,
 ):
     dumped_problem = metadata.find_problem_by_anything(problem)
@@ -162,7 +175,18 @@ def main(
         )
         return
 
-    testcases = get_testcases_io(dumped_problem)
+    if interactive:
+        input = multiline_prompt("Testcase input")
+        output = multiline_prompt("Testcase output")
+        input_path = pathlib.Path(tempfile.mktemp())
+        output_path = pathlib.Path(tempfile.mktemp())
+        input_path.write_text(input)
+        output_path.write_text(output)
+        testcases = [
+            steps.TestcaseIO(index=0, input=input_path, output=output_path),
+        ]
+    else:
+        testcases = get_testcases_io(dumped_problem)
 
     if index is not None:
         testcases = [tc for tc in testcases if tc.index == index]
@@ -206,5 +230,5 @@ def main(
             f"[error]Failed to evaluate testcases for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
         )
         return
-    pretty_print_evaluation_results(dumped_problem, results)
+    pretty_print_evaluation_results(dumped_problem, results, interactive=interactive)
     pretty_print_summary(dumped_problem, lang, results)
