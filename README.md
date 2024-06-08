@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="logo.png" style="max-width: 300px; width: 100%;" alt="project-logo">
+   <font size=10 color="yellow" face=" Roboto, serif">
+   <i>Codefreaker</i>
+  </font>
 </p>
 <p align="center">
     <em>The go-to CLI tool for competitive programmers and setters.</em>
