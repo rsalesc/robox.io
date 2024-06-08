@@ -1,3 +1,4 @@
+import time
 from typing import List, Optional
 import rich.prompt
 import rich.status
@@ -167,9 +168,18 @@ def main(lang: Optional[str] = None):
         batch_to_left_lock.release()
         return not finished
 
+    clock = None
+
     @app.post("/")
     async def parse(problem: Problem, background_tasks: fastapi.BackgroundTasks):
+        nonlocal clock
+        if clock is None:
+            clock = time.monotonic()
         if not process_batch_item(problem):
+            duration = time.monotonic() - clock
+            console.print(
+                f"Parsed all problems in [item]{duration:.2f}[/item] seconds."
+            )
             background_tasks.add_task(shutdown)
         return {}
 
