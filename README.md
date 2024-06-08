@@ -88,7 +88,7 @@ Although trying to solve the issues of these two audiences seems to be too much 
 
 ###  Usage
 
-TODO 
+View auto-generated CLI reference [here](USAGE.md).
 
 ###  Tests
 
