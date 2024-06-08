@@ -60,9 +60,7 @@ Although trying to solve the issues of these two audiences seems to be too much 
 
 ##  Getting Started
 
-**System Requirements:**
-
-* **Python**: `version 3.10`
+**System Requirements:** the tool was developed for Unix systems and was tested only in Ubuntu.
 
 ###  Installation
 
