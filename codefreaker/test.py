@@ -112,7 +112,7 @@ def _pretty_print_evaluation_result(
     problem: DumpedProblem, result: steps.TestcaseEvaluation
 ):
     console.print(_pretty_print_outcome_panel(problem, result))
-    if result.outcome != steps.Outcome.ACCEPTED:
+    if result.outcome in [steps.Outcome.WRONG_ANSWER, steps.Outcome.JUDGE_FAILED]:
         console.print(_pretty_print_side_by_side(result))
         if result.message:
             console.print(f"[error]Checker message:[/error] {result.message.strip()}")
@@ -191,10 +191,7 @@ def main(
 
     persist_root = config.get_empty_app_persist_path()
 
-    with console.status(
-        f"Running code for problem [item]{dumped_problem.pretty_name()}[/item]..."
-    ):
-        testcase_logs = steps.run(lang, box, testcases, persist_root)
+    testcase_logs = steps.run(dumped_problem, lang, box, testcases, persist_root)
 
     if not testcase_logs:
         console.print(

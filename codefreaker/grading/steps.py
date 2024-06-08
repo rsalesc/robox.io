@@ -5,6 +5,8 @@ import pathlib
 import shlex
 from typing import Dict, List, Optional
 
+from rich.progress import Progress, SpinnerColumn, MofNCompleteColumn
+
 from codefreaker import utils
 from codefreaker.console import console
 from codefreaker.config import (
@@ -168,6 +170,7 @@ def preprocess(
 
 
 def run(
+    problem: Problem,
     lang: Language,
     sandbox: SandboxBase,
     testcases: List[TestcaseIO],
@@ -179,40 +182,56 @@ def run(
     # Ensure persist dir exists.
     persist_root.mkdir(parents=True, exist_ok=True)
 
-    for testcase in testcases:
-        if testcase.input:
-            sandbox.create_file_from_string(
-                pathlib.PosixPath("stdin.txt"),
-                testcase.input.read_text(),
-                override=True,
+    time_limit = problem.timeLimit or 1000
+    sandbox.params.timeout = time_limit * 2
+    sandbox.params.wallclock_timeout = time_limit * 5
+    sandbox.params.address_space = 1024  # 1 GB
+
+    progress = Progress(
+        SpinnerColumn(),
+        *Progress.get_default_columns(),
+        MofNCompleteColumn(),
+        transient=True,
+    )
+    with progress:
+        for testcase in progress.track(testcases, description="Running testcases..."):
+            if testcase.input:
+                sandbox.create_file_from_string(
+                    pathlib.PosixPath("stdin.txt"),
+                    testcase.input.read_text(),
+                    override=True,
+                )
+            sandbox.params.set_stdall(
+                stdin="stdin.txt" if testcase.input else None,
+                stdout="stdout.txt",
+                stderr="stderr.txt",
             )
-        sandbox.params.set_stdall(
-            stdin="stdin.txt" if testcase.input else None,
-            stdout="stdout.txt",
-            stderr="stderr.txt",
-        )
 
-        stdout_persisted_path = persist_root / f"stdout-{testcase.index}.txt"
-        stderr_persisted_path = persist_root / f"stderr-{testcase.index}.txt"
+            stdout_persisted_path = persist_root / f"stdout-{testcase.index}.txt"
+            stderr_persisted_path = persist_root / f"stderr-{testcase.index}.txt"
 
-        if not sandbox.execute_without_std(cmd, wait=True):
-            console.print(
-                "[error]Sandbox crashed while processing command:[/error]",
-                utils.highlight_json_obj(cmd),
+            if not sandbox.execute_without_std(cmd, wait=True):
+                console.print(
+                    "[error]Sandbox crashed while processing command:[/error]",
+                    utils.highlight_json_obj(cmd),
+                )
+                return None
+
+            copyfileobj(
+                sandbox.get_file("stdout.txt"), stdout_persisted_path.open("wb")
             )
-            return None
+            copyfileobj(
+                sandbox.get_file("stderr.txt"), stderr_persisted_path.open("wb")
+            )
 
-        copyfileobj(sandbox.get_file("stdout.txt"), stdout_persisted_path.open("wb"))
-        copyfileobj(sandbox.get_file("stderr.txt"), stderr_persisted_path.open("wb"))
-
-        log = TestcaseLog(
-            exitcode=sandbox.get_exit_code(),
-            exitstatus=sandbox.get_exit_status(),
-            time=sandbox.get_execution_time(),
-            stdout_absolute_path=stdout_persisted_path.absolute(),
-            stderr_absolute_path=stderr_persisted_path.absolute(),
-        )
-        logs[testcase.index] = log
+            log = TestcaseLog(
+                exitcode=sandbox.get_exit_code(),
+                exitstatus=sandbox.get_exit_status(),
+                time=sandbox.get_execution_time(),
+                stdout_absolute_path=stdout_persisted_path.absolute(),
+                stderr_absolute_path=stderr_persisted_path.absolute(),
+            )
+            logs[testcase.index] = log
 
     return logs
 

@@ -292,15 +292,15 @@ class StupidSandbox(SandboxBase):
                 rlimit_cpu = self.params.timeout
                 if self.params.extra_timeout:
                     rlimit_cpu += self.params.extra_timeout
-                rlimit_cpu = int(rlimit_cpu) + 1
+                rlimit_cpu = int((rlimit_cpu + 999) // 1000)
                 resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
 
             if self.params.address_space:
-                rlimit_data = self.params.address_space
+                rlimit_data = self.params.address_space * 1024 * 1024
                 resource.setrlimit(resource.RLIMIT_DATA, (rlimit_data, rlimit_data))
 
             if self.params.stack_space:
-                rlimit_stack = self.params.stack_space
+                rlimit_stack = self.params.stack_space * 1024 * 1024
                 resource.setrlimit(resource.RLIMIT_STACK, (rlimit_stack, rlimit_stack))
 
             # TODO - Doesn't work as expected
@@ -368,7 +368,7 @@ class StupidSandbox(SandboxBase):
             full_wallclock_timeout = self.params.wallclock_timeout
             if self.params.extra_timeout:
                 full_wallclock_timeout += self.params.extra_timeout
-            gevent.spawn(timed_killer, full_wallclock_timeout, self.popen)
+            gevent.spawn(timed_killer, full_wallclock_timeout / 1000, self.popen)
 
         # If the caller wants us to wait for completion, we also avoid
         # std*** to interfere with command. Otherwise we let the

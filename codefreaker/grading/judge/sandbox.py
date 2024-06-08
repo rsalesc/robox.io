@@ -46,11 +46,11 @@ class SandboxParams(pydantic.BaseModel):
     stdin_file: Optional[pathlib.Path] = None
     stdout_file: Optional[pathlib.Path] = None
     stderr_file: Optional[pathlib.Path] = None
-    stack_space: Optional[int] = None
-    address_space: Optional[int] = None
-    timeout: Optional[int] = None
-    wallclock_timeout: Optional[int] = None
-    extra_timeout: Optional[int] = None
+    stack_space: Optional[int] = None  # MiB
+    address_space: Optional[int] = None  # MiB
+    timeout: Optional[int] = None  # ms
+    wallclock_timeout: Optional[int] = None  # ms
+    extra_timeout: Optional[int] = None  # ms
 
     def set_stdio(
         self,
