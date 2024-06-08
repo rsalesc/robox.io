@@ -1,6 +1,9 @@
 import pathlib
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from filelock import FileLock
+
+from codefreaker import config
+from codefreaker.test import get_testcases_io
 
 from . import utils
 from . import metadata
@@ -30,14 +33,11 @@ def add_testcase(root: pathlib.Path, problem: DumpedProblem, testcase: Testcase)
         )
         return
 
-    i = len(problem.tests)
+    # Pick next number.
+    i = max(tc.index for tc in get_testcases_io(problem, root)) + 1
     in_path, out_path = get_testcase_paths(root, problem, i)
     in_path.write_text(testcase.input)
     out_path.write_text(testcase.output)
-    problem.tests.append(testcase)
-    metadata.find_problem_path_by_code(problem.code, root).write_text(
-        utils.model_json(problem),
-    )
 
     console.print(
         f"Added testcase [item]{i}[/item] to problem [item]{problem.pretty_name()}[/item]."
@@ -52,27 +52,39 @@ def remove_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
         )
         return
 
-    if i >= len(problem.tests):
+    testcases = get_testcases_io(problem, root)
+    testcases = [testcase for testcase in testcases if testcase.index == i]
+    if not testcases:
         console.print(
-            f"[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item] metadata.[/error]"
+            f"[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item].[/error]"
         )
-
-    in_path, out_path = get_testcase_paths(root, problem, i)
-    in_path.unlink(missing_ok=True)
-    out_path.unlink(missing_ok=True)
-    if i >= len(problem.tests):
-        console.print(
-            f"[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item] metadata.[/error]"
-        )
-    else:
-        problem.tests.pop(i)
-        metadata.find_problem_path_by_code(problem.code, root).write_text(
-            utils.model_json(problem)
-        )
+        return
+    testcases[0].input.unlink(missing_ok=True)
+    testcases[0].output.unlink(missing_ok=True)
 
     console.print(
         f"Removed testcase [item]{i}[/item] from problem [item]{problem.pretty_name()}[/item]."
     )
+
+
+def edit_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
+    problem_path = metadata.find_problem_path_by_code(problem.code, root)
+    if not problem_path.is_file():
+        console.print(
+            f"[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]"
+        )
+        return
+
+    testcases = get_testcases_io(problem, root)
+    testcases = [testcase for testcase in testcases if testcase.index == i]
+    if not testcases:
+        console.print(
+            f"[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item].[/error]"
+        )
+        return
+
+    paths: List[pathlib.Path] = [testcases[0].input, testcases[0].output]
+    config.open_editor(*[path for path in paths if path.is_file()])
 
 
 def main(problem: Optional[str] = None):

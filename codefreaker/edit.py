@@ -2,20 +2,10 @@ import os
 import pathlib
 import subprocess
 
-from codefreaker import metadata
+from codefreaker import metadata, utils
 from . import console
-from .config import get_config
+from .config import get_config, open_editor
 from . import annotations
-
-
-def get_editor():
-    return get_config().editor or os.environ.get("EDITOR", None)
-
-
-def open_editor(path: pathlib.Path):
-    if get_editor() is None:
-        raise Exception("No editor found. Please set the EDITOR environment variable.")
-    subprocess.run([get_editor(), str(path)])
 
 
 def main(problem: str, language: annotations.LanguageWithDefault = None):

@@ -52,3 +52,16 @@ def delete(
         return
 
     hydration.remove_testcase(pathlib.Path(), dumped_problem, i)
+
+
+@app.command("edit, e")
+def edit(problem: annotations.Problem, i: annotations.TestcaseIndex):
+    """
+    Edit the testcases of a problem.
+    """
+    dumped_problem = metadata.find_problem_by_anything(problem)
+    if dumped_problem is None:
+        console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
+        return
+
+    hydration.edit_testcase(pathlib.Path(), dumped_problem, i)

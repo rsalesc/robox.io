@@ -1,4 +1,6 @@
+import os
 import shutil
+import subprocess
 from typing import Any, Dict, List, Optional
 import importlib.resources
 import typer
@@ -136,6 +138,16 @@ def get_config_path() -> pathlib.Path:
     return get_app_path() / "config.json"
 
 
+def get_editor():
+    return get_config().editor or os.environ.get("EDITOR", None)
+
+
+def open_editor(path: pathlib.Path, *args):
+    if get_editor() is None:
+        raise Exception("No editor found. Please set the EDITOR environment variable.")
+    subprocess.run([get_editor(), str(path), *[str(arg) for arg in args]])
+
+
 @functools.cache
 def get_config() -> Config:
     config_path = get_config_path()
@@ -171,3 +183,11 @@ def reset():
     cfg_path = get_config_path()
     cfg_path.unlink(missing_ok=True)
     get_config()  # Reset the config.
+
+
+@app.command("edit, e")
+def edit():
+    """
+    Open the config in an editor.
+    """
+    open_editor(get_config_path())

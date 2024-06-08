@@ -5,6 +5,7 @@ from typing_extensions import Annotated
 import typer
 
 from codefreaker import metadata, utils
+from codefreaker import config
 from codefreaker.config import get_builtin_checker
 from codefreaker.console import console
 
@@ -12,7 +13,7 @@ from codefreaker.console import console
 app = typer.Typer(no_args_is_help=True)
 
 
-@app.command()
+@app.command("add, a")
 def add(
     problem: str,
     template: Annotated[
@@ -59,7 +60,7 @@ def add(
     )
 
 
-@app.command()
+@app.command("set, s")
 def set(problem: str, checker: str):
     """
     Set a checker for the problem.
@@ -79,7 +80,7 @@ def set(problem: str, checker: str):
     )
 
 
-@app.command()
+@app.command("unset, u")
 def unset(problem: str):
     """
     Use the default checker for a problem.
@@ -97,3 +98,30 @@ def unset(problem: str):
     console.print(
         f"Default checker will be used for problem [item]{dumped_problem.pretty_name()}[/item]."
     )
+
+
+@app.command("edit, e")
+def edit(problem: str):
+    """
+    Edit the checker for a problem.
+    """
+    dumped_problem = metadata.find_problem_by_anything(problem)
+    if dumped_problem is None:
+        console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
+        return
+
+    checker = dumped_problem.checker
+    if checker is None:
+        console.print(
+            f"[error]No checker set for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+        )
+        return
+
+    checker_path = pathlib.Path() / checker
+    if not checker_path.is_file():
+        console.print(
+            f"[error]Checker [item]{checker}[/item] not found in the problems folder. You cannot edit a builtin checker.[/error]"
+        )
+        return
+
+    config.open_editor(checker_path)
