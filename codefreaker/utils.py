@@ -43,7 +43,7 @@ def normalize_with_underscores(s: str) -> str:
 
 
 def model_json(model: BaseModel) -> str:
-    return model.model_dump_json(indent=4)
+    return model.model_dump_json(indent=4, exclude_unset=True, exclude_none=True)
 
 
 def confirm_on_status(status: Optional[rich.status.Status], *args, **kwargs) -> bool:

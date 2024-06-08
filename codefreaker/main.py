@@ -13,6 +13,7 @@ from . import testcase
 from . import create as create_pkg
 from . import edit as edit_pkg
 from . import test as test_pkg
+from . import submit as submit_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(
@@ -65,6 +66,18 @@ def test(
     Test a problem using the provided language.
     """
     test_pkg.main(problem, language, keep_sandbox=keep_sandbox)
+
+
+@app.command("submit, s")
+def submit(
+    problem: str,
+    language: annotations.LanguageWithDefault = None,
+    keep_sandbox: bool = False,
+):
+    """
+    Submit a problem using the provided language.
+    """
+    submit_pkg.main(problem, language, keep_sandbox=keep_sandbox)
 
 
 @app.callback()

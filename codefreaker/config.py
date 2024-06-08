@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional
+import shutil
+from typing import Any, Dict, List, Optional
 import importlib.resources
 import typer
 import functools
@@ -37,6 +38,7 @@ class Language(BaseModel):
     preprocess: Optional[List[str]] = None
     exec: str
     artifacts: Optional[Dict[str, Optional[Artifact]]] = {}
+    submitor: Optional[str] = None
 
     def get_file(self, basename: str) -> str:
         return format_vars(self.file, problem_code=basename)
@@ -59,10 +61,16 @@ class Language(BaseModel):
         return template_path.read_text()
 
 
+SubmitorConfig = Dict[str, Any]
+Credentials = Dict[str, Any]
+
+
 class Config(BaseModel):
     defaultLanguage: str
     languages: Dict[str, Language]
     editor: Optional[str] = None
+    submitor: Dict[str, SubmitorConfig]
+    credentials: Credentials
 
     def get_default_language(self) -> Optional[Language]:
         return self.languages.get(self.defaultLanguage)
@@ -74,6 +82,13 @@ class Config(BaseModel):
 def get_app_path() -> pathlib.Path:
     app_dir = typer.get_app_dir(APP_NAME)
     return pathlib.Path(app_dir)
+
+
+def get_empty_app_persist_path() -> pathlib.Path:
+    app_dir = get_app_path() / "persist"
+    shutil.rmtree(str(app_dir), ignore_errors=True)
+    app_dir.mkdir(parents=True, exist_ok=True)
+    return app_dir
 
 
 def get_default_template_path(template: str) -> pathlib.Path:

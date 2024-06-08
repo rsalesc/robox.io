@@ -11,6 +11,7 @@ from rich.measure import Measurement, measure_renderables
 import typer
 
 from codefreaker import annotations, metadata, testcase_rendering
+from codefreaker import config
 from codefreaker.config import Language, get_config
 from codefreaker.console import console
 from codefreaker.grading import steps
@@ -157,16 +158,22 @@ def main(
     box = stupid_sandbox.StupidSandbox()
     atexit.register(lambda: box.cleanup(delete=not keep_sandbox))
 
-    if not steps.preprocess(dumped_problem, lang, box):
-        console.print(
-            f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
-        )
-        return
+    with console.status(
+        f"Preprocessing code for problem [item]{dumped_problem.pretty_name()}[/item] in language [item]{language or get_config().defaultLanguage}[/item]..."
+    ):
+        if not steps.preprocess(dumped_problem, lang, box):
+            console.print(
+                f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+            )
+            return
 
     testcases = get_testcases_io(dumped_problem)
-    persist_root = pathlib.Path("persist")
+    persist_root = config.get_empty_app_persist_path()
 
-    testcase_logs = steps.run(lang, box, testcases, persist_root)
+    with console.status(
+        f"Running code for problem [item]{dumped_problem.pretty_name()}[/item]..."
+    ):
+        testcase_logs = steps.run(lang, box, testcases, persist_root)
 
     if not testcase_logs:
         console.print(

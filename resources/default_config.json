@@ -13,7 +13,8 @@
         "a.out": {
           "executable": true
         }
-      }
+      },
+      "submitor": "c++17"
     },
     "exinc": {
       "template": "template.cpp",
@@ -27,7 +28,21 @@
         "a.out": {
           "executable": true
         }
+      },
+      "submitor": "c++17"
+    }
+  },
+  "submitor": {
+    "c++17": {
+      "codeforces": {
+        "typeid": 54
       }
+    }
+  },
+  "credentials": {
+    "codeforces": {
+      "handle": "",
+      "password": ""
     }
   }
 }
