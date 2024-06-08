@@ -64,6 +64,8 @@ Although trying to solve the issues of these two audiences seems to be too much 
 
 **System Requirements:** the tool was developed for Unix systems and was tested only in Ubuntu.
 
+If you want to use the parsing feature, you also have to install [Competitive Companion](https://github.com/jmerle/competitive-companion).
+
 ###  Installation
 
 #### From `pip`
@@ -89,6 +91,42 @@ Although trying to solve the issues of these two audiences seems to be too much 
 
 
 ###  Usage
+
+#### 0. Be familiar with Competitive Companion
+
+Make sure you're familiarized with [Competitive Companion](https://github.com/jmerle/competitive-companion)
+-- a helper that facilitates parsing tasks directly from your browser.
+
+#### 1. Clone a contest or a single problem
+
+```console
+$ # Or simply `cfk c`
+$ cfk clone
+```
+
+After running the command above, hit the ➕ (plus) icon in Competitive Companion,
+and you should start seeing parsing logs in the command line.
+
+![clone](https://github.com/rsalesc/codefreaker/assets/4999965/edb4611e-e459-49ba-940f-c362f27dc76e)
+
+#### 2. Implement a solution and run testcases
+
+```console
+$ # Or simply `cfk test A`
+$ cfk test A
+```
+![test_wa](https://github.com/rsalesc/codefreaker/assets/4999965/309090e3-179b-4bd7-8961-a54fd109ac16)
+![test](https://github.com/rsalesc/codefreaker/assets/4999965/49681373-1663-46a1-a63a-06ed1176e82d)
+
+#### 3. Submit your solution
+
+```console
+$ # Or simply `cfk s A`
+$ cfk submit A
+```
+![submit](https://github.com/rsalesc/codefreaker/assets/4999965/153eb278-384b-401b-94a1-0b1df23ce4ad)
+
+#### Advanced usages
 
 View auto-generated CLI reference [here](USAGE.md).
 
