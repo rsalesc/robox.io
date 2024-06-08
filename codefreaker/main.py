@@ -3,6 +3,8 @@ import typer
 import rich
 import pathlib
 
+from codefreaker import checker
+
 from .console import console
 from . import annotations
 from . import clone as clone_pkg
@@ -27,6 +29,12 @@ app.add_typer(
     name="testcase, tc",
     cls=annotations.AliasGroup,
     help="Commands to manage the testcases of a problem.",
+)
+app.add_typer(
+    checker.app,
+    name="checker, check",
+    cls=annotations.AliasGroup,
+    help="Commands to manage the checker of a problem.",
 )
 
 
