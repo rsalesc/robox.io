@@ -176,15 +176,24 @@ def main(
         return
 
     if interactive:
-        input = multiline_prompt("Testcase input")
-        output = multiline_prompt("Testcase output")
-        input_path = pathlib.Path(tempfile.mktemp())
-        output_path = pathlib.Path(tempfile.mktemp())
-        input_path.write_text(input)
-        output_path.write_text(output)
-        testcases = [
-            steps.TestcaseIO(index=0, input=input_path, output=output_path),
-        ]
+        testcases = []
+        while True:
+            console.print(
+                f"Providing IO for testcase [item]#{len(testcases)}[/item]..."
+            )
+            input = multiline_prompt("Testcase input")
+            if not input.strip():
+                break
+            output = multiline_prompt("Testcase output")
+            input_path = pathlib.Path(tempfile.mktemp())
+            output_path = pathlib.Path(tempfile.mktemp())
+            input_path.write_text(input)
+            output_path.write_text(output)
+            testcases.append(
+                steps.TestcaseIO(
+                    index=len(testcases), input=input_path, output=output_path
+                )
+            )
     else:
         testcases = get_testcases_io(dumped_problem)
 
