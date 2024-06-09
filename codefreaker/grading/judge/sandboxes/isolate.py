@@ -228,8 +228,9 @@ class IsolateSandbox(SandboxBase):
             pathlib.PosixPath("./isolate") / self.exec_name,
             pathlib.PosixPath(".") / self.exec_name,
             get_app_path() / self.exec_name,
+            pathlib.PosixPath("/usr/local/bin") / self.exec_name,
+            pathlib.PosixPath(self.exec_name),
         ]
-        paths += [pathlib.PosixPath(self.exec_name)]
         for path in paths:
             # Consider only non-directory, executable files with SUID flag on.
             if path.exists() and not path.is_dir() and os.access(str(path), os.X_OK):
@@ -252,7 +253,7 @@ class IsolateSandbox(SandboxBase):
         if self.params.box_id is not None:
             res += [f"--box-id={self.params.box_id}"]
         if self.params.cgroup:
-            res += ["--cg", "--cg-timing"]
+            res += ["--cg"]
         if self.chdir is not None:
             res += [f"--chdir={str(self.chdir)}"]
         for dirmount in self.params.dirs:
@@ -309,7 +310,7 @@ class IsolateSandbox(SandboxBase):
         res += ["--run"]
         return res
 
-    def get_log(self):
+    def hydrate_logs(self):
         """Read the content of the log file of the sandbox (usually
         run.log.N for some integer N), and set self.log as a dict
         containing the info in the log file (time, memory, status,

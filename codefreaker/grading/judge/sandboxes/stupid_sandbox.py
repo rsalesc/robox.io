@@ -163,6 +163,9 @@ class StupidSandbox(SandboxBase):
         elif status == self.EXIT_SIGNAL:
             return "Execution killed with signal %s" % self.get_killing_signal()
 
+    def hydrate_logs(self):
+        return
+
     def _popen(
         self,
         command: List[str],

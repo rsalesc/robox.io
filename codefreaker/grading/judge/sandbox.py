@@ -7,6 +7,7 @@ import stat
 import pathlib
 import subprocess
 import logging
+import sys
 from typing import BinaryIO, Dict, List, Optional, Union
 
 import pydantic
@@ -519,6 +520,15 @@ class SandboxBase(abc.ABC):
             itself), False otherwise; if the call is not blocking,
             return the Popen object from subprocess.
 
+        """
+        pass
+
+    @abc.abstractmethod
+    def hydrate_logs(self):
+        """Fetch the results of the execution and hydrate logs.
+
+        This method should be called after the execution has
+        terminated, to hydrate logs and stuff.
         """
         pass
 
