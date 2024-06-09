@@ -3,7 +3,6 @@ import os
 import stat
 import pathlib
 import resource
-import select
 import shutil
 import subprocess
 import tempfile
@@ -13,57 +12,10 @@ from typing import BinaryIO, List, Optional
 
 import gevent
 from ..cacher import FileCacher
-from ..sandbox import SandboxBase
+from ..sandbox import SandboxBase, SandboxParams, wait_without_std
 from codefreaker.grading.judge import sandbox
 
 logger = logging.getLogger(__name__)
-
-
-def wait_without_std(procs: List[subprocess.Popen]) -> List[int]:
-    """Wait for the conclusion of the processes in the list, avoiding
-    starving for input and output.
-
-    procs (list): a list of processes as returned by Popen.
-
-    return (list): a list of return codes.
-
-    """
-
-    def get_to_consume():
-        """Amongst stdout and stderr of list of processes, find the
-        ones that are alive and not closed (i.e., that may still want
-        to write to).
-
-        return (list): a list of open streams.
-
-        """
-        to_consume = []
-        for process in procs:
-            if process.poll() is None:  # If the process is alive.
-                if process.stdout and not process.stdout.closed:
-                    to_consume.append(process.stdout)
-                if process.stderr and not process.stderr.closed:
-                    to_consume.append(process.stderr)
-        return to_consume
-
-    # Close stdin; just saying stdin=None isn't ok, because the
-    # standard input would be obtained from the application stdin,
-    # that could interfere with the child process behaviour
-    for process in procs:
-        if process.stdin:
-            process.stdin.close()
-
-    # Read stdout and stderr to the end without having to block
-    # because of insufficient buffering (and without allocating too
-    # much memory). Unix specific.
-    to_consume = get_to_consume()
-    while len(to_consume) > 0:
-        to_read = select.select(to_consume, [], [], 1.0)[0]
-        for file_ in to_read:
-            file_.read(8 * 1024)
-        to_consume = get_to_consume()
-
-    return [process.wait() for process in procs]
 
 
 class StupidSandbox(SandboxBase):
@@ -85,6 +37,7 @@ class StupidSandbox(SandboxBase):
         file_cacher: Optional[FileCacher] = None,
         name: Optional[str] = None,
         temp_dir: pathlib.Path = None,
+        params: Optional[SandboxParams] = None,
     ):
         """Initialization.
 
@@ -93,7 +46,7 @@ class StupidSandbox(SandboxBase):
         """
         if not temp_dir:
             temp_dir = pathlib.Path(tempfile.gettempdir())
-        SandboxBase.__init__(self, file_cacher, name, temp_dir)
+        SandboxBase.__init__(self, file_cacher, name, temp_dir, params)
 
         # Make box directory
         self._path = pathlib.Path(
@@ -109,7 +62,7 @@ class StupidSandbox(SandboxBase):
         logger.debug("Sandbox in `%s' created, using stupid box.", self._path)
 
         # Box parameters
-        self.params.chdir = self._path
+        self.chdir = self._path
 
     def initialize(self):
         self._path.mkdir(parents=True, exist_ok=True)
@@ -282,8 +235,8 @@ class StupidSandbox(SandboxBase):
 
         def preexec_fn(self: "StupidSandbox"):
             """Set limits for the child process."""
-            if self.params.chdir:
-                os.chdir(self.params.chdir)
+            if self.chdir:
+                os.chdir(self.chdir)
 
             # TODO - We're not checking that setrlimit() returns
             # successfully (they may try to set to higher limits than

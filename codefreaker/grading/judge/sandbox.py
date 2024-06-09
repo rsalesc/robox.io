@@ -1,6 +1,8 @@
 import abc
+import dataclasses
 import io
 import os
+import select
 import stat
 import pathlib
 import subprocess
@@ -16,6 +18,60 @@ from . import cacher
 logger = logging.getLogger(__name__)
 
 MERGE_STDERR = pathlib.PosixPath("/dev/stdout")
+
+
+def wait_without_std(procs: List[subprocess.Popen]) -> List[int]:
+    """Wait for the conclusion of the processes in the list, avoiding
+    starving for input and output.
+
+    procs (list): a list of processes as returned by Popen.
+
+    return (list): a list of return codes.
+
+    """
+
+    def get_to_consume():
+        """Amongst stdout and stderr of list of processes, find the
+        ones that are alive and not closed (i.e., that may still want
+        to write to).
+
+        return (list): a list of open streams.
+
+        """
+        to_consume = []
+        for process in procs:
+            if process.poll() is None:  # If the process is alive.
+                if process.stdout and not process.stdout.closed:
+                    to_consume.append(process.stdout)
+                if process.stderr and not process.stderr.closed:
+                    to_consume.append(process.stderr)
+        return to_consume
+
+    # Close stdin; just saying stdin=None isn't ok, because the
+    # standard input would be obtained from the application stdin,
+    # that could interfere with the child process behaviour
+    for process in procs:
+        if process.stdin:
+            process.stdin.close()
+
+    # Read stdout and stderr to the end without having to block
+    # because of insufficient buffering (and without allocating too
+    # much memory). Unix specific.
+    to_consume = get_to_consume()
+    while len(to_consume) > 0:
+        to_read = select.select(to_consume, [], [], 1.0)[0]
+        for file_ in to_read:
+            file_.read(8 * 1024)
+        to_consume = get_to_consume()
+
+    return [process.wait() for process in procs]
+
+
+@dataclasses.dataclass
+class DirectoryMount:
+    src: pathlib.Path
+    dst: pathlib.Path
+    options: str
 
 
 class SandboxParams(pydantic.BaseModel):
@@ -34,10 +90,9 @@ class SandboxParams(pydantic.BaseModel):
     """
 
     box_id: int = 0
-    chdir: Optional[pathlib.Path] = None
-    fsize: Optional[int] = None
+    fsize: Optional[int] = None  # KiB
     cgroup: bool = False
-    dirs: List[str] = []
+    dirs: List[DirectoryMount] = []
     preserve_env: bool = False
     inherit_env: List[str] = []
     set_env: Dict[str, str] = {}
@@ -110,6 +165,7 @@ class SandboxBase(abc.ABC):
         file_cacher: Optional[cacher.FileCacher] = None,
         name: Optional[str] = None,
         temp_dir: pathlib.Path = None,
+        params: Optional[SandboxParams] = None,
     ):
         """Initialization.
 
@@ -127,7 +183,7 @@ class SandboxBase(abc.ABC):
 
         self.cmd_file = "commands.log"
 
-        self.params = SandboxParams()
+        self.params = params or SandboxParams()
 
         # Set common environment variables.
         # Specifically needed by Python, that searches the home for
