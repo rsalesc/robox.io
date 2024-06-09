@@ -183,6 +183,17 @@ files = [
 test = ["pytest (>=6)"]
 
 [[package]]
+name = "exinc"
+version = "1.0.0"
+description = "Tool to expand C++ includes targeting competitive programmers."
+optional = false
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "exinc-1.0.0-py3-none-any.whl", hash = "sha256:c4745b58db37d16ccae945dbc0b2d57a2f958e4cf947631f1c2bf49396f32aee"},
+    {file = "exinc-1.0.0.tar.gz", hash = "sha256:0feeac3f17fd3413eae37c06d9904d73d79210f251baa12a05c094113a82b78e"},
+]
+
+[[package]]
 name = "fastapi"
 version = "0.111.0"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -1454,4 +1465,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "596bb6c5e2c8ce3bdb108cb06b26460e23decb5ac378b084b5408e707c0975d3"
+content-hash = "d5628f6154b18362532ca1ce709bc2fef2b58d86f23ff334dffd8a10a65b2a43"
