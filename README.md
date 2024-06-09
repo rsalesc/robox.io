@@ -68,12 +68,21 @@ If you want to use the parsing feature, you also have to install [Competitive Co
 
 ###  Installation
 
+#### From `pipx`
+
+> Use `pipx` for better isolation between apps!
+> ```console
+> $ pipx install codefreaker
+> $ pipx install exinc
+> ```
+
 #### From `pip`
 
 > [![PyPi](https://badgen.net/badge/icon/pypi?icon=pypi&label)](https://https://pypi.org/)
 > ```console
-> $ pip install codefreaker
+> $ pip install codefreaker exinc
 > ```
+
 
 #### From code
 
