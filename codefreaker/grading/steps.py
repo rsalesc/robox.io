@@ -169,6 +169,57 @@ def preprocess(
     return True
 
 
+def run_single(
+    problem: Problem,
+    lang: Language,
+    sandbox: SandboxBase,
+    testcase: TestcaseIO,
+    persist_root: pathlib.Path = pathlib.Path("."),
+) -> Optional[TestcaseLog]:
+    cmd = shlex.split(lang.exec)
+
+    time_limit = problem.timeLimit or 1000
+    sandbox.params.timeout = time_limit * 2
+    sandbox.params.wallclock_timeout = time_limit * 5
+    sandbox.params.address_space = 1024  # 1 GB
+
+    if testcase.input:
+        sandbox.create_file_from_string(
+            pathlib.PosixPath("stdin.txt"),
+            testcase.input.read_text(),
+            override=True,
+        )
+    sandbox.params.set_stdall(
+        stdin="stdin.txt" if testcase.input else None,
+        stdout="stdout.txt",
+        stderr=MERGE_STDERR,
+    )
+
+    stdout_persisted_path = persist_root / f"stdout-{testcase.index}.txt"
+    stderr_persisted_path = persist_root / f"stderr-{testcase.index}.txt"
+
+    if not sandbox.execute_without_std(cmd, wait=True):
+        console.print(
+            "[error]Sandbox crashed while processing command:[/error]",
+            utils.highlight_json_obj(cmd),
+        )
+        return None
+
+    copyfileobj(
+        sandbox.get_file("stdout.txt"),
+        stdout_persisted_path.open("wb"),
+        maxlen=MAX_STDOUT_LEN,
+    )
+
+    return TestcaseLog(
+        exitcode=sandbox.get_exit_code(),
+        exitstatus=sandbox.get_exit_status(),
+        time=sandbox.get_execution_time(),
+        stdout_absolute_path=stdout_persisted_path.absolute(),
+        stderr_absolute_path=stderr_persisted_path.absolute(),
+    )
+
+
 def run(
     problem: Problem,
     lang: Language,
@@ -176,16 +227,10 @@ def run(
     testcases: List[TestcaseIO],
     persist_root: pathlib.Path = pathlib.Path("."),
 ) -> Optional[Dict[int, TestcaseLog]]:
-    cmd = shlex.split(lang.exec)
     logs: Dict[int, TestcaseLog] = {}
 
     # Ensure persist dir exists.
     persist_root.mkdir(parents=True, exist_ok=True)
-
-    time_limit = problem.timeLimit or 1000
-    sandbox.params.timeout = time_limit * 2
-    sandbox.params.wallclock_timeout = time_limit * 5
-    sandbox.params.address_space = 1024  # 1 GB
 
     progress = Progress(
         SpinnerColumn(),
@@ -195,42 +240,10 @@ def run(
     )
     with progress:
         for testcase in progress.track(testcases, description="Running testcases..."):
-            if testcase.input:
-                sandbox.create_file_from_string(
-                    pathlib.PosixPath("stdin.txt"),
-                    testcase.input.read_text(),
-                    override=True,
-                )
-            sandbox.params.set_stdall(
-                stdin="stdin.txt" if testcase.input else None,
-                stdout="stdout.txt",
-                stderr=MERGE_STDERR,
+
+            logs[testcase.index] = run_single(
+                problem, lang, sandbox, testcase, persist_root
             )
-
-            stdout_persisted_path = persist_root / f"stdout-{testcase.index}.txt"
-            stderr_persisted_path = persist_root / f"stderr-{testcase.index}.txt"
-
-            if not sandbox.execute_without_std(cmd, wait=True):
-                console.print(
-                    "[error]Sandbox crashed while processing command:[/error]",
-                    utils.highlight_json_obj(cmd),
-                )
-                return None
-
-            copyfileobj(
-                sandbox.get_file("stdout.txt"),
-                stdout_persisted_path.open("wb"),
-                maxlen=MAX_STDOUT_LEN,
-            )
-
-            log = TestcaseLog(
-                exitcode=sandbox.get_exit_code(),
-                exitstatus=sandbox.get_exit_status(),
-                time=sandbox.get_execution_time(),
-                stdout_absolute_path=stdout_persisted_path.absolute(),
-                stderr_absolute_path=stderr_persisted_path.absolute(),
-            )
-            logs[testcase.index] = log
 
     return logs
 
@@ -246,7 +259,7 @@ def _wcmp_check(expected: str, output: str) -> Outcome:
     return Outcome.WRONG_ANSWER
 
 
-def _compile_checker(checker: str, sandbox: SandboxBase) -> bool:
+def compile_checker(checker: str, sandbox: SandboxBase) -> bool:
     sandbox.params.set_stdall(
         stdin=None,
         stdout="stdout.txt",
@@ -332,15 +345,40 @@ def _check(
     return CheckerResult(outcome=Outcome.ACCEPTED, message=stderr)
 
 
+def evaluate_single(
+    problem: DumpedProblem,
+    sandbox: SandboxBase,
+    testcase: TestcaseIO,
+    log: TestcaseLog,
+) -> TestcaseEvaluation:
+    if log.exitstatus != SandboxBase.EXIT_OK:
+        return TestcaseEvaluation(
+            testcase=testcase,
+            log=log,
+            outcome=Outcome.RUNTIME_ERROR,
+        )
+
+    if not testcase.output:
+        # No output to compare.
+        return TestcaseEvaluation(testcase=testcase, log=log, outcome=Outcome.ACCEPTED)
+
+    checker_result = _check(problem, sandbox, testcase, log.stdout_absolute_path)
+    return TestcaseEvaluation(
+        testcase=testcase,
+        log=log,
+        outcome=checker_result.outcome,
+        message=checker_result.message,
+    )
+
+
 def evaluate(
     problem: DumpedProblem,
     sandbox: SandboxBase,
     testcases: List[TestcaseIO],
     testcase_logs: Dict[int, TestcaseLog],
-    persist_root: pathlib.Path = pathlib.Path("."),
 ) -> List[TestcaseEvaluation]:
     if problem.checker:
-        if not _compile_checker(problem.checker, sandbox):
+        if not compile_checker(problem.checker, sandbox):
             return []
 
     evaluations = []
@@ -349,31 +387,6 @@ def evaluate(
             continue
 
         log = testcase_logs[testcase.index]
-        if log.exitstatus != SandboxBase.EXIT_OK:
-            evaluations.append(
-                TestcaseEvaluation(
-                    testcase=testcase,
-                    log=log,
-                    outcome=Outcome.RUNTIME_ERROR,
-                )
-            )
-            continue
-
-        if not testcase.output:
-            # No output to compare.
-            evaluations.append(
-                TestcaseEvaluation(testcase=testcase, log=log, outcome=Outcome.ACCEPTED)
-            )
-            continue
-
-        checker_result = _check(problem, sandbox, testcase, log.stdout_absolute_path)
-        evaluations.append(
-            TestcaseEvaluation(
-                testcase=testcase,
-                log=log,
-                outcome=checker_result.outcome,
-                message=checker_result.message,
-            )
-        )
+        evaluations.append(evaluate_single(problem, sandbox, testcase, log))
 
     return evaluations
