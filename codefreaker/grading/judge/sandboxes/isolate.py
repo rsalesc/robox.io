@@ -59,8 +59,9 @@ class IsolateSandbox(SandboxBase):
             temp_dir = pathlib.Path(tempfile.gettempdir())
         SandboxBase.__init__(self, file_cacher, name, temp_dir, params)
 
-        self.params.box_id = IsolateSandbox.next_id % 10
-        IsolateSandbox.next_id += 1
+        if not self.params.box_id:
+            self.params.box_id = IsolateSandbox.next_id % 10
+            IsolateSandbox.next_id += 1
 
         # We create a directory "home" inside the outer temporary directory,
         # that will be bind-mounted to "/tmp" inside the sandbox (some
