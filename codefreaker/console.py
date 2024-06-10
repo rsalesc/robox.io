@@ -15,6 +15,7 @@ theme = Theme(
     }
 )
 console = Console(theme=theme, style="info", highlight=False)
+stderr_console = Console(theme=theme, style="info", highlight=False, stderr=True)
 
 
 def multiline_prompt(text: str) -> str:

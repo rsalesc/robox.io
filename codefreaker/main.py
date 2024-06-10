@@ -10,6 +10,7 @@ from . import testcase
 from . import create as create_pkg
 from . import edit as edit_pkg
 from . import test as test_pkg
+from . import run as run_pkg
 from . import submit as submit_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
@@ -82,6 +83,22 @@ def test(
         keep_sandbox=keep_sandbox,
         index=index,
         interactive=interactive,
+    )
+
+
+@app.command("run, r")
+def run(
+    problem: annotations.Problem,
+    language: annotations.LanguageWithDefault = None,
+    keep_sandbox: bool = False,
+):
+    """
+    Run a problem using the provided language.
+    """
+    run_pkg.main(
+        problem,
+        language,
+        keep_sandbox=keep_sandbox,
     )
 
 

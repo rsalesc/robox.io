@@ -13,7 +13,6 @@ from codefreaker.config import Language, get_config
 from codefreaker.console import console, multiline_prompt
 from codefreaker.grading import steps
 from codefreaker.grading.judge.sandboxes import stupid_sandbox
-from codefreaker.grading.judge.sandboxes.isolate import IsolateSandbox
 from codefreaker.schema import DumpedProblem
 
 

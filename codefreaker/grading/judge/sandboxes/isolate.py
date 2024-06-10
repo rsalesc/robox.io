@@ -9,7 +9,6 @@ from typing import BinaryIO, List, Optional, Union
 from codefreaker.config import get_app_path
 from codefreaker.grading.judge.cacher import FileCacher
 from codefreaker.grading.judge.sandbox import (
-    DirectoryMount,
     SandboxBase,
     SandboxParams,
     wait_without_std,
