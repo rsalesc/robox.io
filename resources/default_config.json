@@ -6,7 +6,7 @@
       "template": "template.cpp",
       "file": "%{problem-code}.cpp",
       "preprocess": [
-        "g++ \"%{file}\" -std=c++17"
+        "g++ \"%{file}\" -std=c++17 -fdiagnostics-color=always"
       ],
       "exec": "./a.out",
       "artifacts": {

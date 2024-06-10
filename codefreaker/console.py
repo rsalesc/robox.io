@@ -4,6 +4,7 @@ import sys
 
 theme = Theme(
     {
+        "default": "bright_white",
         "cfk": "bold italic yellow",
         "info": "bright_black",
         "status": "bright_white",

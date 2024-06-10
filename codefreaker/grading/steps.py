@@ -4,6 +4,7 @@ import pathlib
 import shlex
 from typing import Dict, List, Optional
 
+from rich.text import Text
 from rich.progress import Progress, SpinnerColumn, MofNCompleteColumn
 
 from codefreaker import utils
@@ -140,8 +141,7 @@ def preprocess(
             utils.highlight_json_obj(logs[-1].cmd),
         )
         console.print(f"Exit code: [error]{logs[-1].exitcode}[/error]")
-        console.print()
-        print(logs[-1].log)
+        console.print(Text.from_ansi(logs[-1].log), style="default")
         return False
 
     if lang.has_submit_file():
