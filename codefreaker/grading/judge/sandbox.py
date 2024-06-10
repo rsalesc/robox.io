@@ -95,7 +95,6 @@ class SandboxParams(pydantic.BaseModel):
 
     """
 
-    box_id: int = 0
     fsize: Optional[int] = None  # KiB
     cgroup: bool = False
     dirs: List[DirectoryMount] = []
@@ -103,7 +102,7 @@ class SandboxParams(pydantic.BaseModel):
     inherit_env: List[str] = []
     set_env: Dict[str, str] = {}
     verbosity: int = 0
-    max_processes: int = 1
+    max_processes: Optional[int] = 1
 
     stdin_file: Optional[pathlib.Path] = None
     stdout_file: Optional[pathlib.Path] = None
@@ -144,6 +143,29 @@ class SandboxParams(pydantic.BaseModel):
         self.stdin_file = stdin
         self.stdout_file = stdout
         self.stderr_file = stderr
+
+    def add_mapped_directory(
+        self,
+        src: pathlib.Path,
+        dest: Optional[pathlib.Path] = None,
+        options: Optional[str] = None,
+        ignore_if_not_existing: bool = False,
+    ):
+        """Add src to the directory to be mapped inside the sandbox.
+
+        src (Path): directory to make visible.
+        dest (Path|None): if not None, the path where to bind src.
+        options (str|None): if not None, isolate's directory rule options.
+        ignore_if_not_existing (bool): if True, ignore the mapping when src
+            does not exist (instead of having isolate terminate with an
+            error).
+
+        """
+        if dest is None:
+            dest = src
+        if ignore_if_not_existing and not src.exists():
+            return
+        self.dirs.append(DirectoryMount(src, dest, options))
 
 
 class SandboxBase(abc.ABC):

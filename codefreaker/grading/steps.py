@@ -14,7 +14,7 @@ from codefreaker.config import (
     format_vars,
     get_builtin_checker,
 )
-from codefreaker.grading.judge.sandbox import SandboxBase, MERGE_STDERR
+from codefreaker.grading.judge.sandbox import SandboxBase, MERGE_STDERR, SandboxParams
 from codefreaker.grading.judge.storage import copyfileobj
 from codefreaker.schema import DumpedProblem, Problem
 
@@ -68,6 +68,16 @@ class TestcaseEvaluation:
 class CheckerResult:
     outcome: Outcome
     message: str = ""
+
+
+def get_preprocess_sandbox_params(lang: Optional[Language] = None) -> SandboxParams:
+    params = SandboxParams(
+        max_processes=None,
+        preserve_env=True,
+    )
+    params.add_mapped_directory(pathlib.Path("/usr"))
+    params.add_mapped_directory(pathlib.Path("/etc"))
+    return params
 
 
 def preprocess(
@@ -169,6 +179,10 @@ def preprocess(
     return True
 
 
+def get_run_sandbox_params(lang: Language) -> SandboxParams:
+    return SandboxParams()
+
+
 def run_single(
     problem: Problem,
     lang: Language,
@@ -181,7 +195,7 @@ def run_single(
     time_limit = problem.timeLimit or 1000
     sandbox.params.timeout = time_limit * 2
     sandbox.params.wallclock_timeout = time_limit * 5
-    sandbox.params.address_space = 1024  # 1 GB
+    sandbox.params.address_space = problem.memoryLimit or 1024  # 1 GB
 
     if testcase.input:
         sandbox.create_file_from_string(
@@ -259,6 +273,10 @@ def _wcmp_check(expected: str, output: str) -> Outcome:
     return Outcome.WRONG_ANSWER
 
 
+def get_checker_sandbox_params() -> SandboxParams:
+    return get_preprocess_sandbox_params()
+
+
 def compile_checker(checker: str, sandbox: SandboxBase) -> bool:
     sandbox.params.set_stdall(
         stdin=None,
@@ -283,7 +301,7 @@ def compile_checker(checker: str, sandbox: SandboxBase) -> bool:
     )
     sandbox.create_file_from_string("testlib.h", testlib.read_text(), override=True)
 
-    cmd = ["g++", "-std=c++17", "-o", "checker", "checker.cpp"]
+    cmd = ["/usr/bin/g++", "-std=c++17", "-o", "checker", "checker.cpp"]
     if not sandbox.execute_without_std(cmd, wait=True):
         console.print(
             "[error]Sandbox crashed while processing command:[/error]",

@@ -3,8 +3,6 @@ import dataclasses
 import pathlib
 import tempfile
 from typing import List, Optional
-import typer
-from typing_extensions import Annotated
 from rich.columns import Columns
 from rich.panel import Panel
 from rich.text import Text
@@ -15,6 +13,7 @@ from codefreaker.config import Language, get_config
 from codefreaker.console import console, multiline_prompt
 from codefreaker.grading import steps
 from codefreaker.grading.judge.sandboxes import stupid_sandbox
+from codefreaker.grading.judge.sandboxes.isolate import IsolateSandbox
 from codefreaker.schema import DumpedProblem
 
 
@@ -206,7 +205,7 @@ def main(
         )
         return
 
-    box = stupid_sandbox.StupidSandbox()
+    box = stupid_sandbox.StupidSandbox(params=steps.get_preprocess_sandbox_params(lang))
     atexit.register(lambda: box.cleanup(delete=not keep_sandbox))
 
     with console.status(
@@ -220,6 +219,7 @@ def main(
 
     persist_root = config.get_empty_app_persist_path()
 
+    box.params = steps.get_run_sandbox_params(lang)
     testcase_logs = steps.run(dumped_problem, lang, box, testcases, persist_root)
 
     if not testcase_logs:
@@ -228,12 +228,11 @@ def main(
         )
         return
 
+    box.params = steps.get_checker_sandbox_params()
     with console.status(
         f"Evaluating testcases for problem [item]{dumped_problem.pretty_name()}[/item]..."
     ):
-        results = steps.evaluate(
-            dumped_problem, box, testcases, testcase_logs, persist_root
-        )
+        results = steps.evaluate(dumped_problem, box, testcases, testcase_logs)
     if not results:
         console.print(
             f"[error]Failed to evaluate testcases for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"

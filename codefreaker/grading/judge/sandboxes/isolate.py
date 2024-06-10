@@ -44,7 +44,7 @@ class IsolateSandbox(SandboxBase):
 
     def __init__(
         self,
-        file_cacher: FileCacher,
+        file_cacher: Optional[FileCacher] = None,
         name: Optional[str] = None,
         temp_dir: Optional[pathlib.Path] = None,
         params: Optional[SandboxParams] = None,
@@ -59,9 +59,8 @@ class IsolateSandbox(SandboxBase):
             temp_dir = pathlib.Path(tempfile.gettempdir())
         SandboxBase.__init__(self, file_cacher, name, temp_dir, params)
 
-        if not self.params.box_id:
-            self.params.box_id = IsolateSandbox.next_id % 10
-            IsolateSandbox.next_id += 1
+        self.box_id = IsolateSandbox.next_id % 10
+        IsolateSandbox.next_id += 1
 
         # We create a directory "home" inside the outer temporary directory,
         # that will be bind-mounted to "/tmp" inside the sandbox (some
@@ -134,11 +133,9 @@ class IsolateSandbox(SandboxBase):
             error).
 
         """
-        if dest is None:
-            dest = src
-        if ignore_if_not_existing and not src.exists():
-            return
-        self.params.dirs.append(DirectoryMount(src, dest, options))
+        self.params.add_mapped_directory(
+            src, dest, options, ignore_if_not_existing=ignore_if_not_existing
+        )
 
     def maybe_add_mapped_directory(
         self,
@@ -253,8 +250,8 @@ class IsolateSandbox(SandboxBase):
 
         """
         res = list()
-        if self.params.box_id is not None:
-            res += [f"--box-id={self.params.box_id}"]
+        if self.box_id is not None:
+            res += [f"--box-id={self.box_id}"]
         if self.params.cgroup:
             res += ["--cg"]
         if self.chdir is not None:
@@ -594,9 +591,11 @@ class IsolateSandbox(SandboxBase):
         # std*** to interfere with command. Otherwise we let the
         # caller handle these issues.
         if wait:
-            return self.translate_box_exitcode(
+            exitcode = self.translate_box_exitcode(
                 wait_without_std([popen], actually_pipe_to_stdout=self.debug)[0]
             )
+            self.hydrate_logs()
+            return exitcode
         else:
             return popen
 
@@ -625,7 +624,7 @@ class IsolateSandbox(SandboxBase):
         init_cmd = (
             [self.box_exec]
             + (["--cg"] if self.params.cgroup else [])
-            + ["--box-id=%d" % self.params.box_id, "--init"]
+            + ["--box-id=%d" % self.box_id, "--init"]
         )
         try:
             subprocess.check_call(init_cmd)
@@ -644,7 +643,7 @@ class IsolateSandbox(SandboxBase):
         exe = (
             [self.box_exec]
             + (["--cg"] if self.params.cgroup else [])
-            + ["--box-id=%d" % self.params.box_id]
+            + ["--box-id=%d" % self.box_id]
         )
 
         if delete:
