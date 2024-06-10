@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 MERGE_STDERR = pathlib.PosixPath("/dev/stdout")
 
 
-def wait_without_std(procs: List[subprocess.Popen]) -> List[int]:
+def wait_without_std(
+    procs: List[subprocess.Popen], actually_pipe_to_stdout: bool = False
+) -> List[int]:
     """Wait for the conclusion of the processes in the list, avoiding
     starving for input and output.
 
@@ -62,7 +64,10 @@ def wait_without_std(procs: List[subprocess.Popen]) -> List[int]:
     while len(to_consume) > 0:
         to_read = select.select(to_consume, [], [], 1.0)[0]
         for file_ in to_read:
-            file_.read(8 * 1024)
+            consumed = file_.read(8 * 1024)
+            if actually_pipe_to_stdout:
+                sys.stdout.buffer.write(consumed)
+                sys.stdout.buffer.flush()
         to_consume = get_to_consume()
 
     return [process.wait() for process in procs]

@@ -48,6 +48,7 @@ class IsolateSandbox(SandboxBase):
         name: Optional[str] = None,
         temp_dir: Optional[pathlib.Path] = None,
         params: Optional[SandboxParams] = None,
+        debug: bool = False,
     ):
         """Initialization.
 
@@ -85,6 +86,7 @@ class IsolateSandbox(SandboxBase):
         self.exec_num = -1
         self.cmd_file = self._outer_dir / "commands.log"
         self.chdir = self._home_dest
+        self.debug = debug
         logger.debug(
             "Sandbox in `%s' created, using box `%s'.", self._home, self.box_exec
         )
@@ -591,7 +593,9 @@ class IsolateSandbox(SandboxBase):
         # std*** to interfere with command. Otherwise we let the
         # caller handle these issues.
         if wait:
-            return self.translate_box_exitcode(wait_without_std([popen])[0])
+            return self.translate_box_exitcode(
+                wait_without_std([popen], actually_pipe_to_stdout=self.debug)[0]
+            )
         else:
             return popen
 

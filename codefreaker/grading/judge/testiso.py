@@ -18,10 +18,13 @@ def main():
     python_file = cache.put_file_text("print('hello')")
 
     IsolateSandbox.next_id = 5
-    sandbox = IsolateSandbox(cache, params=SandboxParams(cgroup=False))
+    sandbox = IsolateSandbox(
+        cache, params=SandboxParams(cgroup=True, verbosity=5), debug=True
+    )
     atexit.register(sandbox.cleanup)
     sandbox.create_file_from_storage(pathlib.PosixPath("run.py"), python_file)
 
+    sandbox.params.address_space = 128
     sandbox.params.stdout_file = "run.out"
     sandbox.params.stderr_file = "run.err"
 
