@@ -2,6 +2,7 @@ from typing_extensions import Annotated
 import typer
 
 from codefreaker import checker
+from codefreaker.box import main
 
 from . import annotations
 from . import clone as clone_pkg
@@ -14,6 +15,7 @@ from . import run as run_pkg
 from . import submit as submit_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
+app.add_typer(main.app, name="box", cls=annotations.AliasGroup)
 app.add_typer(
     config.app,
     name="config, cfg",
