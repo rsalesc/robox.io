@@ -58,11 +58,7 @@ class Language(BaseModel):
         )
 
     def get_template(self) -> str:
-        template_path = get_app_path() / "templates" / self.template
-        if not template_path.is_file():
-            template_path.parent.mkdir(parents=True, exist_ok=True)
-            template_path.write_text(get_default_template(self.template))
-        return template_path.read_text()
+        return get_app_file(pathlib.Path("templates") / self.template).read_text()
 
 
 SubmitorConfig = Dict[str, Any]
@@ -95,32 +91,22 @@ def get_empty_app_persist_path() -> pathlib.Path:
     return app_dir
 
 
-def get_builtin_checker(name: str) -> Optional[pathlib.Path]:
-    checker_path = get_app_path() / "checkers" / name
-    if checker_path.is_file():
-        return checker_path
+def get_app_file(path: pathlib.Path) -> pathlib.Path:
+    file_path = get_app_path() / path
+    if file_path.is_file():
+        return file_path
 
     with importlib.resources.as_file(
-        importlib.resources.files(_RESOURCES_PKG) / "checkers" / name
+        importlib.resources.files(_RESOURCES_PKG) / path
     ) as file:
         if file.is_file():
-            checker_path.parent.mkdir(parents=True, exist_ok=True)
-            copyfileobj(file.open("rb"), checker_path.open("wb"))
-    return checker_path
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            copyfileobj(file.open("rb"), file_path.open("wb"))
+    return file_path
 
 
-def get_default_template_path(template: str) -> pathlib.Path:
-    with importlib.resources.as_file(
-        importlib.resources.files(_RESOURCES_PKG) / "templates" / template
-    ) as file:
-        return file
-
-
-def get_default_template(template: str) -> str:
-    file = get_default_template_path(template)
-    if file.is_file():
-        return file.read_text()
-    return ""
+def get_builtin_checker(name: str) -> pathlib.Path:
+    return get_app_file(pathlib.Path("checkers") / name)
 
 
 def get_default_config_path() -> pathlib.Path:

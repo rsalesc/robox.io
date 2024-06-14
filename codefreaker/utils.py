@@ -1,6 +1,6 @@
 import json
 import pathlib
-from typing import Any, Optional
+from typing import Any, Optional, Type, TypeVar, Union
 
 from pydantic import BaseModel
 import rich
@@ -8,8 +8,11 @@ import rich.prompt
 import rich.status
 from rich import text
 from rich.highlighter import JSONHighlighter
+import yaml
 
 from .console import console
+
+T = TypeVar("T", bound=BaseModel)
 
 
 def create_and_write(path: pathlib.Path, *args, **kwargs):
@@ -43,6 +46,14 @@ def normalize_with_underscores(s: str) -> str:
 
 def model_json(model: BaseModel) -> str:
     return model.model_dump_json(indent=4, exclude_unset=True, exclude_none=True)
+
+
+def model_to_yaml(model: BaseModel) -> str:
+    return yaml.dump(model.model_dump(exclude_unset=True, exclude_none=True))
+
+
+def model_from_yaml(model: Type[T], s: str) -> T:
+    return model(**yaml.safe_load(s))
 
 
 def confirm_on_status(status: Optional[rich.status.Status], *args, **kwargs) -> bool:
