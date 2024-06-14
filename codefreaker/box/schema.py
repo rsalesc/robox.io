@@ -55,9 +55,9 @@ class TestcaseGroup(BaseModel):
     # to add to this group.
     testcases: Optional[List[Testcase]] = []
 
-    # A Python regex that matches input/output file paths relative to the
+    # A Python glob that matches input/output file paths relative to the
     # package directory. The matched files will be added to this group.
-    testcasePattern: Optional[Testcase] = None
+    testcaseGlob: Optional[Testcase] = None
 
     # The generators to call to generate testcases for this group.
     generators: Optional[List[GeneratorCall]] = []
