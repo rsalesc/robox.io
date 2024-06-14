@@ -1,5 +1,12 @@
-from typing import List, Optional
+import functools
+import pathlib
+from typing import List, Optional, Type, TypeVar
 from pydantic import BaseModel
+import typer
+
+from codefreaker import config, console, utils
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class FileMapping(BaseModel):
@@ -74,6 +81,10 @@ class EnvironmentLanguage(BaseModel):
     # Execution config to use when running programs for this language.
     execution: ExecutionConfig
 
+    # Mapping for files within the sandbox. If not specified, the default mapping
+    # for the environment will be used.
+    fileMapping: Optional[FileMapping] = None
+
 
 class Environment(BaseModel):
     # Default mapping for files within the sandbox. Fields in the mapping can be
@@ -93,3 +104,94 @@ class Environment(BaseModel):
 
     # Identifier of the sandbox used by this environment (e.g. "stupid", "isolate")
     sandbox: str
+
+
+def get_environment_path(env: str) -> pathlib.Path:
+    return config.get_app_file(pathlib.PosixPath("environments") / f"{env}.cfk.yml")
+
+
+@functools.cache
+def get_environment(env: Optional[str] = None) -> Environment:
+    env_path = get_environment_path(env or config.get_config().boxEnvironment)
+    if not env_path.is_file():
+        console.console.print(
+            f"Environment file [item]{env_path}[/item] not found.", style="error"
+        )
+        raise typer.Exit()
+    return utils.model_from_yaml(Environment, env_path.read_text())
+
+
+@functools.cache
+def get_language(name: str) -> EnvironmentLanguage:
+    for lang in get_environment().languages:
+        if lang.name == name:
+            return lang
+    console.console.print(f"Language [item]{name}[/item] not found.", style="error")
+    raise typer.Exit()
+
+
+def _merge_shallow_models(model: Type[T], base: T, override: T) -> T:
+    return model(
+        **{
+            **base.model_dump(exclude_unset=True),
+            **override.model_dump(exclude_unset=True),
+        }
+    )
+
+
+def _merge_compilation_configs(
+    compilation_configs: List[CompilationConfig],
+) -> CompilationConfig:
+    merged_cfg = CompilationConfig()
+    merged_cfg.sandbox = EnvironmentSandbox(
+        max_processes=None,
+        timelimit=10000,
+        wallTimeLimit=10000,
+        memoryLimit=512,
+        preserveEnv=True,
+        mirrorDirs=["/etc", "/usr"],
+    )
+    for cfg in compilation_configs:
+        merged_cfg.commands = cfg.commands or merged_cfg.commands
+        merged_cfg.sandbox = _merge_shallow_models(
+            EnvironmentSandbox, cfg.sandbox, merged_cfg.sandbox
+        )
+    return merged_cfg
+
+
+@functools.cache
+def get_compilation_config(language: str) -> CompilationConfig:
+    environment = get_environment()
+    return _merge_compilation_configs(
+        [environment.defaultCompilation, get_language(language).compilation]
+    )
+
+
+def _merge_execution_configs(
+    execution_configs: List[ExecutionConfig],
+) -> ExecutionConfig:
+    merged_cfg = ExecutionConfig()
+    for cfg in execution_configs:
+        merged_cfg.command = cfg.command or merged_cfg.command
+        merged_cfg.sandbox = _merge_shallow_models(
+            EnvironmentSandbox, cfg.sandbox, merged_cfg.sandbox
+        )
+    return merged_cfg
+
+
+@functools.cache
+def get_execution_config(language: str) -> ExecutionConfig:
+    environment = get_environment()
+    return _merge_execution_configs(
+        [environment.defaultExecution, get_language(language).execution]
+    )
+
+
+@functools.cache
+def get_file_mapping(language: str) -> FileMapping:
+    environment = get_environment()
+    return _merge_shallow_models(
+        FileMapping,
+        environment.defaultFileMapping or FileMapping(),
+        get_language(language).fileMapping or FileMapping(),
+    )

@@ -71,6 +71,7 @@ class Config(BaseModel):
     editor: Optional[str] = None
     submitor: Dict[str, SubmitorConfig]
     credentials: Credentials
+    boxEnvironment: Optional[str] = "default"
 
     def get_default_language(self) -> Optional[Language]:
         return self.languages.get(self.defaultLanguage)

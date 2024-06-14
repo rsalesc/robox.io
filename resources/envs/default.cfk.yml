@@ -1,0 +1,19 @@
+---
+sandbox: "stupid"
+defaultCompilation:
+  maxProcesses: 1000
+  timeLimit: 10000 # 10 seconds
+  wallTimeLimit: 10000 # 10 seconds
+  memoryLimit: 512 # 512mb
+  preserveEnv: true
+  mirrorDirs:
+    - "/etc"
+    - "/usr"
+languages:
+  - name: "cpp"
+    extension: "cpp"
+    compilation:
+      commands:
+        - "g++ -std=c++17 -o {executable} {compilable}"
+    execution:
+      command: "./{executable}"
