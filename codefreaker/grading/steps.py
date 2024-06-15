@@ -27,12 +27,12 @@ class Outcome(Enum):
 
 @dataclasses.dataclass
 class GradingFileInput:
+    # Destination path relative to the sandboox.
+    dest: pathlib.Path
     # Source path relative to the FS.
     src: Optional[pathlib.Path] = None
     # Digest if we should get file from storage.
     digest: Optional[str] = None
-    # Destination path relative to the sandboox.
-    dest: pathlib.Path
     # Whether the destination file should be marked as an executable.
     executable: bool = False
     # Whether to get file from storage.
