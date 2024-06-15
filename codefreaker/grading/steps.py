@@ -237,54 +237,13 @@ def get_checker_sandbox_params() -> SandboxParams:
     return params
 
 
-def compile_checker(checker: str, sandbox: SandboxBase) -> bool:
-    sandbox.params.set_stdall(
-        stdin=None,
-        stdout="stdout.txt",
-        stderr="stderr.txt",
-    )
-
-    checker_path = pathlib.Path(checker)
-    if not checker_path.is_file():
-        checker_path = get_builtin_checker(checker)
-    if not checker_path.is_file():
-        console.print(f"[error]Checker {checker_path} does not exist.[/error]")
-        return False
-
-    testlib = get_builtin_checker("testlib.h")
-    if not testlib.is_file():
-        console.print(f"[error]Testlib was not found in {testlib}.[/error]")
-        return False
-
-    sandbox.create_file_from_string(
-        "checker.cpp", checker_path.read_text(), override=True
-    )
-    sandbox.create_file_from_string("testlib.h", testlib.read_text(), override=True)
-
-    cmd = ["/usr/bin/g++", "-std=c++17", "-o", "checker", "checker.cpp"]
-    if not sandbox.execute_without_std(cmd, wait=True):
-        console.print(
-            "[error]Sandbox crashed while processing command:[/error]",
-            utils.highlight_json_obj(cmd),
-        )
-        return False
-    if sandbox.get_exit_code() != 0:
-        console.print(
-            "[error]Checker compilation failed with exit code:[/error]",
-            sandbox.get_exit_code(),
-        )
-        print(sandbox.get_file_to_string("stderr.txt", maxlen=None))
-        return False
-    return True
-
-
 def _check(
-    problem: DumpedProblem,
     sandbox: SandboxBase,
     testcase: TestcaseIO,
     output_path: pathlib.Path,
+    should_use_python_checker: bool = False,
 ) -> CheckerResult:
-    if not problem.checker:
+    if should_use_python_checker:
         # Use default wcmp checker.
         expected = testcase.output.read_text()
         output = output_path.read_text()
@@ -323,11 +282,13 @@ def _check(
     return CheckerResult(outcome=Outcome.ACCEPTED, message=stderr)
 
 
-def evaluate_single(
-    problem: DumpedProblem,
+# Always assume a `checker` executable in the sandbox if should use checker.
+def evaluate(
     sandbox: SandboxBase,
     testcase: TestcaseIO,
     log: TestcaseLog,
+    artifacts: GradingArtifacts,
+    should_use_python_checker: bool = False,
 ) -> TestcaseEvaluation:
     if log.exitstatus != SandboxBase.EXIT_OK:
         return TestcaseEvaluation(
@@ -340,31 +301,16 @@ def evaluate_single(
         # No output to compare.
         return TestcaseEvaluation(testcase=testcase, log=log, outcome=Outcome.ACCEPTED)
 
-    checker_result = _check(problem, sandbox, testcase, log.stdout_absolute_path)
+    _process_input_artifacts(artifacts, sandbox)
+    checker_result = _check(
+        sandbox,
+        testcase,
+        log.stdout_absolute_path,
+        should_use_python_checker=should_use_python_checker,
+    )
     return TestcaseEvaluation(
         testcase=testcase,
         log=log,
         outcome=checker_result.outcome,
         message=checker_result.message,
     )
-
-
-def evaluate(
-    problem: DumpedProblem,
-    sandbox: SandboxBase,
-    testcases: List[TestcaseIO],
-    testcase_logs: Dict[int, TestcaseLog],
-) -> List[TestcaseEvaluation]:
-    if problem.checker:
-        if not compile_checker(problem.checker, sandbox):
-            return []
-
-    evaluations = []
-    for testcase in testcases:
-        if testcase.index not in testcase_logs:
-            continue
-
-        log = testcase_logs[testcase.index]
-        evaluations.append(evaluate_single(problem, sandbox, testcase, log))
-
-    return evaluations

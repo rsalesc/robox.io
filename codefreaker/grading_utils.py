@@ -1,6 +1,7 @@
 from pathlib import PosixPath
 import pathlib
 from typing import List, Optional
+from codefreaker import config
 from codefreaker.config import Artifact, Language, format_vars
 from codefreaker.grading import steps
 from codefreaker.grading.judge.sandbox import MERGE_STDERR, SandboxParams
@@ -100,6 +101,45 @@ def build_run_grading_artifacts(
             src=PosixPath("stdout.txt"),
             dest=persist_root / f"stdout-{testcase.index}.txt",
             maxlen=steps.MAX_STDOUT_LEN,
+        )
+    )
+    return res
+
+
+def build_checker_compile_grading_artifacts(
+    problem: DumpedProblem, persist_root: pathlib.Path
+) -> GradingArtifacts:
+    res = GradingArtifacts(root=PosixPath("."))
+    if not problem.checker:
+        return res
+
+    checker_path = PosixPath(problem.checker)
+    if not checker_path.is_file():
+        checker_path = config.get_builtin_checker(problem.checker)
+    if not checker_path:
+        return res
+
+    res.inputs.append(GradingFileInput(src=checker_path, dest=PosixPath("checker.cpp")))
+    testlib = config.get_builtin_checker("testlib.h")
+    if testlib.is_file():
+        res.inputs.append(GradingFileInput(src=testlib, dest=PosixPath("testlib.h")))
+    res.outputs.append(
+        GradingFileOutput(
+            src=PosixPath("checker"), dest=persist_root / "checker", executable=True
+        )
+    )
+    return res
+
+
+def build_checker_run_grading_artifacts(
+    problem: DumpedProblem, persist_root: pathlib.Path
+) -> GradingArtifacts:
+    res = GradingArtifacts(root=PosixPath("."))
+    if not problem.checker:
+        return res
+    res.inputs.append(
+        GradingFileInput(
+            src=persist_root / "checker", dest=PosixPath("checker"), executable=True
         )
     )
     return res

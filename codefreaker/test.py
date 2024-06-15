@@ -93,6 +93,36 @@ def _run_testcases(
     return logs
 
 
+def _evaluate_testcases(
+    problem: DumpedProblem,
+    sandbox: SandboxBase,
+    testcases: List[steps.TestcaseIO],
+    testcase_logs: Dict[int, steps.TestcaseLog],
+    persist_root: Optional[pathlib.Path] = pathlib.Path("."),
+) -> List[steps.TestcaseEvaluation]:
+    evaluations = []
+    artifacts = grading_utils.build_checker_run_grading_artifacts(
+        problem,
+        persist_root,
+    )
+    for testcase in testcases:
+        if testcase.index not in testcase_logs:
+            continue
+
+        log = testcase_logs[testcase.index]
+        evaluations.append(
+            steps.evaluate(
+                sandbox,
+                testcase,
+                log,
+                artifacts,
+                should_use_python_checker=not problem.checker,
+            )
+        )
+
+    return evaluations
+
+
 def _pretty_print_output_on_panel(file: pathlib.Path, title: str) -> Panel:
     return Panel(
         testcase_rendering.render_from_file(file),
@@ -252,6 +282,7 @@ def main(
 
     box = stupid_sandbox.StupidSandbox()
     atexit.register(lambda: box.cleanup(delete=not keep_sandbox))
+    persist_root = config.get_empty_app_persist_path()
 
     with console.status(
         f"Preprocessing code for problem [item]{dumped_problem.pretty_name()}[/item] in language [item]{language or get_config().defaultLanguage}[/item]..."
@@ -270,7 +301,21 @@ def main(
                 )
                 return
 
-    persist_root = config.get_empty_app_persist_path()
+    with console.status(
+        f"Compiling checker for problem [item]{dumped_problem.pretty_name()}[/item]..."
+    ):
+        command = "/usr/bin/g++ -std=c++17 -o checker checker.cpp"
+        artifacts = grading_utils.build_checker_compile_grading_artifacts(
+            dumped_problem, persist_root
+        )
+        if dumped_problem.checker and not steps.compile(
+            [command], grading_utils.build_preprocess_sandbox_params(), box, artifacts
+        ):
+            console.print(
+                f"[error]Failed to compile checker for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+            )
+            return
+
     testcase_logs = _run_testcases(dumped_problem, lang, box, testcases, persist_root)
 
     if not testcase_logs:
@@ -279,11 +324,12 @@ def main(
         )
         return
 
-    box.params = steps.get_checker_sandbox_params()
     with console.status(
         f"Evaluating testcases for problem [item]{dumped_problem.pretty_name()}[/item]..."
     ):
-        results = steps.evaluate(dumped_problem, box, testcases, testcase_logs)
+        results = _evaluate_testcases(
+            dumped_problem, box, testcases, testcase_logs, persist_root
+        )
     if not results:
         console.print(
             f"[error]Failed to evaluate testcases for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
