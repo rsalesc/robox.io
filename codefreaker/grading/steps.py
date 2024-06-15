@@ -2,19 +2,14 @@ import dataclasses
 from enum import Enum
 import pathlib
 import shlex
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from rich.text import Text
 
 from codefreaker import utils
 from codefreaker.console import console
-from codefreaker.config import (
-    Language,
-    get_builtin_checker,
-)
-from codefreaker.grading.judge.sandbox import SandboxBase, MERGE_STDERR, SandboxParams
+from codefreaker.grading.judge.sandbox import SandboxBase, SandboxParams
 from codefreaker.grading.judge.storage import copyfileobj
-from codefreaker.schema import DumpedProblem, Problem
 
 MAX_STDOUT_LEN = 1024 * 1024 * 128  # 128 MB
 
@@ -33,11 +28,14 @@ class Outcome(Enum):
 @dataclasses.dataclass
 class GradingFileInput:
     # Source path relative to the FS.
-    src: pathlib.Path
+    src: Optional[pathlib.Path] = None
+    # Digest if we should get file from storage.
+    digest: Optional[str] = None
     # Destination path relative to the sandboox.
     dest: pathlib.Path
     # Whether the destination file should be marked as an executable.
     executable: bool = False
+    # Whether to get file from storage.
 
 
 @dataclasses.dataclass
@@ -45,7 +43,9 @@ class GradingFileOutput:
     # Source path relative to the sandbox.
     src: pathlib.Path
     # Destination path relative to the FS.
-    dest: pathlib.Path
+    dest: Optional[pathlib.Path] = None
+    # Digest if we should put file in storage.
+    digest: Optional[str] = None
     # Whether the destination file should be marked as an executable.
     executable: bool = False
     # Whether the file is optional or not.
@@ -106,6 +106,14 @@ class CheckerResult:
 
 def _process_input_artifacts(artifacts: GradingArtifacts, sandbox: SandboxBase):
     for input_artifact in artifacts.inputs:
+        if input_artifact.digest:
+            sandbox.create_file_from_storage(
+                input_artifact.dest,
+                input_artifact.digest,
+                override=True,
+                executable=input_artifact.executable,
+            )
+            continue
         sandbox.create_file_from_bytes(
             input_artifact.dest,
             (artifacts.root / input_artifact.src).read_bytes(),
@@ -125,6 +133,12 @@ def _process_output_artifacts(
                 f"[error]Artifact [item]{output_artifact.src}[/item] does not exist.[/error]"
             )
             return False
+        if output_artifact.digest:
+            output_artifact.digest = sandbox.get_file_to_storage(
+                output_artifact.src,
+                trunc_len=output_artifact.maxlen,
+            )
+            continue
         dst: pathlib.Path = artifacts.root / output_artifact.dest
         copyfileobj(
             sandbox.get_file(output_artifact.src),
