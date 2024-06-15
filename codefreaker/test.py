@@ -2,9 +2,10 @@ import atexit
 import dataclasses
 import pathlib
 import tempfile
-from typing import List, Optional
+from typing import Dict, List, Optional
 from rich.columns import Columns
 from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, MofNCompleteColumn
 from rich.text import Text
 
 from codefreaker import annotations, grading_utils, metadata, testcase_rendering
@@ -12,8 +13,9 @@ from codefreaker import config
 from codefreaker.config import Language, get_config
 from codefreaker.console import console, multiline_prompt
 from codefreaker.grading import steps
+from codefreaker.grading.judge.sandbox import SandboxBase
 from codefreaker.grading.judge.sandboxes import stupid_sandbox
-from codefreaker.schema import DumpedProblem
+from codefreaker.schema import DumpedProblem, Problem
 
 
 def get_testcase_index(path: pathlib.Path) -> int:
@@ -45,6 +47,50 @@ def get_testcases_io(
         testcases_per_index[index] = steps.TestcaseIO(index=index, output=output_file)
 
     return sorted(testcases_per_index.values(), key=lambda x: x.index)
+
+
+def _run_testcases(
+    problem: Problem,
+    lang: Language,
+    sandbox: SandboxBase,
+    testcases: List[steps.TestcaseIO],
+    persist_root: Optional[pathlib.Path] = pathlib.Path("."),
+) -> Optional[Dict[int, steps.TestcaseLog]]:
+    logs: Dict[int, steps.TestcaseLog] = {}
+
+    # Ensure persist dir exists.
+    persist_root.mkdir(parents=True, exist_ok=True)
+
+    progress = Progress(
+        SpinnerColumn(),
+        *Progress.get_default_columns(),
+        MofNCompleteColumn(),
+        transient=True,
+    )
+    with progress:
+        for testcase in progress.track(testcases, description="Running testcases..."):
+            params = grading_utils.build_run_sandbox_params(
+                problem, testcase.input is not None
+            )
+            artifacts = grading_utils.build_run_grading_artifacts(
+                testcase, persist_root
+            )
+            run_log = steps.run(
+                lang.exec,
+                params,
+                sandbox,
+                artifacts,
+            )
+            if not run_log:
+                logs[testcase.index] = None
+                continue
+            logs[testcase.index] = steps.TestcaseLog(
+                **run_log.__dict__,
+                stdout_absolute_path=persist_root / f"stdout-{testcase.index}.txt",
+                stderr_absolute_path=persist_root / f"stderr-{testcase.index}.txt",
+            )
+
+    return logs
 
 
 def _pretty_print_output_on_panel(file: pathlib.Path, title: str) -> Panel:
@@ -215,7 +261,9 @@ def main(
                 dumped_problem, lang
             )
             sandbox_params = grading_utils.build_preprocess_sandbox_params()
-            artifacts = grading_utils.build_grading_artifacts(dumped_problem, lang)
+            artifacts = grading_utils.build_compile_grading_artifacts(
+                dumped_problem, lang
+            )
             if not steps.compile(preprocess_cmds, sandbox_params, box, artifacts):
                 console.print(
                     f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
@@ -223,9 +271,7 @@ def main(
                 return
 
     persist_root = config.get_empty_app_persist_path()
-
-    box.params = steps.get_run_sandbox_params(lang)
-    testcase_logs = steps.run(dumped_problem, lang, box, testcases, persist_root)
+    testcase_logs = _run_testcases(dumped_problem, lang, box, testcases, persist_root)
 
     if not testcase_logs:
         console.print(

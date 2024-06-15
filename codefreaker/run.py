@@ -32,7 +32,7 @@ def main(
 
     preprocess_cmds = grading_utils.build_preprocess_commands(dumped_problem, lang)
     sandbox_params = grading_utils.build_preprocess_sandbox_params()
-    artifacts = grading_utils.build_grading_artifacts(dumped_problem, lang)
+    artifacts = grading_utils.build_compile_grading_artifacts(dumped_problem, lang)
 
     if not steps.compile(preprocess_cmds, sandbox_params, box, artifacts):
         stderr_console.print(

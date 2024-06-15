@@ -5,14 +5,11 @@ import shlex
 from typing import Dict, List, Optional
 
 from rich.text import Text
-from rich.progress import Progress, SpinnerColumn, MofNCompleteColumn
 
 from codefreaker import utils
 from codefreaker.console import console
 from codefreaker.config import (
-    Artifact,
     Language,
-    format_vars,
     get_builtin_checker,
 )
 from codefreaker.grading.judge.sandbox import SandboxBase, MERGE_STDERR, SandboxParams
@@ -53,6 +50,8 @@ class GradingFileOutput:
     executable: bool = False
     # Whether the file is optional or not.
     optional: bool = False
+    # Whether to cap its size
+    maxlen: Optional[int] = None
 
 
 @dataclasses.dataclass
@@ -79,11 +78,14 @@ class PreprocessLog:
 
 
 @dataclasses.dataclass
-class TestcaseLog:
+class RunLog:
     exitcode: int
     exitstatus: str
     time: float
 
+
+@dataclasses.dataclass
+class TestcaseLog(RunLog):
     stdout_absolute_path: pathlib.Path
     stderr_absolute_path: pathlib.Path
 
@@ -102,18 +104,45 @@ class CheckerResult:
     message: str = ""
 
 
+def _process_input_artifacts(artifacts: GradingArtifacts, sandbox: SandboxBase):
+    for input_artifact in artifacts.inputs:
+        sandbox.create_file_from_bytes(
+            input_artifact.dest,
+            (artifacts.root / input_artifact.src).read_bytes(),
+            executable=input_artifact.executable,
+            override=True,
+        )
+
+
+def _process_output_artifacts(
+    artifacts: GradingArtifacts, sandbox: SandboxBase
+) -> bool:
+    for output_artifact in artifacts.outputs:
+        if not sandbox.file_exists(output_artifact.src):
+            if output_artifact.optional:
+                continue
+            console.print(
+                f"[error]Artifact [item]{output_artifact.src}[/item] does not exist.[/error]"
+            )
+            return False
+        dst: pathlib.Path = artifacts.root / output_artifact.dest
+        copyfileobj(
+            sandbox.get_file(output_artifact.src),
+            dst.open("wb"),
+            maxlen=output_artifact.maxlen,
+        )
+        if output_artifact.executable:
+            dst.chmod(0o755)
+    return True
+
+
 def compile(
     commands: List[str],
     params: SandboxParams,
     sandbox: SandboxBase,
     artifacts: GradingArtifacts,
 ) -> bool:
-    for input_artifact in artifacts.inputs:
-        sandbox.create_file_from_bytes(
-            input_artifact.dest,
-            input_artifact.src.relative_to(artifacts.root).read_bytes(),
-            executable=input_artifact.executable,
-        )
+    _process_input_artifacts(artifacts, sandbox)
 
     if not commands:
         # Code does not need preprocessing of any kind.
@@ -157,57 +186,18 @@ def compile(
         console.print(Text.from_ansi(logs[-1].log), style="default")
         return False
 
-    for output_artifact in artifacts.outputs:
-        if not sandbox.file_exists(output_artifact.src):
-            if output_artifact.optional:
-                continue
-            console.print(
-                f"[error]Artifact [item]{output_artifact.src}[/item] does not exist after preprocessing.[/error]"
-            )
-            return False
-        dst = output_artifact.dest.relative_to(artifacts.root)
-        copyfileobj(
-            sandbox.get_file(output_artifact.src),
-            dst.open("wb"),
-        )
-        if output_artifact.executable:
-            dst.chmod(0o755)
-
-    return True
+    return _process_output_artifacts(artifacts, sandbox)
 
 
-def get_run_sandbox_params(lang: Language) -> SandboxParams:
-    return SandboxParams()
-
-
-def run_single(
-    problem: Problem,
-    lang: Language,
+def run(
+    command: str,
+    params: SandboxParams,
     sandbox: SandboxBase,
-    testcase: TestcaseIO,
-    persist_root: pathlib.Path = pathlib.Path("."),
-) -> Optional[TestcaseLog]:
-    cmd = shlex.split(lang.exec)
-
-    time_limit = problem.timeLimit or 1000
-    sandbox.params.timeout = time_limit * 2
-    sandbox.params.wallclock_timeout = time_limit * 5
-    sandbox.params.address_space = problem.memoryLimit or 1024  # 1 GB
-
-    if testcase.input:
-        sandbox.create_file_from_string(
-            pathlib.PosixPath("stdin.txt"),
-            testcase.input.read_text(),
-            override=True,
-        )
-    sandbox.params.set_stdall(
-        stdin="stdin.txt" if testcase.input else None,
-        stdout="stdout.txt",
-        stderr=MERGE_STDERR,
-    )
-
-    stdout_persisted_path = persist_root / f"stdout-{testcase.index}.txt"
-    stderr_persisted_path = persist_root / f"stderr-{testcase.index}.txt"
+    artifacts: GradingArtifacts,
+) -> Optional[RunLog]:
+    _process_input_artifacts(artifacts, sandbox)
+    cmd = shlex.split(command)
+    sandbox.params = params
 
     if not sandbox.execute_without_std(cmd, wait=True):
         console.print(
@@ -216,47 +206,14 @@ def run_single(
         )
         return None
 
-    copyfileobj(
-        sandbox.get_file("stdout.txt"),
-        stdout_persisted_path.open("wb"),
-        maxlen=MAX_STDOUT_LEN,
-    )
+    if not _process_output_artifacts(artifacts, sandbox):
+        return None
 
-    return TestcaseLog(
+    return RunLog(
         exitcode=sandbox.get_exit_code(),
         exitstatus=sandbox.get_exit_status(),
         time=sandbox.get_execution_time(),
-        stdout_absolute_path=stdout_persisted_path.absolute(),
-        stderr_absolute_path=stderr_persisted_path.absolute(),
     )
-
-
-def run(
-    problem: Problem,
-    lang: Language,
-    sandbox: SandboxBase,
-    testcases: List[TestcaseIO],
-    persist_root: pathlib.Path = pathlib.Path("."),
-) -> Optional[Dict[int, TestcaseLog]]:
-    logs: Dict[int, TestcaseLog] = {}
-
-    # Ensure persist dir exists.
-    persist_root.mkdir(parents=True, exist_ok=True)
-
-    progress = Progress(
-        SpinnerColumn(),
-        *Progress.get_default_columns(),
-        MofNCompleteColumn(),
-        transient=True,
-    )
-    with progress:
-        for testcase in progress.track(testcases, description="Running testcases..."):
-
-            logs[testcase.index] = run_single(
-                problem, lang, sandbox, testcase, persist_root
-            )
-
-    return logs
 
 
 def _normalize_checked_words(s: str) -> List[str]:

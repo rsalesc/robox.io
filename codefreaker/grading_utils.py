@@ -2,13 +2,15 @@ from pathlib import PosixPath
 import pathlib
 from typing import List, Optional
 from codefreaker.config import Artifact, Language, format_vars
-from codefreaker.grading.judge.sandbox import SandboxParams
+from codefreaker.grading import steps
+from codefreaker.grading.judge.sandbox import MERGE_STDERR, SandboxParams
 from codefreaker.grading.steps import (
     GradingArtifacts,
     GradingFileInput,
     GradingFileOutput,
+    TestcaseIO,
 )
-from codefreaker.schema import DumpedProblem
+from codefreaker.schema import DumpedProblem, Problem
 
 
 def build_formatted_command(
@@ -36,7 +38,9 @@ def build_preprocess_sandbox_params() -> SandboxParams:
     return params
 
 
-def build_grading_artifacts(problem: DumpedProblem, lang: Language) -> GradingArtifacts:
+def build_compile_grading_artifacts(
+    problem: DumpedProblem, lang: Language
+) -> GradingArtifacts:
     res = GradingArtifacts(root=PosixPath("."))
     file = lang.get_file(problem.code)
     submit_file = lang.get_submit_file(problem.code)
@@ -65,4 +69,37 @@ def build_grading_artifacts(problem: DumpedProblem, lang: Language) -> GradingAr
             )
         )
 
+    return res
+
+
+def build_run_sandbox_params(problem: Problem, has_input: bool) -> SandboxParams:
+    params = SandboxParams()
+    params.timeout = problem.timeLimit * 2
+    params.wallclock_timeout = problem.timeLimit * 5
+    params.address_space = problem.memoryLimit or 1024  # 1 GB
+    params.set_stdall(
+        stdin="stdin.txt" if has_input else None,
+        stdout="stdout.txt",
+        stderr=MERGE_STDERR,
+    )
+    return params
+
+
+def build_run_grading_artifacts(
+    testcase: TestcaseIO, persist_root: pathlib.Path
+) -> GradingArtifacts:
+    res = GradingArtifacts(root=PosixPath("."))
+    res.inputs.append(
+        GradingFileInput(
+            src=testcase.input,
+            dest=PosixPath("stdin.txt"),
+        )
+    )
+    res.outputs.append(
+        GradingFileOutput(
+            src=PosixPath("stdout.txt"),
+            dest=persist_root / f"stdout-{testcase.index}.txt",
+            maxlen=steps.MAX_STDOUT_LEN,
+        )
+    )
     return res
