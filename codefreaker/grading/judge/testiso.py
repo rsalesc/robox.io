@@ -3,6 +3,7 @@ import pathlib
 
 from rich.console import Console
 
+from codefreaker import grading_utils
 from codefreaker.grading import steps
 from codefreaker.grading.judge.sandboxes.isolate import IsolateSandbox
 from . import storage
@@ -27,7 +28,7 @@ int main() {
     )
 
     sandbox = IsolateSandbox(
-        cache, params=steps.get_preprocess_sandbox_params(None), debug=True
+        cache, params=grading_utils.build_preprocess_sandbox_params(), debug=True
     )
     atexit.register(sandbox.cleanup)
     sandbox.create_file_from_storage(pathlib.PosixPath("run.cpp"), python_file)

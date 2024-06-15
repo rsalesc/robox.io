@@ -7,7 +7,7 @@ from rich.columns import Columns
 from rich.panel import Panel
 from rich.text import Text
 
-from codefreaker import annotations, metadata, testcase_rendering
+from codefreaker import annotations, grading_utils, metadata, testcase_rendering
 from codefreaker import config
 from codefreaker.config import Language, get_config
 from codefreaker.console import console, multiline_prompt
@@ -204,17 +204,23 @@ def main(
         )
         return
 
-    box = stupid_sandbox.StupidSandbox(params=steps.get_preprocess_sandbox_params(lang))
+    box = stupid_sandbox.StupidSandbox()
     atexit.register(lambda: box.cleanup(delete=not keep_sandbox))
 
     with console.status(
         f"Preprocessing code for problem [item]{dumped_problem.pretty_name()}[/item] in language [item]{language or get_config().defaultLanguage}[/item]..."
     ):
-        if not steps.preprocess(dumped_problem, lang, box):
-            console.print(
-                f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+        if lang.preprocess:
+            preprocess_cmds = grading_utils.build_preprocess_commands(
+                dumped_problem, lang
             )
-            return
+            sandbox_params = grading_utils.build_preprocess_sandbox_params()
+            artifacts = grading_utils.build_grading_artifacts(dumped_problem, lang)
+            if not steps.compile(preprocess_cmds, sandbox_params, box, artifacts):
+                console.print(
+                    f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+                )
+                return
 
     persist_root = config.get_empty_app_persist_path()
 
