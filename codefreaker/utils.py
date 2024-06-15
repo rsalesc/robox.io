@@ -1,6 +1,6 @@
 import json
 import pathlib
-from typing import Any, Optional, Type, TypeVar, Union
+from typing import Any, Optional, Type, TypeVar
 
 from pydantic import BaseModel
 import rich

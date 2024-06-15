@@ -1,6 +1,6 @@
 from pathlib import PosixPath
 import pathlib
-from typing import List, Optional
+from typing import List
 from codefreaker import config
 from codefreaker.config import Artifact, Language, format_vars
 from codefreaker.grading import steps
