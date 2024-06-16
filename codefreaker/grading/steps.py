@@ -26,16 +26,20 @@ class Outcome(Enum):
 
 
 @dataclasses.dataclass
+class DigestHolder:
+    value: Optional[str] = None
+
+
+@dataclasses.dataclass
 class GradingFileInput:
     # Destination path relative to the sandboox.
     dest: pathlib.Path
     # Source path relative to the FS.
     src: Optional[pathlib.Path] = None
     # Digest if we should get file from storage.
-    digest: Optional[str] = None
+    digest: Optional[DigestHolder] = None
     # Whether the destination file should be marked as an executable.
     executable: bool = False
-    # Whether to get file from storage.
 
 
 @dataclasses.dataclass
@@ -45,13 +49,15 @@ class GradingFileOutput:
     # Destination path relative to the FS.
     dest: Optional[pathlib.Path] = None
     # Digest if we should put file in storage.
-    digest: Optional[str] = None
+    digest: Optional[DigestHolder] = None
     # Whether the destination file should be marked as an executable.
     executable: bool = False
     # Whether the file is optional or not.
     optional: bool = False
     # Whether to cap its size
     maxlen: Optional[int] = None
+    # Whether the file is just an intermediate file that should not be tracked.
+    intermediate: bool = False
 
 
 @dataclasses.dataclass
@@ -106,10 +112,10 @@ class CheckerResult:
 
 def _process_input_artifacts(artifacts: GradingArtifacts, sandbox: SandboxBase):
     for input_artifact in artifacts.inputs:
-        if input_artifact.digest:
+        if input_artifact.digest is not None:
             sandbox.create_file_from_storage(
                 input_artifact.dest,
-                input_artifact.digest,
+                input_artifact.digest.value,
                 override=True,
                 executable=input_artifact.executable,
             )
@@ -133,8 +139,8 @@ def _process_output_artifacts(
                 f"[error]Artifact [item]{output_artifact.src}[/item] does not exist.[/error]"
             )
             return False
-        if output_artifact.digest:
-            output_artifact.digest = sandbox.get_file_to_storage(
+        if output_artifact.digest is not None:
+            output_artifact.digest.value = sandbox.get_file_to_storage(
                 output_artifact.src,
                 trunc_len=output_artifact.maxlen,
             )
