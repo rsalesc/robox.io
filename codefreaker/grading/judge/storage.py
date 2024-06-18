@@ -104,6 +104,11 @@ class Storage(ABC):
         pass
 
     @abstractmethod
+    def exists(self, filename: str) -> bool:
+        """Check if a file exists in the storage."""
+        pass
+
+    @abstractmethod
     def describe(self, filename: str) -> str:
         """Return the description of a file given its filename.
         filename (unicode): the filename of the file to describe.
@@ -153,6 +158,9 @@ class NullStorage(Storage):
         return None
 
     def commit_file(self, file: PendingFile, desc: str = "") -> bool:
+        return False
+
+    def exists(self, filename: str) -> bool:
         return False
 
     def describe(self, digest: str) -> str:
@@ -223,6 +231,12 @@ class FilesystemStorage(Storage):
         else:
             os.unlink(file.fd.name)
             return False
+
+    def exists(self, filename: str) -> bool:
+        """See FileCacherBackend.exists()."""
+        file_path: pathlib.Path = self.path / filename
+
+        return file_path.is_file()
 
     def describe(self, filename: str) -> str:
         """See FileCacherBackend.describe()."""

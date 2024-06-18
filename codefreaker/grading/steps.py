@@ -4,6 +4,7 @@ import pathlib
 import shlex
 from typing import List, Optional
 
+from pydantic import BaseModel
 from rich.text import Text
 
 from codefreaker import utils
@@ -25,13 +26,11 @@ class Outcome(Enum):
     INTERNAL_ERROR = "internal-error"
 
 
-@dataclasses.dataclass
-class DigestHolder:
+class DigestHolder(BaseModel):
     value: Optional[str] = None
 
 
-@dataclasses.dataclass
-class GradingFileInput:
+class GradingFileInput(BaseModel):
     # Destination path relative to the sandboox.
     dest: pathlib.Path
     # Source path relative to the FS.
@@ -42,8 +41,7 @@ class GradingFileInput:
     executable: bool = False
 
 
-@dataclasses.dataclass
-class GradingFileOutput:
+class GradingFileOutput(BaseModel):
     # Source path relative to the sandbox.
     src: pathlib.Path
     # Destination path relative to the FS.
@@ -60,13 +58,13 @@ class GradingFileOutput:
     intermediate: bool = False
 
 
-@dataclasses.dataclass
-class GradingArtifacts:
+class GradingArtifacts(BaseModel):
+    # Root directory for the produced artifacts.
     root: Optional[pathlib.Path] = pathlib.PosixPath(".")
     # List of input files to copy to the sandbox.
-    inputs: List[GradingFileInput] = dataclasses.field(default_factory=list)
+    inputs: Optional[List[GradingFileInput]] = []
     # List of output files to copy from the sandbox.
-    outputs: List[GradingFileOutput] = dataclasses.field(default_factory=list)
+    outputs: Optional[List[GradingFileOutput]] = []
 
 
 @dataclasses.dataclass
