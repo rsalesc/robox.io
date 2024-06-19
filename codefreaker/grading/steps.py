@@ -11,6 +11,7 @@ from codefreaker import utils
 from codefreaker.console import console
 from codefreaker.grading.judge.sandbox import SandboxBase, SandboxParams
 from codefreaker.grading.judge.storage import copyfileobj
+from codefreaker.config import get_testlib
 
 MAX_STDOUT_LEN = 1024 * 1024 * 128  # 128 MB
 
@@ -152,6 +153,10 @@ def _process_output_artifacts(
         if output_artifact.executable:
             dst.chmod(0o755)
     return True
+
+
+def testlib_grading_input() -> GradingFileInput:
+    return GradingFileInput(src=get_testlib(), dest=pathlib.Path("testlib.h"))
 
 
 def compile(

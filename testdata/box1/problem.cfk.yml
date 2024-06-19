@@ -5,8 +5,12 @@ memoryLimit: 256
 generators:
   - name: "gen1"
     path: "gen1.cpp"
+  - name: "gen2"
+    path: "gen2.cpp"
 testcases:
   - name: "gen1"
     testcaseGlob: "tests/*.in"
     generators:
       - name: "gen1"
+      - name: "gen2"
+        args: "424242"

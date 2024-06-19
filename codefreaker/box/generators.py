@@ -41,6 +41,7 @@ def _compile_generator(generator: CodeItem) -> str:
     compiled_digest = DigestHolder()
 
     artifacts = GradingArtifacts()
+    artifacts.inputs.append(steps.testlib_grading_input())
     artifacts.inputs.append(
         GradingFileInput(src=generator_path, dest=PosixPath(file_mapping.compilable))
     )
