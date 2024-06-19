@@ -110,7 +110,7 @@ class Environment(BaseModel):
 
 
 def get_environment_path(env: str) -> pathlib.Path:
-    return config.get_app_file(pathlib.PosixPath("environments") / f"{env}.cfk.yml")
+    return config.get_app_file(pathlib.PosixPath("envs") / f"{env}.cfk.yml")
 
 
 @functools.cache
@@ -156,9 +156,10 @@ def _merge_compilation_configs(
     )
     for cfg in compilation_configs:
         merged_cfg.commands = cfg.commands or merged_cfg.commands
-        merged_cfg.sandbox = _merge_shallow_models(
-            EnvironmentSandbox, cfg.sandbox, merged_cfg.sandbox
-        )
+        if cfg.sandbox is not None:
+            merged_cfg.sandbox = _merge_shallow_models(
+                EnvironmentSandbox, merged_cfg.sandbox, cfg.sandbox
+            )
     return merged_cfg
 
 

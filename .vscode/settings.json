@@ -3,5 +3,8 @@
   "files.associations": {
     "*.jinja": "c",
     "tuple": "c"
-  }
+  },
+  "python.analysis.extraPaths": [
+    "./codefreaker"
+  ]
 }

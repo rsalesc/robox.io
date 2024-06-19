@@ -57,8 +57,9 @@ def is_artifact_ok(artifact: GradingArtifacts, storage: Storage) -> bool:
         if output.optional or output.intermediate:
             continue
         if output.digest is not None:
-            if output.digest.value and not storage.exists(output.digest.value):
+            if output.digest.value is None or not storage.exists(output.digest.value):
                 return False
+            return True
         file_path: pathlib.Path = artifact.root / output.dest
         if not file_path.is_file():
             return False
@@ -83,8 +84,8 @@ class DependencyCache:
         self.root = root
         self.storage = storage
 
-    def _cache_name(self):
-        return self.root / ".cache_db"
+    def _cache_name(self) -> str:
+        return str(self.root / ".cache_db")
 
     def _find_in_cache(self, key: str) -> Optional[List[Optional[str]]]:
         with shelve.open(self._cache_name()) as db:

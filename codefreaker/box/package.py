@@ -12,7 +12,8 @@ from codefreaker.grading.judge.cacher import FileCacher
 from codefreaker.grading.judge.sandbox import SandboxBase
 from codefreaker.grading.judge.storage import FilesystemStorage, Storage
 
-YAML_NAME = "problem.cfk.yaml"
+YAML_NAME = "problem.cfk.yml"
+TEMP_DIR = None
 
 
 @functools.cache
@@ -37,7 +38,7 @@ def find_problem_package(root: pathlib.Path = pathlib.Path(".")) -> Optional[Pac
 def find_problem_package_or_die(root: pathlib.Path = pathlib.Path(".")) -> Package:
     package = find_problem_package(root)
     if package is None:
-        console.console.print(f"Puzzle not found in {root}", style="error")
+        console.console.print(f"Problem not found in {root.absolute()}", style="error")
         raise typer.Exit(1)
     return package
 
@@ -79,7 +80,7 @@ def get_file_cacher(root: pathlib.Path = pathlib.Path(".")) -> FileCacher:
 
 
 def get_new_sandbox(root: pathlib.Path = pathlib.Path(".")) -> SandboxBase:
-    return get_sandbox_type()(file_cacher=get_file_cacher(root))
+    return get_sandbox_type()(file_cacher=get_file_cacher(root), temp_dir=TEMP_DIR)
 
 
 @functools.cache

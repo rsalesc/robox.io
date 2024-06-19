@@ -22,3 +22,5 @@ languages:
         - "g++ -std=c++17 -o {executable} {compilable}"
     execution:
       command: "./{executable}"
+    fileMapping:
+      compilable: "compilable.cpp"

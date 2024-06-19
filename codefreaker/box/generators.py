@@ -1,4 +1,5 @@
 from pathlib import PosixPath
+from typing import Dict
 from codefreaker.box import package
 from codefreaker.box.code import find_language_name
 from codefreaker.box.environment import (
@@ -38,7 +39,7 @@ def _compile_generator(generator: CodeItem) -> str:
     artifacts.outputs.append(
         GradingFileOutput(
             src=PosixPath(file_mapping.executable),
-            dest=compiled_digest,
+            digest=compiled_digest,
             executable=True,
         )
     )
@@ -54,7 +55,7 @@ def _compile_generator(generator: CodeItem) -> str:
     return compiled_digest.value
 
 
-def compile_generators():
+def compile_generators() -> Dict[str, str]:
     pkg = package.find_problem_package_or_die()
 
     generator_to_compiled_digest = {}
@@ -62,7 +63,7 @@ def compile_generators():
     for generator in pkg.generators:
         generator_to_compiled_digest[generator.name] = _compile_generator(generator)
 
-    print(generator_to_compiled_digest)
+    return generator_to_compiled_digest
 
 
 def generate_testcases():
