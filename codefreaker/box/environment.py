@@ -5,6 +5,9 @@ from pydantic import BaseModel
 import typer
 
 from codefreaker import config, console, utils
+from codefreaker.grading.judge.sandbox import SandboxBase, SandboxParams
+from codefreaker.grading.judge.sandboxes.isolate import IsolateSandbox
+from codefreaker.grading.judge.sandboxes.stupid_sandbox import StupidSandbox
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -195,3 +198,43 @@ def get_file_mapping(language: str) -> FileMapping:
         environment.defaultFileMapping or FileMapping(),
         get_language(language).fileMapping or FileMapping(),
     )
+
+
+@functools.cache
+def get_sandbox_type() -> Type[SandboxBase]:
+    used_sandbox = get_environment().sandbox
+    if used_sandbox == "stupid":
+        return StupidSandbox
+    if used_sandbox == "isolate":
+        return IsolateSandbox
+    return StupidSandbox
+
+
+def get_mapped_commands(
+    commands: List[str], mapping: Optional[FileMapping] = None
+) -> List[str]:
+    mapping = mapping or FileMapping()
+    return [cmd.format(**mapping.model_dump()) for cmd in commands]
+
+
+def get_mapped_command(command: str, mapping: Optional[FileMapping] = None) -> str:
+    return get_mapped_commands([command], mapping)[0]
+
+
+def get_sandbox_params_from_config(config: EnvironmentSandbox) -> SandboxParams:
+    params = SandboxParams()
+    if config.timeLimit is not None:
+        params.timeout = config.timeLimit
+    if config.wallTimeLimit is not None:
+        params.wallclock_timeout = config.wallTimeLimit
+    if config.memoryLimit is not None:
+        params.address_space = config.memoryLimit
+    if config.maxProcesses is not None:
+        params.max_processes = config.maxProcesses
+    if config.preserveEnv:
+        params.preserve_env = True
+    if config.mirrorDirs:
+        for dir in config.mirrorDirs:
+            path = pathlib.Path(dir)
+            params.add_mapped_directory(path)
+    return params

@@ -103,6 +103,8 @@ class DependencyCache:
             return
         try:
             yield
+        except:
+            raise
         finally:
             self.store_in_cache(commands, artifact_list)
 
