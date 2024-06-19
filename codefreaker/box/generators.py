@@ -76,7 +76,7 @@ def _copy_testcase_over(testcase: Testcase, group_path: pathlib.Path, i: int):
         str(testcase.inputPath),
         _get_group_input(group_path, i),
     )
-    if testcase.outputPath.is_file():
+    if testcase.outputPath is not None and testcase.outputPath.is_file():
         shutil.copy(
             str(testcase.outputPath),
             _get_group_output(group_path, i),
@@ -146,6 +146,10 @@ def generate_testcases():
         group_path = package.get_build_testgroup_path(testcase.name)
 
         i = 0
+        # Individual testcases.
+        for tc in testcase.testcases or []:
+            _copy_testcase_over(tc, group_path, i)
+            i += 1
 
         # Glob testcases.
         if testcase.testcaseGlob:

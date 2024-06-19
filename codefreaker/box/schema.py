@@ -30,7 +30,7 @@ class Testcase(BaseModel):
     inputPath: pathlib.Path
 
     # The path of the output file, relative to the package directory.
-    outputPath: pathlib.Path
+    outputPath: Optional[pathlib.Path] = None
 
 
 class GeneratorCall(BaseModel):
