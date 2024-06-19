@@ -53,13 +53,14 @@ def _compile_generator(generator: CodeItem) -> str:
         )
     )
 
-    with dependency_cache(commands, [artifacts]):
-        steps.compile(
-            commands=commands,
-            params=sandbox_params,
-            artifacts=artifacts,
-            sandbox=sandbox,
-        )
+    with dependency_cache(commands, [artifacts]) as is_cached:
+        if not is_cached:
+            steps.compile(
+                commands=commands,
+                params=sandbox_params,
+                artifacts=artifacts,
+                sandbox=sandbox,
+            )
 
     return compiled_digest.value
 
@@ -123,8 +124,9 @@ def _run_generator(
         )
     )
 
-    with dependency_cache([command], [artifacts]):
-        steps.run(command, sandbox_params, sandbox, artifacts)
+    with dependency_cache([command], [artifacts]) as is_cached:
+        if not is_cached:
+            steps.run(command, sandbox_params, sandbox, artifacts)
 
 
 def compile_generators() -> Dict[str, str]:

@@ -1,4 +1,7 @@
 import hashlib
+from typing import BinaryIO
+
+import gevent
 
 
 class Digester:
@@ -14,3 +17,19 @@ class Digester:
     def digest(self):
         """Return the digest as an hex string."""
         return self._hasher.digest().hex()
+
+
+def digest_cooperatively_into_digester(
+    f: BinaryIO, digester: Digester, chunk_size: int = 2**20
+):
+    buf = f.read(chunk_size)
+    while len(buf) > 0:
+        digester.update(buf)
+        gevent.sleep(0)
+        buf = f.read(chunk_size)
+
+
+def digest_cooperatively(f: BinaryIO, chunk_size: int = 2**20):
+    d = Digester()
+    digest_cooperatively_into_digester(f, d, chunk_size)
+    return d.digest()

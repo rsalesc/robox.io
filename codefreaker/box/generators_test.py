@@ -20,18 +20,26 @@ def test_generator_compilation(pkg_from_testdata: pathlib.Path):
 
 
 @pytest.mark.test_pkg("box1")
-def test_generator_compilation_does_not_cache_on_change(
+def test_generator_compilation_cache_works(
     pkg_from_testdata: pathlib.Path,
 ):
     # Run the first time.
     generate_testcases()
     assert (package.get_build_testgroup_path("gen1") / "001.in").read_text() == "123\n"
-    # Change the generator.
+    assert (
+        package.get_build_testgroup_path("gen1") / "002.in"
+    ).read_text() == "424242\n"
+
+    # Change the generator `gen1`, but keep `gen2` as is.
     gen_path = pkg_from_testdata / "gen1.cpp"
     gen_path.write_text(gen_path.read_text().replace("123", "4567"))
+
     # Run the second time.
     generate_testcases()
     assert (package.get_build_testgroup_path("gen1") / "001.in").read_text() == "4567\n"
+    assert (
+        package.get_build_testgroup_path("gen1") / "002.in"
+    ).read_text() == "424242\n"
 
     # Debug when fail.
     print_directory_tree(pkg_from_testdata)
