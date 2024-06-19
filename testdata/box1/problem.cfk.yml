@@ -7,5 +7,6 @@ generators:
     path: "gen1.cpp"
 testcases:
   - name: "gen1"
+    testcaseGlob: "tests/*.in"
     generators:
       - name: "gen1"

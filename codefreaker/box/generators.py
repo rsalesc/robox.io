@@ -1,5 +1,7 @@
 from pathlib import PosixPath
+import pathlib
 import shlex
+import shutil
 from typing import Dict
 
 import typer
@@ -13,7 +15,7 @@ from codefreaker.box.environment import (
     get_mapped_commands,
     get_sandbox_params_from_config,
 )
-from codefreaker.box.schema import CodeItem, Generator, GeneratorCall
+from codefreaker.box.schema import CodeItem, Generator, GeneratorCall, Testcase
 from codefreaker.grading import steps
 from codefreaker.grading.steps import (
     DigestHolder,
@@ -61,11 +63,31 @@ def _compile_generator(generator: CodeItem) -> str:
     return compiled_digest.value
 
 
+def _get_group_input(group_path: pathlib.Path, i: int) -> pathlib.Path:
+    return group_path / f"{i:03d}.in"
+
+
+def _get_group_output(group_path: pathlib.Path, i: int) -> pathlib.Path:
+    return group_path / f"{i:03d}.out"
+
+
+def _copy_testcase_over(testcase: Testcase, group_path: pathlib.Path, i: int):
+    shutil.copy(
+        str(testcase.inputPath),
+        _get_group_input(group_path, i),
+    )
+    if testcase.outputPath.is_file():
+        shutil.copy(
+            str(testcase.outputPath),
+            _get_group_output(group_path, i),
+        )
+
+
 def _run_generator(
     generator: Generator,
     args: str,
     compiled_digest: str,
-    group_path: PosixPath,
+    group_path: pathlib.Path,
     i: int = 0,
 ):
     language = find_language_name(generator)
@@ -93,11 +115,10 @@ def _run_generator(
             executable=True,
         )
     )
-    output_fn = f"{i:03d}.in"
     artifacts.outputs.append(
         GradingFileOutput(
             src=PosixPath(file_mapping.output),
-            dest=group_path / output_fn,
+            dest=_get_group_input(group_path, i),
         )
     )
 
@@ -125,6 +146,18 @@ def generate_testcases():
         group_path = package.get_build_testgroup_path(testcase.name)
 
         i = 0
+
+        # Glob testcases.
+        if testcase.testcaseGlob:
+            matched_inputs = sorted(PosixPath().glob(testcase.testcaseGlob))
+
+            for input_path in matched_inputs:
+                if not input_path.is_file() or input_path.suffix != ".in":
+                    continue
+                output_path = input_path.parent / f"{input_path.stem}.out"
+                tc = Testcase(inputPath=input_path, outputPath=output_path)
+                _copy_testcase_over(tc, group_path, i)
+                i += 1
 
         # Run single generators.
         for generator_call in testcase.generators:

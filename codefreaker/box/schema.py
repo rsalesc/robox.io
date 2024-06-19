@@ -1,4 +1,5 @@
 from enum import Enum
+import pathlib
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -26,14 +27,10 @@ class CodeItem(BaseModel):
 
 class Testcase(BaseModel):
     # The path of the input file, relative to the package directory.
-    # In case this is given through a `testcasePattern`, this is a Python
-    # regex that matches input file paths relative to the package directory.
-    inputPath: str
+    inputPath: pathlib.Path
 
     # The path of the output file, relative to the package directory.
-    # In case this is given through a `testcasePattern`, this is a Python
-    # regex that matches output file paths relative to the package directory.
-    outputPath: str
+    outputPath: pathlib.Path
 
 
 class GeneratorCall(BaseModel):
@@ -55,9 +52,11 @@ class TestcaseGroup(BaseModel):
     # to add to this group.
     testcases: Optional[List[Testcase]] = []
 
-    # A Python glob that matches input/output file paths relative to the
-    # package directory. The matched files will be added to this group.
-    testcaseGlob: Optional[Testcase] = None
+    # A Python glob that matches input file paths relative to the
+    # package directory. The globbed files should end with the extension
+    # ".in", and their corresponding outputs should have the same file name,
+    # but ending with ".out".
+    testcaseGlob: Optional[str] = None
 
     # The generators to call to generate testcases for this group.
     generators: Optional[List[GeneratorCall]] = []
