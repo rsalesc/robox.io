@@ -3,6 +3,7 @@ import shutil
 import subprocess
 from typing import Any, Dict, List, Optional
 import importlib.resources
+import requests
 import typer
 import functools
 import pathlib
@@ -106,8 +107,42 @@ def get_app_file(path: pathlib.Path) -> pathlib.Path:
     return file_path
 
 
+def _download_checker(name: str, save_at: pathlib.Path):
+    console.print(f"Downloading checker {name}...")
+    r = requests.get(
+        f"https://raw.githubusercontent.com/MikeMirzayanov/testlib/master/checkers/{name}"
+    )
+
+    if r.ok:
+        save_at.parent.mkdir(parents=True, exist_ok=True)
+        with save_at.open("wb") as f:
+            f.write(r.content)
+
+
+def _download_testlib(name: str, save_at: pathlib.Path):
+    console.print("Downloading testlib.h...")
+    r = requests.get(
+        "https://raw.githubusercontent.com/MikeMirzayanov/testlib/master/testlib.h"
+    )
+
+    if r.ok:
+        save_at.parent.mkdir(parents=True, exist_ok=True)
+        with save_at.open("wb") as f:
+            f.write(r.content)
+
+
 def get_builtin_checker(name: str) -> pathlib.Path:
-    return get_app_file(pathlib.Path("checkers") / name)
+    app_file = get_app_file(pathlib.Path("checkers") / name)
+    if not app_file.exists():
+        _download_checker(name, app_file)
+    return app_file
+
+
+def get_testlib() -> pathlib.Path:
+    app_file = get_app_file(pathlib.Path("testlib.h"))
+    if not app_file.exists():
+        _download_testlib("testlib.h", app_file)
+    return app_file
 
 
 def get_default_config_path() -> pathlib.Path:

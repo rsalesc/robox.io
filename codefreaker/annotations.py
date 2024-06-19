@@ -42,7 +42,6 @@ def _get_checker_options():
         options.update(_list_files(file))
 
     options.update(_list_files(config.get_app_path() / "checkers"))
-    options.remove("testlib.h")
     options.remove("boilerplate.cpp")
     return sorted(options)
 

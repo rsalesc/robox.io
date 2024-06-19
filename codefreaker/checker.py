@@ -5,7 +5,7 @@ import typer
 
 from codefreaker import annotations, metadata, utils
 from codefreaker import config
-from codefreaker.config import get_builtin_checker
+from codefreaker.config import get_builtin_checker, get_testlib
 from codefreaker.console import console
 
 
@@ -36,7 +36,7 @@ def add(
         console.print(f"[error]Template file {template} not found.[/error]")
         return
 
-    testlib_path = get_builtin_checker("testlib.h")
+    testlib_path = get_testlib()
     if not testlib_path.is_file():
         console.print("[error]Testlib file not found.[/error]")
         return

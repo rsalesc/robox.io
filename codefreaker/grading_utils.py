@@ -120,7 +120,7 @@ def build_checker_compile_grading_artifacts(
         return res
 
     res.inputs.append(GradingFileInput(src=checker_path, dest=PosixPath("checker.cpp")))
-    testlib = config.get_builtin_checker("testlib.h")
+    testlib = config.get_testlib()
     if testlib.is_file():
         res.inputs.append(GradingFileInput(src=testlib, dest=PosixPath("testlib.h")))
     res.outputs.append(
