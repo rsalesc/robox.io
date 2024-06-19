@@ -175,11 +175,13 @@ def _merge_execution_configs(
     execution_configs: List[ExecutionConfig],
 ) -> ExecutionConfig:
     merged_cfg = ExecutionConfig()
+    merged_cfg.sandbox = EnvironmentSandbox()
     for cfg in execution_configs:
         merged_cfg.command = cfg.command or merged_cfg.command
-        merged_cfg.sandbox = _merge_shallow_models(
-            EnvironmentSandbox, cfg.sandbox, merged_cfg.sandbox
-        )
+        if cfg.sandbox is not None:
+            merged_cfg.sandbox = _merge_shallow_models(
+                EnvironmentSandbox, merged_cfg.sandbox, cfg.sandbox
+            )
     return merged_cfg
 
 

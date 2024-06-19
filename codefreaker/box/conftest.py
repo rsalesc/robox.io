@@ -5,6 +5,7 @@ import shutil
 import pytest
 
 from codefreaker.box import package
+from codefreaker import testing_utils
 
 
 @pytest.fixture
@@ -32,4 +33,9 @@ def pkg_from_testdata(
         raise ValueError("test_pkg marker not found")
     testdata = testdata_path / marker.args[0]
     shutil.copytree(str(testdata), str(pkg_cleandir), dirs_exist_ok=True)
-    yield
+    yield pkg_cleandir
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    testing_utils.clear_all_functools_cache()

@@ -46,7 +46,7 @@ class GeneratorCall(BaseModel):
 
 class TestcaseGroup(BaseModel):
     # The name of this test group.
-    name: Optional[str] = None
+    name: str
 
     # Testcases below will be added to this group in the order
     # they're defined, from `testcases` first to `generatorScript` last.

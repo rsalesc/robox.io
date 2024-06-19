@@ -5,3 +5,7 @@ memoryLimit: 256
 generators:
   - name: "gen1"
     path: "gen1.cpp"
+testcases:
+  - name: "gen1"
+    generators:
+      - name: "gen1"

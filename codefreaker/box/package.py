@@ -6,7 +6,7 @@ import typer
 
 from codefreaker import console, utils
 from codefreaker.box.environment import get_sandbox_type
-from codefreaker.box.schema import Package
+from codefreaker.box.schema import Generator, Package
 from codefreaker.grading.caching import DependencyCache
 from codefreaker.grading.judge.cacher import FileCacher
 from codefreaker.grading.judge.sandbox import SandboxBase
@@ -86,3 +86,32 @@ def get_new_sandbox(root: pathlib.Path = pathlib.Path(".")) -> SandboxBase:
 @functools.cache
 def get_singleton_sandbox(root: pathlib.Path = pathlib.Path(".")) -> SandboxBase:
     return get_new_sandbox(root)
+
+
+@functools.cache
+def get_build_path(root: pathlib.Path = pathlib.Path(".")) -> pathlib.Path:
+    return find_problem(root) / "build"
+
+
+@functools.cache
+def get_build_tests_path(root: pathlib.Path = pathlib.Path(".")) -> pathlib.Path:
+    return get_build_path(root) / "tests"
+
+
+@functools.cache
+def get_build_testgroup_path(
+    group: str, root: pathlib.Path = pathlib.Path(".")
+) -> pathlib.Path:
+    res = get_build_tests_path(root) / group
+    res.mkdir(exist_ok=True, parents=True)
+    return res
+
+
+@functools.cache
+def get_generator(name: str, root: pathlib.Path = pathlib.Path(".")) -> Generator:
+    package = find_problem_package(root)
+    for generator in package.generators:
+        if generator.name == name:
+            return generator
+    console.console.print(f"Generator {name} not found", style="error")
+    raise typer.Exit(1)
