@@ -79,6 +79,18 @@ def get_file_cacher(root: pathlib.Path = pathlib.Path(".")) -> FileCacher:
     return FileCacher(get_cache_storage(root))
 
 
+@functools.cache
+def get_digest_as_string(
+    digest: str, root: pathlib.Path = pathlib.Path(".")
+) -> Optional[str]:
+    cacher = get_file_cacher(root)
+    try:
+        content = cacher.get_file_content(digest)
+        return content.decode()
+    except KeyError:
+        return None
+
+
 def get_new_sandbox(root: pathlib.Path = pathlib.Path(".")) -> SandboxBase:
     return get_sandbox_type()(file_cacher=get_file_cacher(root), temp_dir=TEMP_DIR)
 

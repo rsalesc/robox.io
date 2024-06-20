@@ -1,6 +1,6 @@
 from pathlib import PosixPath
 import pathlib
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 import typer
@@ -18,6 +18,7 @@ from codefreaker.box.schema import CodeItem
 from codefreaker.box import package
 from codefreaker.grading.steps import (
     DigestHolder,
+    DigestOrDest,
     DigestOrSource,
     GradingArtifacts,
     GradingFileInput,
@@ -32,6 +33,7 @@ class TestcaseValidationInfo(BaseModel):
     group: str
     path: pathlib.Path
     ok: bool
+    message: Optional[str] = None
 
 
 def _compile_validator(validator: CodeItem) -> str:
@@ -40,13 +42,16 @@ def _compile_validator(validator: CodeItem) -> str:
 
 def _validate_testcase(
     testcase: pathlib.Path, validator: CodeItem, validator_digest: str
-) -> bool:
+) -> Tuple[bool, Optional[str]]:
+    message_digest = DigestHolder()
     run_log = run_item(
         validator,
         DigestOrSource.create(validator_digest),
         stdin=DigestOrSource.create(testcase),
+        stderr=DigestOrDest.create(message_digest),
     )
-    return run_log is not None and run_log.exitcode == 0
+    message = package.get_digest_as_string(message_digest.value or "")
+    return (run_log is not None and run_log.exitcode == 0, message)
 
 
 def compile_validators() -> Dict[str, str]:
@@ -81,11 +86,13 @@ def validate_testcases() -> List[TestcaseValidationInfo]:
         testcases = find_testcases(group)
 
         for testcase in testcases:
+            ok, message = _validate_testcase(testcase, validator, compiled_digest)
             validation_info.append(
                 TestcaseValidationInfo(
                     group=group.name,
                     path=testcase,
-                    ok=_validate_testcase(testcase, validator, compiled_digest),
+                    ok=ok,
+                    message=message,
                 )
             )
 
