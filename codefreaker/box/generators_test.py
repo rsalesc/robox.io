@@ -5,13 +5,17 @@ import shutil
 import pytest
 
 from codefreaker.box import package
-from codefreaker.box.generators import generate_testcases
+from codefreaker.box.generators import (
+    generate_outputs_for_testcases,
+    generate_testcases,
+)
 from codefreaker.testing_utils import print_directory_tree
 
 
 @pytest.mark.test_pkg("box1")
-def test_generator_compilation(pkg_from_testdata: pathlib.Path):
+def test_generator_works(pkg_from_testdata: pathlib.Path):
     generate_testcases()
+    generate_outputs_for_testcases()
     assert (package.get_build_testgroup_path("gen1") / "000.in").read_text() == "777\n"
     assert (package.get_build_testgroup_path("gen1") / "001.in").read_text() == "123\n"
     assert (
@@ -24,7 +28,7 @@ def test_generator_compilation(pkg_from_testdata: pathlib.Path):
 
 
 @pytest.mark.test_pkg("box1")
-def test_generator_compilation_cache_works(
+def test_generator_cache_works(
     pkg_from_testdata: pathlib.Path,
 ):
     # Run the first time.

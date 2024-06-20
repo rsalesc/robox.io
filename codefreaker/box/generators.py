@@ -2,7 +2,7 @@ from pathlib import PosixPath
 import pathlib
 import shlex
 import shutil
-from typing import Dict
+from typing import Dict, List
 
 import typer
 from codefreaker.box import package
@@ -69,6 +69,69 @@ def _run_generator(
             f"Failed generating test {i} from group path {group_path}",
             style="error",
         )
+
+
+def get_all_built_testcases() -> Dict[str, List[Testcase]]:
+    pkg = package.find_problem_package_or_die()
+    res = {}
+    for group in pkg.testcases:
+        group_path = package.get_build_testgroup_path(group.name)
+        group_testcases = []
+        for input_path in group_path.glob("*.in"):
+            if not input_path.is_file():
+                continue
+            output_path = input_path.parent / f"{input_path.stem}.out"
+            group_testcases.append(
+                Testcase(inputPath=input_path, outputPath=output_path)
+            )
+            res[group.name] = group_testcases
+
+    return res
+
+
+def generate_outputs_for_testcases():
+    pkg = package.find_problem_package_or_die()
+
+    built_testcases = get_all_built_testcases()
+    main_solution = package.get_main_solution()
+
+    if main_solution is not None:
+        solution_digest = compile_item(main_solution)
+
+    for group in pkg.testcases:
+        group_testcases = built_testcases[group.name]
+
+        for testcase in group_testcases:
+            input_path = testcase.inputPath
+            output_path = testcase.outputPath
+
+            if output_path.is_file():
+                continue
+            if main_solution is None:
+                console.console.print(
+                    "No main solution found to generate outputs for testcases",
+                    style="error",
+                )
+                raise typer.Exit(1)
+
+            run_log = run_item(
+                main_solution,
+                DigestOrSource.create(solution_digest),
+                stdin=DigestOrSource.create(input_path),
+                stdout=DigestOrDest.create(output_path),
+            )
+
+            if run_log is None or run_log.exitcode != 0:
+                console.console.print(
+                    f"Failed generating output for {input_path}",
+                    style="error",
+                )
+                if run_log is not None:
+                    console.console.print(
+                        f"Program exited with code {run_log.exitcode}",
+                        style="error",
+                    )
+                raise typer.Exit(1)
 
 
 def compile_generators() -> Dict[str, str]:

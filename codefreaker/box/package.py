@@ -1,12 +1,12 @@
 import functools
 import pathlib
-from typing import Optional
+from typing import List, Optional
 
 import typer
 
 from codefreaker import console, utils
 from codefreaker.box.environment import get_sandbox_type
-from codefreaker.box.schema import Generator, Package
+from codefreaker.box.schema import ExpectedOutcome, Generator, Package, Solution
 from codefreaker.grading.caching import DependencyCache
 from codefreaker.grading.judge.cacher import FileCacher
 from codefreaker.grading.judge.sandbox import SandboxBase
@@ -121,9 +121,23 @@ def get_build_testgroup_path(
 
 @functools.cache
 def get_generator(name: str, root: pathlib.Path = pathlib.Path(".")) -> Generator:
-    package = find_problem_package(root)
+    package = find_problem_package_or_die(root)
     for generator in package.generators:
         if generator.name == name:
             return generator
     console.console.print(f"Generator {name} not found", style="error")
     raise typer.Exit(1)
+
+
+@functools.cache
+def get_solutions(root: pathlib.Path = pathlib.Path(".")) -> List[Solution]:
+    package = find_problem_package_or_die(root)
+    return package.solutions
+
+
+@functools.cache
+def get_main_solution(root: pathlib.Path = pathlib.Path(".")) -> Optional[Solution]:
+    for solution in get_solutions(root):
+        if solution.outcome == ExpectedOutcome.ACCEPTED:
+            return solution
+    return None
