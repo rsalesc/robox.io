@@ -23,6 +23,10 @@ class FileMapping(BaseModel):
     # relative to the sandbox root.
     output: Optional[str] = "stdout"
 
+    # Path where to output the stderr file after running the program,
+    # relative to the sandbox root.
+    error: Optional[str] = "stderr"
+
     # Path where to copy the compilable file to before compiling the program,
     # relative to the sandbox root.
     compilable: Optional[str] = "compilable"

@@ -13,11 +13,12 @@ from codefreaker.box.environment import (
     get_mapped_commands,
     get_sandbox_params_from_config,
 )
-from codefreaker.box.code import compile_item, find_language_name
+from codefreaker.box.code import compile_item, find_language_name, run_item
 from codefreaker.box.schema import CodeItem
 from codefreaker.box import package
 from codefreaker.grading.steps import (
     DigestHolder,
+    DigestOrSource,
     GradingArtifacts,
     GradingFileInput,
     GradingFileOutput,
@@ -40,51 +41,12 @@ def _compile_validator(validator: CodeItem) -> str:
 def _validate_testcase(
     testcase: pathlib.Path, validator: CodeItem, validator_digest: str
 ) -> bool:
-    language = find_language_name(validator)
-    execution_options = get_execution_config(language)
-    file_mapping = get_file_mapping(language)
-    dependency_cache = package.get_dependency_cache()
-    sandbox = package.get_singleton_sandbox()
-    sandbox_params = get_sandbox_params_from_config(execution_options.sandbox)
-
-    sandbox_params.set_stdall(stdin=file_mapping.input, stderr=file_mapping.output)
-
-    command = get_mapped_command(execution_options.command, file_mapping)
-    validator_output = DigestHolder()
-    logs = GradingLogsHolder()
-
-    artifacts = GradingArtifacts()
-    artifacts.logs = logs
-    artifacts.inputs.append(
-        GradingFileInput(
-            digest=DigestHolder(value=validator_digest),
-            dest=PosixPath(file_mapping.executable),
-            executable=True,
-        )
+    run_log = run_item(
+        validator,
+        DigestOrSource.create(validator_digest),
+        stdin=DigestOrSource.create(testcase),
     )
-    artifacts.inputs.append(
-        GradingFileInput(
-            src=testcase,
-            dest=PosixPath(file_mapping.input),
-        )
-    )
-    artifacts.outputs.append(
-        GradingFileOutput(
-            src=PosixPath(file_mapping.output),
-            digest=validator_output,
-        )
-    )
-
-    with dependency_cache([command], [artifacts]) as is_cached:
-        if not is_cached:
-            steps.run(
-                command=command,
-                params=sandbox_params,
-                artifacts=artifacts,
-                sandbox=sandbox,
-            )
-
-    return logs.run is not None and logs.run.exitcode == 0
+    return run_log is not None and run_log.exitcode == 0
 
 
 def compile_validators() -> Dict[str, str]:

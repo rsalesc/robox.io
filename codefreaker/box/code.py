@@ -1,23 +1,32 @@
 from pathlib import PosixPath
 import pathlib
+import shlex
+from typing import Optional
 
 import typer
 from codefreaker.box import package
 from codefreaker.box.environment import (
     get_compilation_config,
+    get_execution_config,
     get_file_mapping,
     get_language,
+    get_mapped_command,
     get_mapped_commands,
     get_sandbox_params_from_config,
 )
 from codefreaker.box.schema import CodeItem
 from codefreaker.grading.steps import (
     DigestHolder,
+    DigestOrDest,
+    DigestOrSource,
     GradingArtifacts,
     GradingFileInput,
     GradingFileOutput,
+    GradingLogsHolder,
+    RunLog,
 )
 from codefreaker.grading import steps
+from codefreaker import console
 
 
 def get_extension(code: CodeItem) -> str:
@@ -74,3 +83,74 @@ def compile_item(code: CodeItem) -> str:
                 raise typer.Exit(1)
 
     return compiled_digest.value
+
+
+def run_item(
+    code: CodeItem,
+    executable: DigestOrSource,
+    stdin: Optional[DigestOrSource] = None,
+    stdout: Optional[DigestOrDest] = None,
+    stderr: Optional[DigestOrDest] = None,
+    extra_args: Optional[str] = None,
+) -> Optional[RunLog]:
+    language = find_language_name(code)
+    execution_options = get_execution_config(language)
+    file_mapping = get_file_mapping(language)
+    dependency_cache = package.get_dependency_cache()
+    sandbox = package.get_singleton_sandbox()
+    sandbox_params = get_sandbox_params_from_config(execution_options.sandbox)
+
+    sandbox_params.set_stdall(
+        stdin=file_mapping.input if stdin is not None else None,
+        stdout=file_mapping.output if stdout is not None else None,
+        stderr=file_mapping.error if stderr is not None else None,
+    )
+
+    command = get_mapped_command(execution_options.command, file_mapping)
+
+    if extra_args is not None:
+        splitted_command = shlex.split(command)
+        splitted_command.extend(shlex.split(extra_args))
+        command = shlex.join(splitted_command)
+
+    artifacts = GradingArtifacts()
+    artifacts.logs = GradingLogsHolder()
+    artifacts.inputs.append(
+        GradingFileInput(
+            **executable.expand(),
+            dest=PosixPath(file_mapping.executable),
+            executable=True,
+        )
+    )
+    if stdin is not None:
+        artifacts.inputs.append(
+            GradingFileInput(
+                **stdin.expand(),
+                dest=PosixPath(file_mapping.input),
+            )
+        )
+    if stdout is not None:
+        artifacts.outputs.append(
+            GradingFileOutput(
+                src=PosixPath(file_mapping.output),
+                **stdout.expand(),
+            )
+        )
+    if stderr is not None:
+        artifacts.outputs.append(
+            GradingFileOutput(
+                src=PosixPath(file_mapping.error),
+                **stderr.expand(),
+            )
+        )
+
+    with dependency_cache([command], [artifacts]) as is_cached:
+        if not is_cached:
+            steps.run(
+                command=command,
+                params=sandbox_params,
+                artifacts=artifacts,
+                sandbox=sandbox,
+            )
+
+    return artifacts.logs.run

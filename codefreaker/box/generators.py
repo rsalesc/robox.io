@@ -6,7 +6,7 @@ from typing import Dict
 
 import typer
 from codefreaker.box import package
-from codefreaker.box.code import compile_item, find_language_name
+from codefreaker.box.code import compile_item, find_language_name, run_item
 from codefreaker.box.environment import (
     get_execution_config,
     get_file_mapping,
@@ -17,6 +17,8 @@ from codefreaker.box.schema import CodeItem, Generator, Testcase
 from codefreaker.grading import steps
 from codefreaker.grading.steps import (
     DigestHolder,
+    DigestOrDest,
+    DigestOrSource,
     GradingArtifacts,
     GradingFileInput,
     GradingFileOutput,
@@ -55,47 +57,18 @@ def _run_generator(
     group_path: pathlib.Path,
     i: int = 0,
 ):
-    language = find_language_name(generator)
-    execution_options = get_execution_config(language)
-    file_mapping = get_file_mapping(language)
-    dependency_cache = package.get_dependency_cache()
-    sandbox = package.get_singleton_sandbox()
-    sandbox_params = get_sandbox_params_from_config(execution_options.sandbox)
-
-    sandbox_params.set_stdio(stdout=file_mapping.output)
-
-    command = get_mapped_command(execution_options.command, file_mapping)
-    splitted_command = shlex.split(command)
-    # Add custom generator args.
-    if args:
-        splitted_command.extend(shlex.split(args))
-
-    command = shlex.join(splitted_command)
-
-    artifacts = GradingArtifacts()
-    artifacts.inputs.append(
-        GradingFileInput(
-            digest=DigestHolder(value=compiled_digest),
-            dest=PosixPath(file_mapping.executable),
-            executable=True,
-        )
-    )
-    artifacts.outputs.append(
-        GradingFileOutput(
-            src=PosixPath(file_mapping.output),
-            dest=_get_group_input(group_path, i),
-        )
+    run_log = run_item(
+        generator,
+        DigestOrSource.create(compiled_digest),
+        stdout=DigestOrDest.create(_get_group_input(group_path, i)),
+        extra_args=args or None,
     )
 
-    with dependency_cache([command], [artifacts]) as is_cached:
-        if not is_cached:
-            run_log = steps.run(command, sandbox_params, sandbox, artifacts)
-            if not run_log or run_log.exitcode != 0:
-                console.console.print(
-                    f"Failed generating test {i} from group path {group_path}",
-                    style="error",
-                )
-                raise typer.Exit(1)
+    if not run_log or run_log.exitcode != 0:
+        console.console.print(
+            f"Failed generating test {i} from group path {group_path}",
+            style="error",
+        )
 
 
 def compile_generators() -> Dict[str, str]:

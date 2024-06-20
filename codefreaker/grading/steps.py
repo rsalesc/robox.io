@@ -2,7 +2,7 @@ import dataclasses
 from enum import Enum
 import pathlib
 import shlex
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 from rich.text import Text
@@ -33,6 +33,52 @@ class DigestHolder(BaseModel):
 
 class GradingLogsHolder(BaseModel):
     run: Optional["RunLog"] = None
+
+
+class DigestOrSource(BaseModel):
+    # Source path relative to the FS.
+    src: Optional[pathlib.Path] = None
+    # Digest if we should get file from storage.
+    digest: Optional[DigestHolder] = None
+
+    @staticmethod
+    def create(data: Union[pathlib.Path, DigestHolder, str]) -> "DigestOrSource":
+        if isinstance(data, str):
+            return DigestOrSource(digest=DigestHolder(value=data))
+        if isinstance(data, DigestHolder):
+            return DigestOrSource(digest=data)
+        return DigestOrSource(src=data)
+
+    def expand(self) -> Dict[str, Any]:
+        res = {}
+        if self.src is not None:
+            res["src"] = self.src
+        if self.digest is not None:
+            res["digest"] = self.digest
+        return res
+
+
+class DigestOrDest(BaseModel):
+    # Destination path relative to the FS.
+    dest: Optional[pathlib.Path] = None
+    # Digest if we should get file from storage.
+    digest: Optional[DigestHolder] = None
+
+    @staticmethod
+    def create(data: Union[pathlib.Path, DigestHolder, str]) -> "DigestOrDest":
+        if isinstance(data, str):
+            return DigestOrDest(digest=DigestHolder(value=data))
+        if isinstance(data, DigestHolder):
+            return DigestOrDest(digest=data)
+        return DigestOrDest(dest=data)
+
+    def expand(self) -> Dict[str, Any]:
+        res = {}
+        if self.dest is not None:
+            res["dest"] = self.dest
+        if self.digest is not None:
+            res["digest"] = self.digest
+        return res
 
 
 class GradingFileInput(BaseModel):
