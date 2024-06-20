@@ -26,3 +26,10 @@ languages:
       command: "./{executable}"
     fileMapping:
       compilable: "compilable.cpp"
+  - name: "py"
+    extension: "py"
+    execution:
+      command: "python3 {executable}"
+    fileMapping:
+      executable: "executable.py"
+

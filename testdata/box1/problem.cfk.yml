@@ -17,4 +17,4 @@ testcases:
       - name: "gen2"
         args: "424242"
     generatorScript:
-      path: "genScript.cpp"
+      path: "genScript.py"

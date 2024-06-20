@@ -169,6 +169,8 @@ def _merge_compilation_configs(
         mirrorDirs=["/etc", "/usr"],
     )
     for cfg in compilation_configs:
+        if cfg is None:
+            continue
         merged_cfg.commands = cfg.commands or merged_cfg.commands
         if cfg.sandbox is not None:
             merged_cfg.sandbox = _merge_shallow_models(
@@ -191,6 +193,8 @@ def _merge_execution_configs(
     merged_cfg = ExecutionConfig()
     merged_cfg.sandbox = EnvironmentSandbox()
     for cfg in execution_configs:
+        if cfg is None:
+            continue
         merged_cfg.command = cfg.command or merged_cfg.command
         if cfg.sandbox is not None:
             merged_cfg.sandbox = _merge_shallow_models(
