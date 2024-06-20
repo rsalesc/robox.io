@@ -14,6 +14,10 @@ def test_generator_compilation(pkg_from_testdata: pathlib.Path):
     generate_testcases()
     assert (package.get_build_testgroup_path("gen1") / "000.in").read_text() == "777\n"
     assert (package.get_build_testgroup_path("gen1") / "001.in").read_text() == "123\n"
+    assert (
+        package.get_build_testgroup_path("gen1") / "002.in"
+    ).read_text() == "424242\n"
+    assert (package.get_build_testgroup_path("gen1") / "003.in").read_text() == "56\n"
 
     # Debug when fail.
     print_directory_tree(pkg_from_testdata)

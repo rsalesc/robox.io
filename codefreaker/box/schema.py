@@ -70,7 +70,7 @@ class TestcaseGroup(BaseModel):
     generators: Optional[List[GeneratorCall]] = []
 
     # A generator script to call to generate testcases for this group.
-    generatorScript: Optional[str] = None
+    generatorScript: Optional[CodeItem] = None
 
     # A validator to use to validate the testcases of this group.
     # If not specified, will use the package-level validator.

@@ -84,6 +84,7 @@ def compile_generators() -> Dict[str, str]:
 
 def generate_testcases():
     pkg = package.find_problem_package_or_die()
+    cacher = package.get_file_cacher()
 
     compiled_generators = compile_generators()
 
@@ -123,3 +124,44 @@ def generate_testcases():
                 i,
             )
             i += 1
+
+        # Run generator script.
+        if testcase.generatorScript is not None:
+            compiled_digest = compile_item(testcase.generatorScript)
+            script_digest = DigestHolder()
+
+            run_log = run_item(
+                testcase.generatorScript,
+                DigestOrSource.create(compiled_digest),
+                stdout=DigestOrDest.create(script_digest),
+            )
+
+            if run_log is None or run_log.exitcode != 0:
+                console.console.print(
+                    f"Could not run generator script for group {testcase.name}"
+                )
+                raise typer.Exit(1)
+
+            script = cacher.get_file_content(script_digest.value).decode()
+            lines = script.splitlines()
+
+            # Run each line from generator script.
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+
+                generator_name = shlex.split(line)[0]
+                generator = package.get_generator(generator_name)
+                if generator.name not in compiled_generators:
+                    console.console.print(f"Generator {generator.name} not compiled")
+                    raise typer.Exit(1)
+
+                _run_generator(
+                    generator,
+                    shlex.join(shlex.split(line)[1:]),
+                    compiled_generators[generator.name],
+                    group_path,
+                    i,
+                )
+                i += 1
