@@ -9,7 +9,10 @@ from codefreaker.testing_utils import print_directory_tree
 @pytest.mark.test_pkg("box1")
 def test_validators(pkg_from_testdata: pathlib.Path):
     generate_testcases()
-    print(validate_testcases())
+    validation_infos = validate_testcases()
+
+    for info in validation_infos:
+        assert info.ok
 
     # Debug when fail.
     print_directory_tree(pkg_from_testdata)
