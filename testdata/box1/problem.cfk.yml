@@ -7,6 +7,8 @@ generators:
     path: "gen1.cpp"
   - name: "gen2"
     path: "gen2.cpp"
+validator:
+  path: "validator.cpp"
 testcases:
   - name: "gen1"
     testcaseGlob: "tests/*.in"

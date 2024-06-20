@@ -55,12 +55,13 @@ def _compile_generator(generator: CodeItem) -> str:
 
     with dependency_cache(commands, [artifacts]) as is_cached:
         if not is_cached:
-            steps.compile(
+            if not steps.compile(
                 commands=commands,
                 params=sandbox_params,
                 artifacts=artifacts,
                 sandbox=sandbox,
-            )
+            ):
+                raise typer.Exit(1)
 
     return compiled_digest.value
 
@@ -126,7 +127,13 @@ def _run_generator(
 
     with dependency_cache([command], [artifacts]) as is_cached:
         if not is_cached:
-            steps.run(command, sandbox_params, sandbox, artifacts)
+            run_log = steps.run(command, sandbox_params, sandbox, artifacts)
+            if not run_log or run_log.exitcode != 0:
+                console.console.print(
+                    f"Failed generating test {i} from group path {group_path}",
+                    style="error",
+                )
+                raise typer.Exit(1)
 
 
 def compile_generators() -> Dict[str, str]:
