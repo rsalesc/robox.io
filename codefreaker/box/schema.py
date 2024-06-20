@@ -1,7 +1,7 @@
 from enum import Enum
 import pathlib
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ExpectedOutcome(Enum):
@@ -14,6 +14,8 @@ class ExpectedOutcome(Enum):
 
 
 class CodeItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # The path of a file containing the code, relative to the package directory.
     path: str
 
@@ -26,6 +28,8 @@ class CodeItem(BaseModel):
 
 
 class Testcase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # The path of the input file, relative to the package directory.
     inputPath: pathlib.Path
 
@@ -34,6 +38,8 @@ class Testcase(BaseModel):
 
 
 class GeneratorCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # The identifier of the generator to call.
     name: str
 
@@ -42,6 +48,8 @@ class GeneratorCall(BaseModel):
 
 
 class TestcaseGroup(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # The name of this test group.
     name: str
 
@@ -75,6 +83,8 @@ class TestcaseGroup(BaseModel):
 
 
 class Generator(CodeItem):
+    model_config = ConfigDict(extra="forbid")
+
     # The name of this generator.
     # This can be further referenced in testcase groups and
     # stress tests.
@@ -82,11 +92,15 @@ class Generator(CodeItem):
 
 
 class Solution(CodeItem):
+    model_config = ConfigDict(extra="forbid")
+
     # The expected outcome of this solution.
     outcome: ExpectedOutcome
 
 
 class Package(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Name of the problem.
     name: str
 

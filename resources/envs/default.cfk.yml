@@ -1,19 +1,21 @@
 ---
 sandbox: "stupid"
 defaultCompilation:
-  maxProcesses: 1000
-  timeLimit: 10000 # 10 seconds
-  wallTimeLimit: 10000 # 10 seconds
-  memoryLimit: 512 # 512mb
-  preserveEnv: true
-  mirrorDirs:
-    - "/etc"
-    - "/usr"
+  sandbox:
+    maxProcesses: 1000
+    timeLimit: 10000 # 10 seconds
+    wallTimeLimit: 10000 # 10 seconds
+    memoryLimit: 1024 # 1gb
+    preserveEnv: true
+    mirrorDirs:
+      - "/etc"
+      - "/usr"
 defaultExecution:
-  # Useful for checkers, validators, etc.
-  timeLimit: 10000 # 10 seconds
-  wallTimeLimit: 10000 # 10 seconds
-  memoryLimit: 512 # 512mb
+  sandbox:
+    # Useful for checkers, validators, etc.
+    timeLimit: 10000 # 10 seconds
+    wallTimeLimit: 10000 # 10 seconds
+    memoryLimit: 1024 # 1gb
 languages:
   - name: "cpp"
     extension: "cpp"

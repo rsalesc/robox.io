@@ -31,6 +31,10 @@ class DigestHolder(BaseModel):
     value: Optional[str] = None
 
 
+class GradingLogsHolder(BaseModel):
+    run: Optional["RunLog"] = None
+
+
 class GradingFileInput(BaseModel):
     # Destination path relative to the sandboox.
     dest: pathlib.Path
@@ -66,6 +70,8 @@ class GradingArtifacts(BaseModel):
     inputs: Optional[List[GradingFileInput]] = []
     # List of output files to copy from the sandbox.
     outputs: Optional[List[GradingFileOutput]] = []
+    # Capture certain logs of the execution.
+    logs: Optional[GradingLogsHolder] = None
 
 
 @dataclasses.dataclass
@@ -82,8 +88,7 @@ class PreprocessLog:
     log: str
 
 
-@dataclasses.dataclass
-class RunLog:
+class RunLog(BaseModel):
     exitcode: int
     exitstatus: str
     time: float
@@ -232,11 +237,14 @@ def run(
     if not _process_output_artifacts(artifacts, sandbox):
         return None
 
-    return RunLog(
+    run_log = RunLog(
         exitcode=sandbox.get_exit_code(),
         exitstatus=sandbox.get_exit_status(),
         time=sandbox.get_execution_time(),
     )
+    if artifacts.logs is not None:
+        artifacts.logs.run = run_log.model_copy()
+    return run_log
 
 
 def _normalize_checked_words(s: str) -> List[str]:

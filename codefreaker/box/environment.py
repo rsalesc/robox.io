@@ -1,7 +1,7 @@
 import functools
 import pathlib
 from typing import List, Optional, Type, TypeVar
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import typer
 
 from codefreaker import config, console, utils
@@ -13,6 +13,8 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class FileMapping(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Path where to copy the stdin file to before running the program,
     # relative to the sandbox root.
     input: Optional[str] = "stdin"
@@ -31,6 +33,8 @@ class FileMapping(BaseModel):
 
 
 class EnvironmentSandbox(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Max. number of process to allow to run concurrently for the program.
     maxProcesses: Optional[int] = 1
 
@@ -62,6 +66,8 @@ class CompilationConfig(BaseModel):
 
 
 class ExecutionConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Command to run the program.
     command: Optional[str] = None
 
@@ -70,6 +76,8 @@ class ExecutionConfig(BaseModel):
 
 
 class EnvironmentLanguage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Identifier of this language within this environment.
     name: str
 
@@ -90,6 +98,8 @@ class EnvironmentLanguage(BaseModel):
 
 
 class Environment(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Default mapping for files within the sandbox. Fields in the mapping can be
     # individually overridden in the language configuration.
     defaultFileMapping: Optional[FileMapping] = None
@@ -147,8 +157,8 @@ def _merge_compilation_configs(
 ) -> CompilationConfig:
     merged_cfg = CompilationConfig()
     merged_cfg.sandbox = EnvironmentSandbox(
-        max_processes=None,
-        timelimit=10000,
+        maxProcesses=None,
+        timeLimit=10000,
         wallTimeLimit=10000,
         memoryLimit=512,
         preserveEnv=True,

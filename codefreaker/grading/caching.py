@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from pydantic import BaseModel
 from codefreaker.grading.judge.digester import digest_cooperatively
 from codefreaker.grading.judge.storage import Storage
-from codefreaker.grading.steps import DigestHolder, GradingArtifacts
+from codefreaker.grading.steps import DigestHolder, GradingArtifacts, GradingLogsHolder
 from codefreaker import console
 
 
@@ -22,6 +22,7 @@ class CacheInput(BaseModel):
 class CacheFingerprint(BaseModel):
     digests: List[Optional[str]]
     fingerprints: List[str]
+    logs: List[GradingLogsHolder]
 
 
 def _check_digests(artifacts_list: List[GradingArtifacts]):
@@ -64,12 +65,21 @@ def _build_fingerprint_list(artifacts_list: List[GradingArtifacts]) -> List[str]
     return fingerprints
 
 
+def _build_logs_list(artifacts_list: List[GradingArtifacts]) -> List[GradingLogsHolder]:
+    logs = []
+    for artifacts in artifacts_list:
+        if artifacts.logs is not None:
+            logs.append(artifacts.logs)
+    return logs
+
+
 def _build_cache_fingerprint(
     artifacts_list: List[GradingArtifacts],
 ) -> CacheFingerprint:
     digests = [digest.value for digest in _build_digest_list(artifacts_list)]
     fingerprints = _build_fingerprint_list(artifacts_list)
-    return CacheFingerprint(digests=digests, fingerprints=fingerprints)
+    logs = _build_logs_list(artifacts_list)
+    return CacheFingerprint(digests=digests, fingerprints=fingerprints, logs=logs)
 
 
 def _fingerprints_match(
@@ -181,20 +191,25 @@ class DependencyCache:
 
         reference_digests = _build_digest_list(artifact_list)
 
+        # Apply digest changes.
         old_digest_values = [digest for digest in reference_fingerprint.digests]
         for digest, reference_digest in zip(fingerprint.digests, reference_digests):
             reference_digest.value = digest
 
-        if are_artifacts_ok(artifact_list, self.storage):
-            return True
+        if not are_artifacts_ok(artifact_list, self.storage):
+            # Rollback digest changes.
+            for old_digest_value, reference_digest in zip(
+                old_digest_values, reference_digests
+            ):
+                reference_digest.value = old_digest_value
+            return False
 
-        # Rollback changes.
-        for old_digest_value, reference_digest in zip(
-            old_digest_values, reference_digests
-        ):
-            reference_digest.value = old_digest_value
+        # Apply logs changes.
+        for logs, reference_logs in zip(fingerprint.logs, reference_fingerprint.logs):
+            if logs.run is not None:
+                reference_logs.run = logs.run.model_copy(deep=True)
 
-        return False
+        return True
 
     def store_in_cache(
         self,

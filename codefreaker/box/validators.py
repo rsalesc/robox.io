@@ -21,8 +21,10 @@ from codefreaker.grading.steps import (
     GradingArtifacts,
     GradingFileInput,
     GradingFileOutput,
+    GradingLogsHolder,
 )
 from codefreaker.grading import steps
+from codefreaker import console
 
 
 class TestcaseValidationInfo(BaseModel):
@@ -85,8 +87,10 @@ def _validate_testcase(
 
     command = get_mapped_command(execution_options.command, file_mapping)
     validator_output = DigestHolder()
+    logs = GradingLogsHolder()
 
     artifacts = GradingArtifacts()
+    artifacts.logs = logs
     artifacts.inputs.append(
         GradingFileInput(
             digest=DigestHolder(value=validator_digest),
@@ -109,23 +113,14 @@ def _validate_testcase(
 
     with dependency_cache([command], [artifacts]) as is_cached:
         if not is_cached:
-            run_log = steps.run(
+            steps.run(
                 command=command,
                 params=sandbox_params,
                 artifacts=artifacts,
                 sandbox=sandbox,
             )
-            if not run_log:
-                raise typer.Exit(1)
-            if run_log.exitcode != 0:
-                print(
-                    sandbox.file_cacher.get_file_content(
-                        validator_output.value
-                    ).decode()
-                )
-                return False
 
-    return True
+    return logs.run is not None and logs.run.exitcode == 0
 
 
 def compile_validators() -> Dict[str, str]:
