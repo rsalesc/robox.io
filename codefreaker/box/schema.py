@@ -3,15 +3,17 @@ import pathlib
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
+from codefreaker.autoenum import AutoEnum, alias
 
-class ExpectedOutcome(Enum):
-    ACCEPTED = "accepted"
-    WRONG_ANSWER = "wrong-answer"
-    INCORRECT = "incorrect"
-    RUNTIME_ERROR = "runtime-error"
-    TIME_LIMIT_EXCEEDED = "time-limit-exceeded"
-    MEMORY_LIMIT_EXCEEDED = "memory-limit-exceeded"
-    TLE_OR_RTE = "tle-or-rte"
+
+class ExpectedOutcome(AutoEnum):
+    ACCEPTED = alias("accepted", "ac", "correct")
+    WRONG_ANSWER = alias("wrong answer", "wa")
+    INCORRECT = alias("fail", "incorrect")
+    RUNTIME_ERROR = alias("runtime error", "rte", "re")
+    TIME_LIMIT_EXCEEDED = alias("time limit exceeded", "timeout", "tle")
+    MEMORY_LIMIT_EXCEEDED = alias("memory limit exceeded", "mle")
+    TLE_OR_RTE = alias("tle or rte", "tle/rte", "tle+rte")
 
 
 class CodeItem(BaseModel):

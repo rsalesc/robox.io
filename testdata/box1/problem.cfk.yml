@@ -20,14 +20,14 @@ testcases:
       path: "genScript.py"
 solutions:
   - path: "sol.cpp"
-    outcome: "accepted"
+    outcome: "ac"
   - path: "wa.sol.cpp"
-    outcome: "incorrect"
+    outcome: "fail"
   - path: "re.sol.cpp"
-    outcome: "runtime-error"
+    outcome: "rte"
   - path: "tle.sol.cpp"
-    outcome: "time-limit-exceeded"
+    outcome: "tle"
   - path: "tle-and-incorrect.sol.cpp"
-    outcome: "time-limit-exceeded"
+    outcome: "tle"
   - path: "hard-tle.sol.cpp"
-    outcome: "tle-or-rte"  # Will RTE in Stupid, TLE in isolate
+    outcome: "tle+rte"  # Will RTE in Stupid, TLE in isolate
