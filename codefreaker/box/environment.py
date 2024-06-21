@@ -156,7 +156,7 @@ def _merge_shallow_models(model: Type[T], base: T, override: T) -> T:
     )
 
 
-def _merge_compilation_configs(
+def merge_compilation_configs(
     compilation_configs: List[CompilationConfig],
 ) -> CompilationConfig:
     merged_cfg = CompilationConfig()
@@ -182,12 +182,12 @@ def _merge_compilation_configs(
 @functools.cache
 def get_compilation_config(language: str) -> CompilationConfig:
     environment = get_environment()
-    return _merge_compilation_configs(
+    return merge_compilation_configs(
         [environment.defaultCompilation, get_language(language).compilation]
     )
 
 
-def _merge_execution_configs(
+def merge_execution_configs(
     execution_configs: List[ExecutionConfig],
 ) -> ExecutionConfig:
     merged_cfg = ExecutionConfig()
@@ -206,7 +206,7 @@ def _merge_execution_configs(
 @functools.cache
 def get_execution_config(language: str) -> ExecutionConfig:
     environment = get_environment()
-    return _merge_execution_configs(
+    return merge_execution_configs(
         [environment.defaultExecution, get_language(language).execution]
     )
 

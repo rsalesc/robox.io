@@ -17,7 +17,7 @@ class CodeItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # The path of a file containing the code, relative to the package directory.
-    path: str
+    path: pathlib.Path
 
     # The language identifier the could should be compiled/run in.
     language: Optional[str] = None

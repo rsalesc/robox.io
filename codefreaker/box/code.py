@@ -1,11 +1,12 @@
 from pathlib import PosixPath
 import pathlib
 import shlex
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from codefreaker.box import package
 from codefreaker.box.environment import (
+    ExecutionConfig,
     get_compilation_config,
     get_execution_config,
     get_file_mapping,
@@ -13,6 +14,7 @@ from codefreaker.box.environment import (
     get_mapped_command,
     get_mapped_commands,
     get_sandbox_params_from_config,
+    merge_execution_configs,
 )
 from codefreaker.box.schema import CodeItem
 from codefreaker.grading.steps import (
@@ -91,10 +93,15 @@ def run_item(
     stdin: Optional[DigestOrSource] = None,
     stdout: Optional[DigestOrDest] = None,
     stderr: Optional[DigestOrDest] = None,
+    inputs: Optional[List[GradingFileInput]] = None,
+    outputs: Optional[List[GradingFileOutput]] = None,
     extra_args: Optional[str] = None,
+    extra_config: Optional[ExecutionConfig] = None,
 ) -> Optional[RunLog]:
     language = find_language_name(code)
     execution_options = get_execution_config(language)
+    if extra_config is not None:
+        execution_options = merge_execution_configs([execution_options, extra_config])
     file_mapping = get_file_mapping(language)
     dependency_cache = package.get_dependency_cache()
     sandbox = package.get_singleton_sandbox()
@@ -143,6 +150,10 @@ def run_item(
                 **stderr.expand(),
             )
         )
+    if inputs:
+        artifacts.inputs.extend(inputs)
+    if outputs:
+        artifacts.outputs.extend(outputs)
 
     with dependency_cache([command], [artifacts]) as is_cached:
         if not is_cached:

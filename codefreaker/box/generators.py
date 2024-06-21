@@ -5,6 +5,7 @@ import shutil
 from typing import Dict, List
 
 import typer
+from codefreaker.box.testcases import find_built_testcases
 from codefreaker.box import package
 from codefreaker.box.code import compile_item, find_language_name, run_item
 from codefreaker.box.environment import (
@@ -73,19 +74,7 @@ def _run_generator(
 
 def get_all_built_testcases() -> Dict[str, List[Testcase]]:
     pkg = package.find_problem_package_or_die()
-    res = {}
-    for group in pkg.testcases:
-        group_path = package.get_build_testgroup_path(group.name)
-        group_testcases = []
-        for input_path in group_path.glob("*.in"):
-            if not input_path.is_file():
-                continue
-            output_path = input_path.parent / f"{input_path.stem}.out"
-            group_testcases.append(
-                Testcase(inputPath=input_path, outputPath=output_path)
-            )
-            res[group.name] = group_testcases
-
+    res = {group.name: find_built_testcases(group) for group in pkg.testcases}
     return res
 
 

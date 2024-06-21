@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 import typer
-from codefreaker.box.testcases import find_testcases
+from codefreaker.box.testcases import find_built_testcase_inputs
 from codefreaker.box.environment import (
     get_compilation_config,
     get_execution_config,
@@ -83,7 +83,7 @@ def validate_testcases() -> List[TestcaseValidationInfo]:
             continue
         compiled_digest = group_to_compiled_digest[group.name]
 
-        testcases = find_testcases(group)
+        testcases = find_built_testcase_inputs(group)
 
         for testcase in testcases:
             ok, message = _validate_testcase(testcase, validator, compiled_digest)

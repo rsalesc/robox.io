@@ -13,6 +13,3 @@ def test_validators(pkg_from_testdata: pathlib.Path):
 
     for info in validation_infos:
         assert info.ok
-
-    # Debug when fail.
-    print_directory_tree(pkg_from_testdata)

@@ -21,3 +21,9 @@ testcases:
 solutions:
   - path: "sol.cpp"
     outcome: "accepted"
+  - path: "wa.sol.cpp"
+    outcome: "incorrect"
+  - path: "re.sol.cpp"
+    outcome: "runtime-error"
+  - path: "tle.sol.cpp"
+    outcome: "time-limit-exceeded"

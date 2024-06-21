@@ -3,11 +3,21 @@ from typing import List
 
 import typer
 from codefreaker.box.package import get_build_testgroup_path
-from codefreaker.box.schema import TestcaseGroup
+from codefreaker.box.schema import Testcase, TestcaseGroup
 from codefreaker import console
 
 
-def find_testcases(group: TestcaseGroup) -> List[pathlib.Path]:
+def find_built_testcases(group: TestcaseGroup) -> List[Testcase]:
+    inputs = find_built_testcase_inputs(group)
+
+    testcases = []
+    for input in inputs:
+        output = input.with_suffix(".out")
+        testcases.append(Testcase(inputPath=input, outputPath=output))
+    return testcases
+
+
+def find_built_testcase_inputs(group: TestcaseGroup) -> List[pathlib.Path]:
     testgroup_path = get_build_testgroup_path(group.name)
     if not testgroup_path.is_dir():
         console.console.print(

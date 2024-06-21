@@ -6,13 +6,21 @@ import typer
 
 from codefreaker import console, utils
 from codefreaker.box.environment import get_sandbox_type
-from codefreaker.box.schema import ExpectedOutcome, Generator, Package, Solution
+from codefreaker.box.schema import (
+    CodeItem,
+    ExpectedOutcome,
+    Generator,
+    Package,
+    Solution,
+)
 from codefreaker.grading.caching import DependencyCache
 from codefreaker.grading.judge.cacher import FileCacher
 from codefreaker.grading.judge.sandbox import SandboxBase
 from codefreaker.grading.judge.storage import FilesystemStorage, Storage
+from codefreaker.config import get_builtin_checker
 
 YAML_NAME = "problem.cfk.yml"
+_DEFAULT_CHECKER = "wcmp.cpp"
 TEMP_DIR = None
 
 
@@ -62,6 +70,12 @@ def get_problem_storage_dir(root: pathlib.Path = pathlib.Path(".")) -> pathlib.P
     storage_dir = get_problem_cache_dir(root) / ".storage"
     storage_dir.mkdir(parents=True, exist_ok=True)
     return storage_dir
+
+
+def get_problem_runs_dir(root: pathlib.Path = pathlib.Path(".")) -> pathlib.Path:
+    runs_dir = get_problem_cache_dir(root) / "runs"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    return runs_dir
 
 
 @functools.cache
@@ -127,6 +141,15 @@ def get_generator(name: str, root: pathlib.Path = pathlib.Path(".")) -> Generato
             return generator
     console.console.print(f"Generator {name} not found", style="error")
     raise typer.Exit(1)
+
+
+@functools.cache
+def get_checker(root: pathlib.Path = pathlib.Path(".")) -> CodeItem:
+    package = find_problem_package_or_die(root)
+
+    return package.checker or CodeItem(
+        path=get_builtin_checker(_DEFAULT_CHECKER).absolute()
+    )
 
 
 @functools.cache
