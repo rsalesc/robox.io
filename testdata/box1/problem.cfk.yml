@@ -27,3 +27,7 @@ solutions:
     outcome: "runtime-error"
   - path: "tle.sol.cpp"
     outcome: "time-limit-exceeded"
+  - path: "tle-and-incorrect.sol.cpp"
+    outcome: "time-limit-exceeded"
+  - path: "hard-tle.sol.cpp"
+    outcome: "tle-or-rte"  # Will RTE in Stupid, TLE in isolate

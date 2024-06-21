@@ -158,6 +158,7 @@ class TestcaseEvaluation:
 class CheckerResult:
     outcome: Outcome
     message: str = ""
+    no_tle_outcome: Optional[Outcome] = None
 
 
 def _process_input_artifacts(artifacts: GradingArtifacts, sandbox: SandboxBase):

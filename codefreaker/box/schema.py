@@ -11,6 +11,7 @@ class ExpectedOutcome(Enum):
     RUNTIME_ERROR = "runtime-error"
     TIME_LIMIT_EXCEEDED = "time-limit-exceeded"
     MEMORY_LIMIT_EXCEEDED = "memory-limit-exceeded"
+    TLE_OR_RTE = "tle-or-rte"
 
 
 class CodeItem(BaseModel):

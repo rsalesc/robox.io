@@ -28,6 +28,9 @@ def check(
 ) -> CheckerResult:
     pkg = package.find_problem_package_or_die()
 
+    if run_log.time * 1000 > pkg.timeLimit * 2:
+        return CheckerResult(outcome=Outcome.TIME_LIMIT_EXCEEDED)
+
     if run_log.exitstatus in [SandboxBase.EXIT_SIGNAL, SandboxBase.EXIT_NONZERO_RETURN]:
         return CheckerResult(outcome=Outcome.RUNTIME_ERROR)
     if run_log.exitstatus in [SandboxBase.EXIT_TIMEOUT, SandboxBase.EXIT_TIMEOUT_WALL]:
@@ -36,9 +39,6 @@ def check(
         return CheckerResult(outcome=Outcome.MEMORY_LIMIT_EXCEEDED)
     if run_log.exitstatus == SandboxBase.EXIT_SANDBOX_ERROR:
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
-
-    if run_log.time * 1000 > pkg.timeLimit:
-        return CheckerResult(outcome=Outcome.TIME_LIMIT_EXCEEDED)
 
     error = DigestHolder()
     inputs = [
@@ -67,9 +67,16 @@ def check(
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
 
     message = package.get_digest_as_string(error.value or "") or ""
-    if checker_run_log.exitcode in [1, 2]:
-        return CheckerResult(outcome=Outcome.WRONG_ANSWER, message=message)
-    if checker_run_log.exitcode == 3:
-        return CheckerResult(outcome=Outcome.JUDGE_FAILED, message=message)
 
-    return CheckerResult(outcome=Outcome.ACCEPTED, message=message)
+    result = CheckerResult(outcome=Outcome.ACCEPTED, message=message)
+
+    if checker_run_log.exitcode in [1, 2]:
+        result = CheckerResult(outcome=Outcome.WRONG_ANSWER, message=message)
+    if checker_run_log.exitcode == 3:
+        result = CheckerResult(outcome=Outcome.JUDGE_FAILED, message=message)
+
+    if run_log.time * 1000 > pkg.timeLimit:
+        # Soft TLE.
+        result.no_tle_outcome = result.outcome
+        result.outcome = Outcome.TIME_LIMIT_EXCEEDED
+    return result
