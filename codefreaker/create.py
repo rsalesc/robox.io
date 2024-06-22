@@ -2,8 +2,7 @@ import pathlib
 
 from .console import console
 from .config import get_config
-from . import providers
-from .schema import Batch, DumpedProblem, Problem
+from .schema import Batch, Problem
 from . import annotations
 from .clone import create_problem_structure
 

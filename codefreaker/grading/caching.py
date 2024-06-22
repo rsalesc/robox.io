@@ -1,17 +1,14 @@
 import atexit
-from collections.abc import Iterator
 import io
 import os
 import pathlib
 import shelve
 from typing import List, Optional
-from contextlib import contextmanager
 
 from pydantic import BaseModel
 from codefreaker.grading.judge.digester import digest_cooperatively
 from codefreaker.grading.judge.storage import Storage
 from codefreaker.grading.steps import DigestHolder, GradingArtifacts, GradingLogsHolder
-from codefreaker import console
 
 
 class CacheInput(BaseModel):

@@ -1,5 +1,4 @@
 import atexit
-import dataclasses
 import pathlib
 import tempfile
 from typing import Dict, List, Optional

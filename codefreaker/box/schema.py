@@ -1,4 +1,3 @@
-from enum import Enum
 import pathlib
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict

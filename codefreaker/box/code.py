@@ -28,7 +28,6 @@ from codefreaker.grading.steps import (
     RunLog,
 )
 from codefreaker.grading import steps
-from codefreaker import console
 
 
 def get_extension(code: CodeItem) -> str:

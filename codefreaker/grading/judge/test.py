@@ -1,7 +1,6 @@
 import atexit
 import pathlib
 
-import rich
 from . import storage
 from . import cacher
 from .sandboxes import stupid_sandbox

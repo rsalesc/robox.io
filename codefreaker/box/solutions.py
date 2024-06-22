@@ -3,15 +3,13 @@ from typing import Dict, List
 from codefreaker.box import checkers
 from codefreaker.box.testcases import find_built_testcases
 from codefreaker.box.environment import EnvironmentSandbox, ExecutionConfig
-from codefreaker.box.schema import Solution, Testcase, TestcaseGroup
+from codefreaker.box.schema import Solution
 from codefreaker.box.code import compile_item, run_item
 from codefreaker.box import package
 from codefreaker.grading.steps import (
-    CheckerResult,
     DigestOrDest,
     DigestOrSource,
     Evaluation,
-    RunLog,
     TestcaseIO,
     TestcaseLog,
 )
