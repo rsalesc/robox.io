@@ -83,6 +83,7 @@ def compile_item(code: CodeItem) -> str:
         ):
             raise typer.Exit(1)
 
+    assert compiled_digest.value is not None
     return compiled_digest.value
 
 
@@ -107,11 +108,12 @@ def run_item(
     sandbox_params = get_sandbox_params_from_config(execution_options.sandbox)
 
     sandbox_params.set_stdall(
-        stdin=file_mapping.input if stdin is not None else None,
-        stdout=file_mapping.output if stdout is not None else None,
-        stderr=file_mapping.error if stderr is not None else None,
+        stdin=PosixPath(file_mapping.input) if stdin is not None else None,
+        stdout=PosixPath(file_mapping.output) if stdout is not None else None,
+        stderr=PosixPath(file_mapping.error) if stderr is not None else None,
     )
 
+    assert execution_options.command
     command = get_mapped_command(execution_options.command, file_mapping)
 
     if extra_args is not None:

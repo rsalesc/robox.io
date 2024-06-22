@@ -31,8 +31,8 @@ int main() {
     atexit.register(sandbox.cleanup)
     sandbox.create_file_from_storage(pathlib.PosixPath('run.cpp'), python_file)
 
-    sandbox.params.stdout_file = 'run.out'
-    sandbox.params.stderr_file = 'run.err'
+    sandbox.params.stdout_file = pathlib.PosixPath('run.out')
+    sandbox.params.stderr_file = pathlib.PosixPath('run.err')
 
     sandbox.execute_without_std(['/usr/bin/g++', 'run.cpp'], wait=True)
     try:

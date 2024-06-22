@@ -50,9 +50,10 @@ def add(
     # Set checker.
     problem_to_dump = dumped_problem.model_copy()
     problem_to_dump.checker = checker_name
-    metadata.find_problem_path_by_code(dumped_problem.code).write_text(
-        utils.model_json(problem_to_dump)
-    )
+    problem_path = metadata.find_problem_path_by_code(dumped_problem.code)
+    if not problem_path:
+        raise typer.Exit(1)
+    problem_path.write_text(utils.model_json(problem_to_dump))
     console.print(
         f'Checker [item]{checker_name}[/item] added to problem [item]{dumped_problem.pretty_name()}[/item].'
     )
@@ -70,9 +71,10 @@ def set(problem: annotations.Problem, checker: annotations.Checker):
 
     problem_to_dump = dumped_problem.model_copy()
     problem_to_dump.checker = checker
-    metadata.find_problem_path_by_code(dumped_problem.code).write_text(
-        utils.model_json(problem_to_dump)
-    )
+    problem_path = metadata.find_problem_path_by_code(dumped_problem.code)
+    if not problem_path:
+        raise typer.Exit(1)
+    problem_path.write_text(utils.model_json(problem_to_dump))
     console.print(
         f'Checker [item]{checker}[/item] will be used for problem [item]{dumped_problem.pretty_name()}[/item].'
     )
@@ -90,9 +92,10 @@ def unset(problem: annotations.Problem):
 
     problem_to_dump = dumped_problem.model_copy()
     problem_to_dump.checker = None
-    metadata.find_problem_path_by_code(dumped_problem.code).write_text(
-        utils.model_json(problem_to_dump)
-    )
+    problem_path = metadata.find_problem_path_by_code(dumped_problem.code)
+    if not problem_path:
+        raise typer.Exit(1)
+    problem_path.write_text(utils.model_json(problem_to_dump))
     console.print(
         f'Default checker will be used for problem [item]{dumped_problem.pretty_name()}[/item].'
     )

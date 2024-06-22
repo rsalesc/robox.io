@@ -27,7 +27,9 @@ def build_formatted_command(
 
 
 def build_preprocess_commands(problem: DumpedProblem, lang: Language) -> List[str]:
-    return [build_formatted_command(cmd, problem, lang) for cmd in lang.preprocess]
+    return [
+        build_formatted_command(cmd, problem, lang) for cmd in (lang.preprocess or [])
+    ]
 
 
 def build_preprocess_sandbox_params() -> SandboxParams:
@@ -80,8 +82,8 @@ def build_run_sandbox_params(problem: Problem, has_input: bool) -> SandboxParams
     params.wallclock_timeout = problem.timeLimit * 5
     params.address_space = problem.memoryLimit or 1024  # 1 GB
     params.set_stdall(
-        stdin='stdin.txt' if has_input else None,
-        stdout='stdout.txt',
+        stdin=PosixPath('stdin.txt') if has_input else None,
+        stdout=PosixPath('stdout.txt'),
         stderr=MERGE_STDERR,
     )
     return params

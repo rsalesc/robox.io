@@ -14,7 +14,8 @@ def main(
     memorylimit: annotations.Memorylimit = 256,
     multitest: annotations.Multitest = False,
 ):
-    if get_config().get_language(lang) is None:
+    language = get_config().get_language(lang)
+    if language is None:
         console.print(
             f'[error]Language {lang or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]'
         )
@@ -30,7 +31,7 @@ def main(
     create_problem_structure(
         pathlib.Path(),
         problem,
-        get_config().get_language(lang),
+        language,
         status=None,
         verbose=True,
     )

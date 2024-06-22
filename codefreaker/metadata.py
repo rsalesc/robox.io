@@ -56,7 +56,7 @@ def find_problem_path_by_alias(
     if not root:
         root = pathlib.Path()
 
-    candidates: Tuple[pathlib.Path, DumpedProblem] = []
+    candidates: List[Tuple[pathlib.Path, DumpedProblem]] = []
     for metadata_path in root.glob('*.cfk.json'):
         problem = DumpedProblem.model_validate_json(metadata_path.read_text())
         if _find_alias(alias, problem.aliases) is not None:

@@ -1,5 +1,5 @@
 import hashlib
-from typing import BinaryIO
+from typing import IO
 
 import gevent
 
@@ -20,7 +20,7 @@ class Digester:
 
 
 def digest_cooperatively_into_digester(
-    f: BinaryIO, digester: Digester, chunk_size: int = 2**20
+    f: IO[bytes], digester: Digester, chunk_size: int = 2**20
 ):
     buf = f.read(chunk_size)
     while len(buf) > 0:
@@ -29,7 +29,7 @@ def digest_cooperatively_into_digester(
         buf = f.read(chunk_size)
 
 
-def digest_cooperatively(f: BinaryIO, chunk_size: int = 2**20):
+def digest_cooperatively(f: IO[bytes], chunk_size: int = 2**20):
     d = Digester()
     digest_cooperatively_into_digester(f, d, chunk_size)
     return d.digest()

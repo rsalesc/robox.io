@@ -7,13 +7,13 @@ from codefreaker.autoenum import AutoEnum, alias
 
 
 class ExpectedOutcome(AutoEnum):
-    ACCEPTED = alias('accepted', 'ac', 'correct')
-    WRONG_ANSWER = alias('wrong answer', 'wa')
-    INCORRECT = alias('fail', 'incorrect')
-    RUNTIME_ERROR = alias('runtime error', 'rte', 're')
-    TIME_LIMIT_EXCEEDED = alias('time limit exceeded', 'timeout', 'tle')
-    MEMORY_LIMIT_EXCEEDED = alias('memory limit exceeded', 'mle')
-    TLE_OR_RTE = alias('tle or rte', 'tle/rte', 'tle+rte')
+    ACCEPTED = alias('accepted', 'ac', 'correct')  # type: ignore
+    WRONG_ANSWER = alias('wrong answer', 'wa')  # type: ignore
+    INCORRECT = alias('fail', 'incorrect')  # type: ignore
+    RUNTIME_ERROR = alias('runtime error', 'rte', 're')  # type: ignore
+    TIME_LIMIT_EXCEEDED = alias('time limit exceeded', 'timeout', 'tle')  # type: ignore
+    MEMORY_LIMIT_EXCEEDED = alias('memory limit exceeded', 'mle')  # type: ignore
+    TLE_OR_RTE = alias('tle or rte', 'tle/rte', 'tle+rte')  # type: ignore
 
 
 class CodeItem(BaseModel):
@@ -61,7 +61,7 @@ class TestcaseGroup(BaseModel):
 
     # The path to testcases relative to the package directory
     # to add to this group.
-    testcases: Optional[List[Testcase]] = []
+    testcases: List[Testcase] = []
 
     # A Python glob that matches input file paths relative to the
     # package directory. The globbed files should end with the extension
@@ -70,7 +70,7 @@ class TestcaseGroup(BaseModel):
     testcaseGlob: Optional[str] = None
 
     # The generators to call to generate testcases for this group.
-    generators: Optional[List[GeneratorCall]] = []
+    generators: List[GeneratorCall] = []
 
     # A generator script to call to generate testcases for this group.
     generatorScript: Optional[CodeItem] = None
@@ -120,13 +120,13 @@ class Package(BaseModel):
     validator: Optional[CodeItem] = None
 
     # Definitions of the generators for this problem.
-    generators: Optional[List[Generator]] = None
+    generators: List[Generator] = []
 
     # All tested solutions for this problem.
     # The first solution in this list is the default solution --
     # the one that will be used as reference -- and should have
     # the `accepted` outcome.
-    solutions: Optional[List[Solution]] = []
+    solutions: List[Solution] = []
 
     # Test groups for the problem.
-    testcases: Optional[List[TestcaseGroup]] = []
+    testcases: List[TestcaseGroup] = []

@@ -1,3 +1,4 @@
+# type: ignore
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
@@ -5,11 +6,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 class alias(auto):
     def __init__(self, *aliases):
         if len(aliases) == 0:
-            raise ValueError("Cannot have empty alias() call.")
+            raise ValueError('Cannot have empty alias() call.')
         for a in aliases:
             if not isinstance(a, str):
                 raise ValueError(
-                    f"All aliases for must be strings; found alias of type {type(a)} having value: {a}"
+                    f'All aliases for must be strings; found alias of type {type(a)} having value: {a}'
                 )
         self.names = aliases
         self.enum_name = None
@@ -24,10 +25,10 @@ class alias(auto):
 
     @property
     def alias_repr(self) -> str:
-        return str(f"alias:{list(self.names)}")
+        return str(f'alias:{list(self.names)}')
 
     def __setattr__(self, attr_name: str, attr_value: Any):
-        if attr_name == "value":
+        if attr_name == 'value':
             ## because alias subclasses auto and does not set value, enum.py:143 will try to set value
             self.enum_name = attr_value
         else:
@@ -58,11 +59,11 @@ class alias(auto):
             ...
 
         """
-        if attr_name == "value":
-            if object.__getattribute__(self, "enum_name") is None:
+        if attr_name == 'value':
+            if object.__getattribute__(self, 'enum_name') is None:
                 ## Gets _auto_null as alias inherits auto class but does not set `value` class member; refer enum.py:142
                 try:
-                    return object.__getattribute__(self, "value")
+                    return object.__getattribute__(self, 'value')
                 except Exception:
                     from enum import _auto_null
 
@@ -72,9 +73,9 @@ class alias(auto):
 
 
 _DEFAULT_REMOVAL_TABLE = str.maketrans(
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-    "abcdefghijklmnopqrstuvwxyz",
-    " -_.:;,",  ## Will be removed
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'abcdefghijklmnopqrstuvwxyz',
+    ' -_.:;,',  ## Will be removed
 )
 
 
@@ -109,7 +110,7 @@ class AutoEnum(str, Enum):
         return self.name
 
     def __hash__(self):
-        return hash(self.__class__.__name__ + "." + self.name)
+        return hash(self.__class__.__name__ + '.' + self.name)
 
     def __eq__(self, other):
         return self is other
@@ -132,28 +133,28 @@ class AutoEnum(str, Enum):
     def display_names(cls, **kwargd) -> str:
         return str([enum_value.display_name(**kwargd) for enum_value in list(cls)])
 
-    def display_name(self, *, sep: str = " ") -> str:
+    def display_name(self, *, sep: str = ' ') -> str:
         return sep.join(
             [
                 (
                     word.lower()
-                    if word.lower() in ("of", "in", "the")
+                    if word.lower() in ('of', 'in', 'the')
                     else word.capitalize()
                 )
-                for word in str(self).split("_")
+                for word in str(self).split('_')
             ]
         )
 
     @classmethod
     def _initialize_lookup(cls):
         if (
-            "_value2member_map_normalized_" not in cls.__dict__
+            '_value2member_map_normalized_' not in cls.__dict__
         ):  ## Caching values for fast retrieval.
             cls._value2member_map_normalized_ = {}
 
             def _set_normalized(e, normalized_e_name):
                 if normalized_e_name in cls._value2member_map_normalized_:
-                    print("DEU MERDA")
+                    print('DEU MERDA')
                     raise ValueError(
                         f'Cannot register enum "{e.name}"; '
                         f'another enum with the same normalized name "{normalized_e_name}" already exists.'
@@ -187,14 +188,14 @@ class AutoEnum(str, Enum):
         if enum_value is None and raise_error is False:
             return None
         if not isinstance(enum_value, str) and raise_error is True:
-            raise ValueError(f"Input should be a string; found type {type(enum_value)}")
+            raise ValueError(f'Input should be a string; found type {type(enum_value)}')
         cls._initialize_lookup()
         enum_obj: Optional[AutoEnum] = cls._value2member_map_normalized_.get(
             cls._normalize(enum_value)
         )
         if enum_obj is None and raise_error is True:
             raise ValueError(
-                f"Could not find enum with value {repr(enum_value)}; available values are: {list(cls)}."
+                f'Could not find enum with value {repr(enum_value)}; available values are: {list(cls)}.'
             )
         return enum_obj
 
@@ -255,7 +256,7 @@ class AutoEnum(str, Enum):
         if isinstance(d, set):
             return cls.convert_set(d)
         if raise_error:
-            raise ValueError(f"Unrecognized data structure of type {type(d)}")
+            raise ValueError(f'Unrecognized data structure of type {type(d)}')
         return d
 
     @classmethod
@@ -324,9 +325,9 @@ class AutoEnum(str, Enum):
 
 
 class TestEnum(AutoEnum):
-    ACCEPTED = alias("accepted", "ac")
-    WRONG_ANSWER = alias("wrong answer", "wa")
+    ACCEPTED = alias('accepted', 'ac')
+    WRONG_ANSWER = alias('wrong answer', 'wa')
 
 
-if __name__ == "__main__":
-    print(TestEnum("ac"))
+if __name__ == '__main__':
+    print(TestEnum('ac'))

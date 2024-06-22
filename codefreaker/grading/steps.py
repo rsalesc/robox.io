@@ -1,7 +1,7 @@
 import pathlib
 import shlex
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 from rich.text import Text
@@ -110,11 +110,11 @@ class GradingFileOutput(BaseModel):
 
 class GradingArtifacts(BaseModel):
     # Root directory for the produced artifacts.
-    root: Optional[pathlib.Path] = pathlib.PosixPath('.')
+    root: pathlib.Path = pathlib.PosixPath('.')
     # List of input files to copy to the sandbox.
-    inputs: Optional[List[GradingFileInput]] = []
+    inputs: List[GradingFileInput] = []
     # List of output files to copy from the sandbox.
-    outputs: Optional[List[GradingFileOutput]] = []
+    outputs: List[GradingFileOutput] = []
     # Capture certain logs of the execution.
     logs: Optional[GradingLogsHolder] = None
 
@@ -132,14 +132,14 @@ class PreprocessLog(BaseModel):
 
 
 class RunLog(BaseModel):
-    exitcode: int
-    exitstatus: str
-    time: float
+    exitcode: int = 0
+    exitstatus: str = SandboxBase.EXIT_SANDBOX_ERROR
+    time: Optional[float] = 0.0
 
 
 class TestcaseLog(RunLog):
-    stdout_absolute_path: pathlib.Path
-    stderr_absolute_path: pathlib.Path
+    stdout_absolute_path: Optional[pathlib.Path] = None
+    stderr_absolute_path: Optional[pathlib.Path] = None
 
 
 class CheckerResult(BaseModel):
@@ -157,6 +157,7 @@ class Evaluation(BaseModel):
 def _process_input_artifacts(artifacts: GradingArtifacts, sandbox: SandboxBase):
     for input_artifact in artifacts.inputs:
         if input_artifact.digest is not None:
+            assert input_artifact.digest.value is not None
             sandbox.create_file_from_storage(
                 input_artifact.dest,
                 input_artifact.digest.value,
@@ -164,6 +165,7 @@ def _process_input_artifacts(artifacts: GradingArtifacts, sandbox: SandboxBase):
                 executable=input_artifact.executable,
             )
             continue
+        assert input_artifact.src is not None
         sandbox.create_file_from_bytes(
             input_artifact.dest,
             (artifacts.root / input_artifact.src).read_bytes(),
@@ -189,6 +191,7 @@ def _process_output_artifacts(
                 trunc_len=output_artifact.maxlen,
             )
             continue
+        assert output_artifact.dest
         dst: pathlib.Path = artifacts.root / output_artifact.dest
         copyfileobj(
             sandbox.get_file(output_artifact.src),
@@ -221,7 +224,7 @@ def compile(
 
     for i, command in enumerate(commands):
         cmd = shlex.split(command)
-        stderr_file = f'compile-{i}.stderr'
+        stderr_file = pathlib.PosixPath(f'compile-{i}.stderr')
         sandbox.params.set_stdall(stderr=stderr_file)
 
         if not sandbox.execute_without_std(cmd, wait=True):
@@ -287,7 +290,7 @@ def run(
     return run_log
 
 
-def _normalize_checked_words(s: str) -> List[str]:
+def _normalize_checked_words(s: str) -> Tuple[str, ...]:
     return tuple(s.split())
 
 
@@ -314,6 +317,10 @@ def _check(
     output_path: pathlib.Path,
     should_use_python_checker: bool = False,
 ) -> CheckerResult:
+    if testcase.output is None:
+        # No output to compare.
+        return CheckerResult(outcome=Outcome.ACCEPTED)
+
     if should_use_python_checker:
         # Use default wcmp checker.
         expected = testcase.output.read_text()
@@ -323,18 +330,20 @@ def _check(
 
     sandbox.params.set_stdall(
         stdin=None,
-        stdout='stdout.txt',
-        stderr='stderr.txt',
+        stdout=pathlib.PosixPath('stdout.txt'),
+        stderr=pathlib.PosixPath('stderr.txt'),
     )
 
     sandbox.create_file_from_string(
-        'expected.txt', testcase.output.read_text(), override=True
+        pathlib.PosixPath('expected.txt'), testcase.output.read_text(), override=True
     )
     sandbox.create_file_from_string(
-        'output.txt', output_path.read_text(), override=True
+        pathlib.PosixPath('output.txt'), output_path.read_text(), override=True
     )
     sandbox.create_file_from_string(
-        'input.txt', testcase.input.read_text(), override=True
+        pathlib.PosixPath('input.txt'),
+        testcase.input.read_text() if testcase.input is not None else '',
+        override=True,
     )
 
     if not sandbox.execute_without_std(
@@ -345,22 +354,30 @@ def _check(
         )
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
 
-    stderr = sandbox.get_file_to_string('stderr.txt', maxlen=None)
+    checker_stderr = sandbox.get_file_to_string(
+        pathlib.PosixPath('stderr.txt'), maxlen=None
+    )
     if sandbox.get_exit_code() in [1, 2]:
-        return CheckerResult(outcome=Outcome.WRONG_ANSWER, message=stderr)
+        return CheckerResult(outcome=Outcome.WRONG_ANSWER, message=checker_stderr)
     if sandbox.get_exit_code() == 3:
-        return CheckerResult(outcome=Outcome.JUDGE_FAILED, message=stderr)
-    return CheckerResult(outcome=Outcome.ACCEPTED, message=stderr)
+        return CheckerResult(outcome=Outcome.JUDGE_FAILED, message=checker_stderr)
+    return CheckerResult(outcome=Outcome.ACCEPTED, message=checker_stderr)
 
 
 # Always assume a `checker` executable in the sandbox if should use checker.
 def evaluate(
     sandbox: SandboxBase,
     testcase: TestcaseIO,
-    log: TestcaseLog,
+    log: Optional[TestcaseLog],
     artifacts: GradingArtifacts,
     should_use_python_checker: bool = False,
 ) -> Evaluation:
+    if log is None:
+        return Evaluation(
+            testcase=testcase,
+            log=TestcaseLog(),
+            result=CheckerResult(outcome=Outcome.INTERNAL_ERROR),
+        )
     if log.exitstatus != SandboxBase.EXIT_OK:
         return Evaluation(
             testcase=testcase,
@@ -375,6 +392,13 @@ def evaluate(
         )
 
     _process_input_artifacts(artifacts, sandbox)
+    if log.stdout_absolute_path is None:
+        return Evaluation(
+            testcase=testcase,
+            log=log,
+            result=CheckerResult(outcome=Outcome.INTERNAL_ERROR, message='No output'),
+        )
+
     checker_result = _check(
         sandbox,
         testcase,

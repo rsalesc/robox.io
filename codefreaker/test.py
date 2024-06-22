@@ -51,9 +51,9 @@ def _run_testcases(
     lang: Language,
     sandbox: SandboxBase,
     testcases: List[steps.TestcaseIO],
-    persist_root: Optional[pathlib.Path] = pathlib.Path(),
-) -> Optional[Dict[int, steps.TestcaseLog]]:
-    logs: Dict[int, steps.TestcaseLog] = {}
+    persist_root: pathlib.Path = pathlib.Path(),
+) -> Dict[int, Optional[steps.TestcaseLog]]:
+    logs: Dict[int, Optional[steps.TestcaseLog]] = {}
 
     # Ensure persist dir exists.
     persist_root.mkdir(parents=True, exist_ok=True)
@@ -94,8 +94,8 @@ def _evaluate_testcases(
     problem: DumpedProblem,
     sandbox: SandboxBase,
     testcases: List[steps.TestcaseIO],
-    testcase_logs: Dict[int, steps.TestcaseLog],
-    persist_root: Optional[pathlib.Path] = pathlib.Path(),
+    testcase_logs: Dict[int, Optional[steps.TestcaseLog]],
+    persist_root: pathlib.Path = pathlib.Path(),
 ) -> List[steps.Evaluation]:
     evaluations = []
     artifacts = grading_utils.build_checker_run_grading_artifacts(
@@ -120,7 +120,9 @@ def _evaluate_testcases(
     return evaluations
 
 
-def _pretty_print_output_on_panel(file: pathlib.Path, title: str) -> Panel:
+def _pretty_print_output_on_panel(file: Optional[pathlib.Path], title: str) -> Panel:
+    if not file:
+        return Panel('[error]No file to read from.[/error]', title=title, expand=False)
     return Panel(
         testcase_rendering.render_from_file(file),
         title=title,
@@ -129,6 +131,8 @@ def _pretty_print_output_on_panel(file: pathlib.Path, title: str) -> Panel:
 
 
 def _pretty_print_side_by_side(result: steps.Evaluation):
+    if not result.testcase.output:
+        return _pretty_print_output_on_panel(result.log.stdout_absolute_path, 'Output')
     return Columns(
         [
             _pretty_print_output_on_panel(result.testcase.output, 'Expected'),

@@ -19,13 +19,13 @@ def main():
     atexit.register(sandbox.cleanup)
     sandbox.create_file_from_storage(pathlib.PosixPath('run.py'), python_file)
 
-    sandbox.params.stdout_file = 'run.out'
+    sandbox.params.stdout_file = pathlib.PosixPath('run.out')
 
     sandbox.execute_without_std(['python3', 'run.py'], wait=True)
     try:
         sandbox.hydrate_logs()
-    except Exception as e:
-        console.print_exception(e)
+    except Exception:
+        console.print_exception()
 
     print(sandbox.get_human_exit_description())
     print(sandbox.get_stats())

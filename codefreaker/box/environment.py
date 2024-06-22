@@ -18,23 +18,23 @@ class FileMapping(BaseModel):
 
     # Path where to copy the stdin file to before running the program,
     # relative to the sandbox root.
-    input: Optional[str] = 'stdin'
+    input: str = 'stdin'
 
     # Path where to output the stdout file after running the program,
     # relative to the sandbox root.
-    output: Optional[str] = 'stdout'
+    output: str = 'stdout'
 
     # Path where to output the stderr file after running the program,
     # relative to the sandbox root.
-    error: Optional[str] = 'stderr'
+    error: str = 'stderr'
 
     # Path where to copy the compilable file to before compiling the program,
     # relative to the sandbox root.
-    compilable: Optional[str] = 'compilable'
+    compilable: str = 'compilable'
 
     # Path to where to output the executable file after compiling the program,
     # relative to the sandbox root.
-    executable: Optional[str] = 'executable'
+    executable: str = 'executable'
 
 
 class EnvironmentSandbox(BaseModel):
@@ -118,7 +118,7 @@ class Environment(BaseModel):
     defaultExecution: Optional[ExecutionConfig] = None
 
     # Configuration for each language supported in this environment.
-    languages: Optional[List[EnvironmentLanguage]] = []
+    languages: List[EnvironmentLanguage] = []
 
     # Identifier of the sandbox used by this environment (e.g. "stupid", "isolate")
     sandbox: str
@@ -158,7 +158,7 @@ def _merge_shallow_models(model: Type[T], base: T, override: T) -> T:
 
 
 def merge_compilation_configs(
-    compilation_configs: List[CompilationConfig],
+    compilation_configs: List[Optional[CompilationConfig]],
 ) -> CompilationConfig:
     merged_cfg = CompilationConfig()
     merged_cfg.sandbox = EnvironmentSandbox(
@@ -189,7 +189,7 @@ def get_compilation_config(language: str) -> CompilationConfig:
 
 
 def merge_execution_configs(
-    execution_configs: List[ExecutionConfig],
+    execution_configs: List[Optional[ExecutionConfig]],
 ) -> ExecutionConfig:
     merged_cfg = ExecutionConfig()
     merged_cfg.sandbox = EnvironmentSandbox()
@@ -243,7 +243,10 @@ def get_mapped_command(command: str, mapping: Optional[FileMapping] = None) -> s
     return get_mapped_commands([command], mapping)[0]
 
 
-def get_sandbox_params_from_config(config: EnvironmentSandbox) -> SandboxParams:
+def get_sandbox_params_from_config(
+    config: Optional[EnvironmentSandbox],
+) -> SandboxParams:
+    config = config or EnvironmentSandbox()
     params = SandboxParams()
     if config.timeLimit is not None:
         params.timeout = config.timeLimit

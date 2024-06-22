@@ -5,6 +5,7 @@ import re
 from typing import List, Optional
 
 import typer
+import typer.core
 from typing_extensions import Annotated
 
 from codefreaker import config, metadata
@@ -37,83 +38,83 @@ def _list_files(path: pathlib.Path) -> List[str]:
 def _get_checker_options():
     options = set()
     with importlib.resources.as_file(
-        importlib.resources.files(_RESOURCES_PKG) / "checkers"
+        importlib.resources.files(_RESOURCES_PKG) / 'checkers'
     ) as file:
         options.update(_list_files(file))
 
-    options.update(_list_files(config.get_app_path() / "checkers"))
-    options.remove("boilerplate.cpp")
+    options.update(_list_files(config.get_app_path() / 'checkers'))
+    options.remove('boilerplate.cpp')
     return sorted(options)
 
 
 Timelimit = Annotated[
-    Optional[int],
+    int,
     typer.Option(
-        "--timelimit",
-        "-t",
-        help="Time limit in milliseconds.",
-        prompt="Time limit (ms)",
+        '--timelimit',
+        '-t',
+        help='Time limit in milliseconds.',
+        prompt='Time limit (ms)',
     ),
 ]
 Memorylimit = Annotated[
-    Optional[int],
+    int,
     typer.Option(
-        "--memorylimit",
-        "-m",
-        help="Memory limit in megabytes.",
-        prompt="Memory limit (MB)",
+        '--memorylimit',
+        '-m',
+        help='Memory limit in megabytes.',
+        prompt='Memory limit (MB)',
     ),
 ]
 Multitest = Annotated[
     Optional[bool],
     typer.Option(
-        "--multitest",
-        "-m",
+        '--multitest',
+        '-m',
         is_flag=True,
-        help="Whether this problem have multiple tests per file.",
-        prompt="Multitest?",
+        help='Whether this problem have multiple tests per file.',
+        prompt='Multitest?',
     ),
 ]
 Language = Annotated[
     str,
     typer.Option(
-        "--language",
-        "--lang",
-        "-l",
-        help="Language to use.",
-        prompt="Language",
+        '--language',
+        '--lang',
+        '-l',
+        help='Language to use.',
+        prompt='Language',
         default_factory=_get_language_default,
         autocompletion=_get_language_options,
     ),
 ]
 LanguageWithDefault = Annotated[
-    str,
+    Optional[str],
     typer.Option(
-        "--language",
-        "--lang",
-        "-l",
-        help="Language to use.",
+        '--language',
+        '--lang',
+        '-l',
+        help='Language to use.',
         autocompletion=_get_language_options,
     ),
 ]
 Problem = Annotated[str, typer.Argument(autocompletion=_get_problem_options)]
 
 ProblemOption = Annotated[
-    Optional[str], typer.Option("--problem", "-p", autocompletion=_get_problem_options)
+    Optional[str], typer.Option('--problem', '-p', autocompletion=_get_problem_options)
 ]
 
-TestcaseIndex = Annotated[int, typer.Option("--index", "--idx", "-i")]
+TestcaseIndex = Annotated[Optional[int], typer.Option('--index', '--idx', '-i')]
 
 Checker = Annotated[
     str,
     typer.Argument(
-        autocompletion=_get_checker_options, help="Path to a testlib checker file."
+        autocompletion=_get_checker_options, help='Path to a testlib checker file.'
     ),
 ]
 
 
 class AliasGroup(typer.core.TyperGroup):
-    _CMD_SPLIT_P = re.compile(r", ?")
+    _CMD_SPLIT_P = re.compile(r', ?')
 
     def get_command(self, ctx, cmd_name):
         cmd_name = self._group_cmd_name(cmd_name)

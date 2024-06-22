@@ -137,11 +137,11 @@ def main(lang: Optional[str] = None):
                 ignored.add(problem.batch.id)
                 batch_to_left_lock.release()
                 return True
-            if problem.batch.size > 1:
+            if problem.batch.size > 1 and saved_status:
                 saved_status.update(
                     f'[cfk]Codefreaker[/cfk] is parsing problems from group [item]{problem.group}[/item]'
                 )
-            else:
+            elif saved_status:
                 saved_status.update('[cfk]Codefreaker[/cfk] is parsing problems...')
             console.print(
                 f'Started parsing batch [item]{problem.batch.id}[/item] with size [item]{problem.batch.size}[/item].'
@@ -188,4 +188,10 @@ def main(lang: Optional[str] = None):
         server.run()
 
     with console.status('Processing parsed problems...') as status:
-        process_problems(problems_to_process, get_config().get_language(lang), status)
+        language = get_config().get_language(lang)
+        if not language:
+            console.print(
+                f'[error]Language {lang or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]'
+            )
+            return
+        process_problems(problems_to_process, language, status)

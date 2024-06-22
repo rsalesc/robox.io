@@ -1,4 +1,5 @@
 import pathlib
+from typing import Optional
 
 from codefreaker.box import package
 from codefreaker.box.code import compile_item, run_item
@@ -23,13 +24,16 @@ def compile_checker() -> str:
 
 def check(
     checker_digest: str,
-    run_log: RunLog,
+    run_log: Optional[RunLog],
     testcase: Testcase,
     program_output: pathlib.Path,
 ) -> CheckerResult:
     pkg = package.find_problem_package_or_die()
 
-    if run_log.time * 1000 > pkg.timeLimit * 2:
+    if run_log is None:
+        return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
+
+    if run_log.time is not None and run_log.time * 1000 > pkg.timeLimit * 2:
         return CheckerResult(outcome=Outcome.TIME_LIMIT_EXCEEDED)
 
     if run_log.exitstatus in [SandboxBase.EXIT_SIGNAL, SandboxBase.EXIT_NONZERO_RETURN]:
@@ -76,7 +80,7 @@ def check(
     if checker_run_log.exitcode == 3:
         result = CheckerResult(outcome=Outcome.JUDGE_FAILED, message=message)
 
-    if run_log.time * 1000 > pkg.timeLimit:
+    if run_log.time is not None and run_log.time * 1000 > pkg.timeLimit:
         # Soft TLE.
         result.no_tle_outcome = result.outcome
         result.outcome = Outcome.TIME_LIMIT_EXCEEDED

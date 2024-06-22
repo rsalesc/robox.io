@@ -99,6 +99,7 @@ def is_artifact_ok(artifact: GradingArtifacts, storage: Storage) -> bool:
             if output.digest.value is None or not storage.exists(output.digest.value):
                 return False
             return True
+        assert output.dest is not None
         file_path: pathlib.Path = artifact.root / output.dest
         if not file_path.is_file():
             return False

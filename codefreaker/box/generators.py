@@ -2,7 +2,7 @@ import pathlib
 import shlex
 import shutil
 from pathlib import PosixPath
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import typer
 
@@ -48,7 +48,7 @@ def _copy_testcase_over(testcase: Testcase, group_path: pathlib.Path, i: int):
 
 def _run_generator(
     generator: Generator,
-    args: str,
+    args: Optional[str],
     compiled_digest: str,
     group_path: pathlib.Path,
     i: int = 0,
@@ -95,6 +95,7 @@ def generate_outputs_for_testcases():
             input_path = testcase.inputPath
             output_path = testcase.outputPath
 
+            assert output_path is not None
             if output_path.is_file():
                 continue
             if main_solution is None:
@@ -196,6 +197,7 @@ def generate_testcases():
                 )
                 raise typer.Exit(1)
 
+            assert script_digest.value
             script = cacher.get_file_content(script_digest.value).decode()
             lines = script.splitlines()
 

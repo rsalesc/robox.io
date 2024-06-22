@@ -54,7 +54,8 @@ def find_problem_package_or_die(root: pathlib.Path = pathlib.Path()) -> Package:
 def find_problem(root: pathlib.Path = pathlib.Path()) -> pathlib.Path:
     found = find_problem_yaml(root)
     if found is None:
-        return None
+        console.console.print(f'Problem not found in {root.absolute()}', style='error')
+        raise typer.Exit(1)
     return found.parent
 
 

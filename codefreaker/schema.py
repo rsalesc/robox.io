@@ -22,13 +22,13 @@ class Batch(BaseModel):
 
 class Problem(BaseModel):
     name: str
-    group: Optional[str] = ''
-    url: Optional[str] = ''
-    interactive: Optional[bool] = False
+    group: str = ''
+    url: str = ''
+    interactive: bool = False
     memoryLimit: int
     timeLimit: int
-    tests: Optional[List[Testcase]] = []
-    testType: Optional[str] = 'single'
+    tests: List[Testcase] = []
+    testType: str = 'single'
     batch: Batch
 
     def get_code(self):

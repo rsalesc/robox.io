@@ -5,7 +5,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
-from typing import BinaryIO, List, Optional, Union
+from typing import IO, Any, Dict, List, Optional, Union
 
 from codefreaker.config import get_app_path
 from codefreaker.grading.judge.cacher import FileCacher
@@ -41,6 +41,8 @@ class IsolateSandbox(SandboxBase):
     # going to execute it without sandboxing, and with all permissions
     # on the current directory.
     SECURE_COMMANDS = ['/bin/cp', '/bin/mv', '/usr/bin/zip', '/usr/bin/unzip']
+
+    log: Optional[Dict[str, Any]]
 
     def __init__(
         self,
@@ -334,35 +336,38 @@ class IsolateSandbox(SandboxBase):
                 'Error while reading execution log file %s. %r' % (info_file, error)
             ) from error
 
-    def get_execution_time(self) -> float:
+    def get_execution_time(self) -> Optional[float]:
         """Return the time spent in the sandbox, reading the logs if
         necessary.
 
         return (float): time spent in the sandbox.
 
         """
+        assert self.log is not None
         if 'time' in self.log:
             return float(self.log['time'][0])
         return None
 
-    def get_execution_wall_clock_time(self) -> float:
+    def get_execution_wall_clock_time(self) -> Optional[float]:
         """Return the total time from the start of the sandbox to the
         conclusion of the task, reading the logs if necessary.
 
         return (float): total time the sandbox was alive.
 
         """
+        assert self.log is not None
         if 'time-wall' in self.log:
             return float(self.log['time-wall'][0])
         return None
 
-    def get_memory_used(self) -> int:
+    def get_memory_used(self) -> Optional[int]:
         """Return the memory used by the sandbox, reading the logs if
         necessary.
 
         return (int): memory used by the sandbox (in kbytes).
 
         """
+        assert self.log is not None
         if 'cg-mem' in self.log:
             # Isolate returns memory measurements in KiB.
             return int(self.log['cg-mem'][0])
@@ -375,6 +380,7 @@ class IsolateSandbox(SandboxBase):
         return (int): offending signal, or 0.
 
         """
+        assert self.log is not None
         if 'exitsig' in self.log:
             return int(self.log['exitsig'][0])
         return 0
@@ -386,6 +392,7 @@ class IsolateSandbox(SandboxBase):
         return (int): exitcode, or 0.
 
         """
+        assert self.log is not None
         if 'exitcode' in self.log:
             return int(self.log['exitcode'][0])
         return 0
@@ -397,6 +404,7 @@ class IsolateSandbox(SandboxBase):
         return (list): list of statuses of the sandbox.
 
         """
+        assert self.log is not None
         if 'status' in self.log:
             return self.log['status']
         return []
@@ -408,6 +416,7 @@ class IsolateSandbox(SandboxBase):
         return (string): the main reason why the sandbox terminated.
 
         """
+        assert self.log is not None
         status_list = self.get_status_list()
         if 'XX' in status_list:
             return self.EXIT_SANDBOX_ERROR
@@ -447,6 +456,7 @@ class IsolateSandbox(SandboxBase):
             return 'Execution killed with signal %s' % self.get_killing_signal()
         elif status == self.EXIT_NONZERO_RETURN:
             return 'Execution failed because the return code was nonzero'
+        return ''
 
     def inner_absolute_path(self, path: pathlib.Path) -> pathlib.Path:
         """Translate from a relative path inside the sandbox to an
@@ -462,9 +472,9 @@ class IsolateSandbox(SandboxBase):
     def _popen(
         self,
         command: List[str],
-        stdin: Optional[BinaryIO] = None,
-        stdout: Optional[BinaryIO] = None,
-        stderr: Optional[BinaryIO] = None,
+        stdin: Optional[IO[bytes] | int] = None,
+        stdout: Optional[IO[bytes] | int] = None,
+        stderr: Optional[IO[bytes] | int] = None,
         close_fds: bool = True,
     ) -> subprocess.Popen:
         """Execute the given command in the sandbox using

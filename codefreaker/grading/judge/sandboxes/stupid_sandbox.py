@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 from functools import partial
 from time import monotonic
-from typing import BinaryIO, List, Optional
+from typing import IO, List, Optional, Union
 
 import gevent
 
@@ -41,7 +41,7 @@ class StupidSandbox(SandboxBase):
         self,
         file_cacher: Optional[FileCacher] = None,
         name: Optional[str] = None,
-        temp_dir: pathlib.Path = None,
+        temp_dir: Optional[pathlib.Path] = None,
         params: Optional[SandboxParams] = None,
     ):
         """Initialization.
@@ -82,7 +82,7 @@ class StupidSandbox(SandboxBase):
 
     # TODO - It returns wall clock time, because I have no way to
     # check CPU time (libev doesn't have wait4() support)
-    def get_execution_time(self) -> float:
+    def get_execution_time(self) -> Optional[float]:
         """Return the time spent in the sandbox.
 
         return (float): time spent in the sandbox.
@@ -94,7 +94,7 @@ class StupidSandbox(SandboxBase):
     # time; unfortunately I have no way to compute wall clock time
     # just after the child terminates, because I have no guarantee
     # about how the control will come back to this class
-    def get_execution_wall_clock_time(self) -> float:
+    def get_execution_wall_clock_time(self) -> Optional[float]:
         """Return the total time from the start of the sandbox to the
         conclusion of the task.
 
@@ -110,7 +110,7 @@ class StupidSandbox(SandboxBase):
 
     # TODO - It always returns None, since I have no way to check
     # memory usage (libev doesn't have wait4() support)
-    def get_memory_used(self) -> int:
+    def get_memory_used(self) -> Optional[int]:
         """Return the memory used by the sandbox.
 
         return (int): memory used by the sandbox (in bytes).
@@ -124,6 +124,7 @@ class StupidSandbox(SandboxBase):
         return (int): offending signal, or 0.
 
         """
+        assert self.popen is not None
         if self.popen.returncode < 0:
             return -self.popen.returncode
         return 0
@@ -138,6 +139,7 @@ class StupidSandbox(SandboxBase):
         return (string): the main reason why the sandbox terminated.
 
         """
+        assert self.popen
         if self.popen.returncode >= 0:
             return self.EXIT_OK
         else:
@@ -149,6 +151,7 @@ class StupidSandbox(SandboxBase):
         return (float): exitcode, or 0.
 
         """
+        assert self.popen
         return self.popen.returncode
 
     def get_human_exit_description(self) -> str:
@@ -167,6 +170,7 @@ class StupidSandbox(SandboxBase):
             )
         elif status == self.EXIT_SIGNAL:
             return 'Execution killed with signal %s' % self.get_killing_signal()
+        return ''
 
     def hydrate_logs(self):
         return
@@ -174,9 +178,9 @@ class StupidSandbox(SandboxBase):
     def _popen(
         self,
         command: List[str],
-        stdin: Optional[BinaryIO] = None,
-        stdout: Optional[BinaryIO] = None,
-        stderr: Optional[BinaryIO] = None,
+        stdin: Optional[IO[bytes] | int] = None,
+        stdout: Optional[IO[bytes] | int] = None,
+        stderr: Optional[IO[bytes] | int] = None,
         preexec_fn=None,
         close_fds: bool = True,
     ) -> subprocess.Popen:
@@ -225,7 +229,9 @@ class StupidSandbox(SandboxBase):
 
         return p
 
-    def execute_without_std(self, command: List[str], wait: bool = False) -> bool:
+    def execute_without_std(
+        self, command: List[str], wait: bool = False
+    ) -> Union[bool, subprocess.Popen]:
         """Execute the given command in the sandbox using
         subprocess.Popen and discarding standard input, output and
         error. More specifically, the standard input gets closed just

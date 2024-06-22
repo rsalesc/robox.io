@@ -14,7 +14,7 @@ def get_testcase_paths(
 
 
 def hydrate_problem(root: pathlib.Path, problem: DumpedProblem):
-    for i, testcase in enumerate(problem.tests):
+    for i, testcase in enumerate(problem.tests or []):
         in_path, out_path = get_testcase_paths(root, problem, i)
         in_path.write_text(testcase.input)
         out_path.write_text(testcase.output)
@@ -22,7 +22,7 @@ def hydrate_problem(root: pathlib.Path, problem: DumpedProblem):
 
 def add_testcase(root: pathlib.Path, problem: DumpedProblem, testcase: Testcase):
     problem_path = metadata.find_problem_path_by_code(problem.code, root)
-    if not problem_path.is_file():
+    if not problem_path or not problem_path.is_file():
         console.print(
             f'[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]'
         )
@@ -41,7 +41,7 @@ def add_testcase(root: pathlib.Path, problem: DumpedProblem, testcase: Testcase)
 
 def remove_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
     problem_path = metadata.find_problem_path_by_code(problem.code, root)
-    if not problem_path.is_file():
+    if not problem_path or not problem_path.is_file():
         console.print(
             f'[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]'
         )
@@ -54,8 +54,10 @@ def remove_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
             f'[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item].[/error]'
         )
         return
-    testcases[0].input.unlink(missing_ok=True)
-    testcases[0].output.unlink(missing_ok=True)
+    if testcases[0].input:
+        testcases[0].input.unlink(missing_ok=True)
+    if testcases[0].output:
+        testcases[0].output.unlink(missing_ok=True)
 
     console.print(
         f'Removed testcase [item]{i}[/item] from problem [item]{problem.pretty_name()}[/item].'
@@ -64,7 +66,7 @@ def remove_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
 
 def edit_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
     problem_path = metadata.find_problem_path_by_code(problem.code, root)
-    if not problem_path.is_file():
+    if not problem_path or not problem_path.is_file():
         console.print(
             f'[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]'
         )
@@ -78,8 +80,8 @@ def edit_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
         )
         return
 
-    paths: List[pathlib.Path] = [testcases[0].input, testcases[0].output]
-    config.open_editor(*[path for path in paths if path.is_file()])
+    paths: List[Optional[pathlib.Path]] = [testcases[0].input, testcases[0].output]
+    config.open_editor(*[path for path in paths if path is not None and path.is_file()])
 
 
 def main(problem: Optional[str] = None):

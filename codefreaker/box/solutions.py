@@ -43,6 +43,7 @@ def run_solution(
         testcases = find_built_testcases(group)
         for i, testcase in enumerate(testcases):
             runs_dir = package.get_problem_runs_dir()
+            assert testcase.outputPath is not None
             output_path = runs_dir / f'{index}' / group.name / testcase.outputPath.name
             error_path = (
                 runs_dir
@@ -73,7 +74,7 @@ def run_solution(
                         index=i, input=testcase.inputPath, output=testcase.outputPath
                     ),
                     log=TestcaseLog(
-                        **run_log.model_dump(),
+                        **(run_log.model_dump() if run_log is not None else {}),
                         stdout_absolute_path=output_path.absolute(),
                         stderr_absolute_path=error_path.absolute(),
                     ),

@@ -1,19 +1,24 @@
+import pathlib
+from typing import Optional
+
 from codefreaker import annotations, console, metadata
 from codefreaker.config import get_config, open_editor
 
 
-def main(problem: str, language: annotations.LanguageWithDefault = None):
+def main(problem: str, language: Optional[annotations.LanguageWithDefault] = None):
     lang = get_config().get_language(language)
     if lang is None:
-        console.print(
+        console.console.print(
             f'[error]Language {language or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]'
         )
         return
 
-    problem = metadata.find_problem_by_anything(problem)
-    if not problem:
-        console.print(f'[error]Problem with identifier {problem} not found.[/error]')
+    dumped_problem = metadata.find_problem_by_anything(problem)
+    if not dumped_problem:
+        console.console.print(
+            f'[error]Problem with identifier {problem} not found.[/error]'
+        )
         return
 
-    filename = lang.get_file(problem.code)
-    open_editor(filename)
+    filename = lang.get_file(dumped_problem.code)
+    open_editor(pathlib.Path(filename))

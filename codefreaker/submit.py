@@ -1,7 +1,8 @@
 import atexit
 from pathlib import PosixPath
+from typing import Optional
 
-from codefreaker import annotations, metadata, submitors, utils
+from codefreaker import annotations, grading_utils, metadata, submitors, utils
 from codefreaker.config import get_config
 from codefreaker.console import console
 from codefreaker.grading import steps
@@ -10,7 +11,7 @@ from codefreaker.grading.judge.sandboxes import stupid_sandbox
 
 def main(
     problem: annotations.Problem,
-    language: annotations.LanguageWithDefault = None,
+    language: Optional[annotations.LanguageWithDefault] = None,
     keep_sandbox: bool = False,
 ):
     dumped_problem = metadata.find_problem_by_anything(problem)
@@ -33,7 +34,10 @@ def main(
     with console.status(
         f'Preprocessing problem [item]{dumped_problem.pretty_name()}[/item]...'
     ):
-        if not steps.preprocess(dumped_problem, lang, box):
+        preprocess_cmds = grading_utils.build_preprocess_commands(dumped_problem, lang)
+        sandbox_params = grading_utils.build_preprocess_sandbox_params()
+        artifacts = grading_utils.build_compile_grading_artifacts(dumped_problem, lang)
+        if not steps.compile(preprocess_cmds, sandbox_params, box, artifacts):
             console.print(
                 f'[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]'
             )

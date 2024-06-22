@@ -43,6 +43,9 @@ def delete(
     """
     Remove the i-th testcase from a problem.
     """
+    if i is None:
+        console.print(f'[error]Index [item]{i}[/item] is invalid.[/error]')
+        return
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f'[error]Problem [item]{problem}[/item] not found.[/error]')
@@ -56,6 +59,9 @@ def edit(problem: annotations.Problem, i: annotations.TestcaseIndex):
     """
     Edit the testcases of a problem.
     """
+    if i is None:
+        console.print(f'[error]Index [item]{i}[/item] is invalid.[/error]')
+        return
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
         console.print(f'[error]Problem [item]{problem}[/item] not found.[/error]')

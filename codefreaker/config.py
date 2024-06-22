@@ -32,8 +32,8 @@ def format_vars(template: str, **kwargs) -> str:
 
 class Artifact(BaseModel):
     filename: Optional[str] = None
-    executable: Optional[bool] = False
-    optional: Optional[bool] = False
+    executable: bool = False
+    optional: bool = False
 
 
 class Language(BaseModel):
@@ -42,7 +42,7 @@ class Language(BaseModel):
     submitFile: Optional[str] = None
     preprocess: Optional[List[str]] = None
     exec: str
-    artifacts: Optional[Dict[str, Optional[Artifact]]] = {}
+    artifacts: Dict[str, Optional[Artifact]] = {}
     submitor: Optional[str] = None
 
     def get_file(self, basename: str) -> str:
@@ -72,7 +72,7 @@ class Config(BaseModel):
     editor: Optional[str] = None
     submitor: Dict[str, SubmitorConfig]
     credentials: Credentials
-    boxEnvironment: Optional[str] = 'default'
+    boxEnvironment: str = 'default'
 
     def get_default_language(self) -> Optional[Language]:
         return self.languages.get(self.defaultLanguage)
@@ -99,7 +99,7 @@ def get_app_file(path: pathlib.Path) -> pathlib.Path:
         return file_path
 
     with importlib.resources.as_file(
-        importlib.resources.files(_RESOURCES_PKG) / path
+        importlib.resources.files(_RESOURCES_PKG) / path  # type: ignore
     ) as file:
         if file.is_file():
             file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -165,9 +165,10 @@ def get_editor():
 
 
 def open_editor(path: pathlib.Path, *args):
-    if get_editor() is None:
+    editor = get_editor()
+    if editor is None:
         raise Exception('No editor found. Please set the EDITOR environment variable.')
-    subprocess.run([get_editor(), str(path), *[str(arg) for arg in args]])
+    subprocess.run([editor, str(path), *[str(arg) for arg in args]])
 
 
 @functools.cache

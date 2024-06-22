@@ -6,7 +6,8 @@ import os
 import pathlib
 import shutil
 import tempfile
-from typing import BinaryIO, List, Optional
+import typing
+from typing import IO, List, Optional
 
 import gevent
 
@@ -48,7 +49,7 @@ class FileCacher:
     shared: bool
     file_dir: pathlib.Path
     temp_dir: pathlib.Path
-    folder: pathlib.Path
+    folder: Optional[pathlib.Path]
 
     def __init__(
         self,
@@ -63,7 +64,7 @@ class FileCacher:
         self.folder = folder
 
         # First we create the config directories.
-        if self.folder:
+        if folder:
             self._create_directory_or_die(folder)
 
         if not self.is_shared():
@@ -93,7 +94,7 @@ class FileCacher:
         """Create directory and ensure it exists, or raise a RuntimeError."""
         directory.mkdir(parents=True, exist_ok=True)
 
-    def precache_lock(self) -> Optional[BinaryIO]:
+    def precache_lock(self) -> Optional[IO[bytes]]:
         """Lock the (shared) cache for precaching if it is currently unlocked.
 
         Locking is optional: Any process can perform normal cache operations
@@ -108,7 +109,7 @@ class FileCacher:
 
         """
         lock_file = self.file_dir / 'cache_lock'
-        fobj = lock_file.open('w')
+        fobj = lock_file.open('wb')
         returned = False
         try:
             fcntl.flock(fobj, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -123,7 +124,7 @@ class FileCacher:
             if not returned:
                 fobj.close()
 
-    def _load(self, digest: str, cache_only: bool) -> BinaryIO:
+    def _load(self, digest: str, cache_only: bool) -> Optional[IO[bytes]]:
         """Load a file into the cache and open it for reading.
 
         cache_only (bool): don't open the file for reading.
@@ -138,7 +139,7 @@ class FileCacher:
 
         if cache_only:
             if cache_file_path.exists():
-                return
+                return None
         else:
             try:
                 return cache_file_path.open('rb')
@@ -189,7 +190,7 @@ class FileCacher:
 
         self._load(digest, True)
 
-    def get_file(self, digest: str) -> BinaryIO:
+    def get_file(self, digest: str) -> IO[bytes]:
         """Retrieve a file from the storage.
 
         If it's available in the cache use that copy, without querying
@@ -214,7 +215,7 @@ class FileCacher:
 
         logger.debug('Getting file %s.', digest)
 
-        return self._load(digest, False)
+        return typing.cast(IO[bytes], self._load(digest, False))
 
     def get_file_content(self, digest: str) -> bytes:
         """Retrieve a file from the storage.
@@ -235,7 +236,7 @@ class FileCacher:
         with self.get_file(digest) as src:
             return src.read()
 
-    def get_file_to_fobj(self, digest: str, dst: BinaryIO):
+    def get_file_to_fobj(self, digest: str, dst: IO[bytes]):
         """Retrieve a file from the storage.
 
         See `get_file'. This method will write the content of the file
@@ -273,7 +274,7 @@ class FileCacher:
             with dst_path.open('wb') as dst:
                 storage.copyfileobj(src, dst, self.CHUNK_SIZE)
 
-    def put_file_from_fobj(self, src: BinaryIO, desc: str = '') -> str:
+    def put_file_from_fobj(self, src: IO[bytes], desc: str = '') -> str:
         """Store a file in the storage.
 
         If it's already (for some reason...) in the cache send that
@@ -475,7 +476,8 @@ class FileCacher:
 
         """
         clean = True
-        for digest, _ in self.list():
+        for fwd in self.list():
+            digest = fwd.filename
             d = digester.Digester()
             with self.backend.get_file(digest) as fobj:
                 buf = fobj.read(self.CHUNK_SIZE)

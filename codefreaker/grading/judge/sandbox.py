@@ -8,7 +8,8 @@ import select
 import stat
 import subprocess
 import sys
-from typing import BinaryIO, Dict, List, Optional, Union
+import typing
+from typing import IO, Dict, List, Optional, Union
 
 import pydantic
 
@@ -75,7 +76,7 @@ def wait_without_std(
 class DirectoryMount:
     src: pathlib.Path
     dst: pathlib.Path
-    options: str
+    options: Optional[str] = None
 
 
 class SandboxParams(pydantic.BaseModel):
@@ -183,7 +184,7 @@ class SandboxBase(abc.ABC):
     file_cacher: cacher.FileCacher
     name: str
     temp_dir: Optional[pathlib.Path]
-    cmd_file: str
+    cmd_file: pathlib.Path
 
     params: SandboxParams
 
@@ -191,7 +192,7 @@ class SandboxBase(abc.ABC):
         self,
         file_cacher: Optional[cacher.FileCacher] = None,
         name: Optional[str] = None,
-        temp_dir: pathlib.Path = None,
+        temp_dir: Optional[pathlib.Path] = None,
         params: Optional[SandboxParams] = None,
     ):
         """Initialization.
@@ -204,11 +205,11 @@ class SandboxBase(abc.ABC):
             default temporary directory.
 
         """
-        self.file_cacher = file_cacher or storage.NullStorage()
+        self.file_cacher = file_cacher or cacher.FileCacher(storage.NullStorage())
         self.name = name if name is not None else 'unnamed'
         self.temp_dir = temp_dir
 
-        self.cmd_file = 'commands.log'
+        self.cmd_file = pathlib.PosixPath('commands.log')
 
         self.params = params or SandboxParams()
 
@@ -258,7 +259,7 @@ class SandboxBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_execution_time(self) -> float:
+    def get_execution_time(self) -> Optional[float]:
         """Return the time spent in the sandbox.
 
         return (float): time spent in the sandbox.
@@ -267,7 +268,7 @@ class SandboxBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_memory_used(self) -> int:
+    def get_memory_used(self) -> Optional[int]:
         """Return the memory used by the sandbox.
 
         return (int): memory used by the sandbox (in bytes).
@@ -326,7 +327,7 @@ class SandboxBase(abc.ABC):
 
     def create_file(
         self, path: pathlib.Path, executable: bool = False, override: bool = False
-    ) -> BinaryIO:
+    ) -> IO[bytes]:
         """Create an empty file in the sandbox and open it in write
         binary mode.
 
@@ -414,7 +415,9 @@ class SandboxBase(abc.ABC):
             path, content.encode('utf-8'), executable, override=override
         )
 
-    def get_file(self, path: pathlib.Path, trunc_len: Optional[int] = None) -> BinaryIO:
+    def get_file(
+        self, path: pathlib.Path, trunc_len: Optional[int] = None
+    ) -> IO[bytes]:
         """Open a file in the sandbox given its relative path.
 
         path (Path): relative path of the file inside the sandbox.
@@ -429,11 +432,11 @@ class SandboxBase(abc.ABC):
         file_ = real_path.open('rb')
         if trunc_len is not None:
             file_ = Truncator(file_, trunc_len)
-        return file_
+        return typing.cast(IO[bytes], file_)
 
     def get_file_text(
         self, path: pathlib.Path, trunc_len: Optional[int] = None
-    ) -> BinaryIO:
+    ) -> IO[str]:
         """Open a file in the sandbox given its relative path, in text mode.
 
         Assumes encoding is UTF-8. The caller must handle decoding errors.
@@ -450,9 +453,11 @@ class SandboxBase(abc.ABC):
         file_ = real_path.open('rt', encoding='utf-8')
         if trunc_len is not None:
             file_ = Truncator(file_, trunc_len)
-        return file_
+        return typing.cast(IO[str], file_)
 
-    def get_file_to_bytes(self, path: pathlib.Path, maxlen: int = 1024) -> bytes:
+    def get_file_to_bytes(
+        self, path: pathlib.Path, maxlen: Optional[int] = 1024
+    ) -> bytes:
         """Return the content of a file in the sandbox given its
         relative path.
 
@@ -469,7 +474,9 @@ class SandboxBase(abc.ABC):
             else:
                 return file_.read(maxlen)
 
-    def get_file_to_string(self, path: pathlib.Path, maxlen: int = 1024) -> str:
+    def get_file_to_string(
+        self, path: pathlib.Path, maxlen: Optional[int] = 1024
+    ) -> str:
         """Return the content of a file in the sandbox given its
         relative path.
 
@@ -483,7 +490,7 @@ class SandboxBase(abc.ABC):
         return self.get_file_to_bytes(path, maxlen).decode('utf-8')
 
     def get_file_to_storage(
-        self, path: pathlib.Path, description: str = '', trunc_len: int = None
+        self, path: pathlib.Path, description: str = '', trunc_len: Optional[int] = None
     ) -> str:
         """Put a sandbox file in FS and return its digest.
 

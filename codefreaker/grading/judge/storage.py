@@ -4,20 +4,18 @@ import logging
 import pathlib
 import tempfile
 from abc import ABC, abstractmethod
-from typing import IO, BinaryIO, List, Optional, TypeVar
+from typing import IO, AnyStr, List, Optional
 
 import gevent
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
-
-TOMBSTONE = "x"
+TOMBSTONE = 'x'
 
 
 def copyfileobj(
-    source_fobj: IO[T],
-    destination_fobj: IO[T],
+    source_fobj: IO[AnyStr],
+    destination_fobj: IO[AnyStr],
     buffer_size=io.DEFAULT_BUFFER_SIZE,
     maxlen: Optional[int] = None,
 ):
@@ -51,7 +49,7 @@ def copyfileobj(
 
 @dataclasses.dataclass
 class PendingFile:
-    fd: BinaryIO
+    fd: IO[bytes]
     filename: str
 
 
@@ -65,7 +63,7 @@ class Storage(ABC):
     """Abstract base class for all concrete storages."""
 
     @abstractmethod
-    def get_file(self, filename: str) -> BinaryIO:
+    def get_file(self, filename: str) -> IO[bytes]:
         """Retrieve a file from the storage.
         filename (unicode): the path of the file to retrieve.
         return (fileobj): a readable binary file-like object from which
@@ -87,7 +85,7 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def commit_file(self, file: PendingFile, desc: str = "") -> bool:
+    def commit_file(self, file: PendingFile, desc: str = '') -> bool:
         """Commit a file created by create_file() to be stored.
         Given a file object returned by create_file(), this function populates
         the database to record that this file now legitimately exists and can
@@ -149,23 +147,23 @@ class NullStorage(Storage):
 
     """
 
-    def get_file(self, digest: str) -> BinaryIO:
-        raise KeyError("File not found.")
+    def get_file(self, digest: str) -> IO[bytes]:
+        raise KeyError('File not found.')
 
-    def create_file(self, digest: str) -> BinaryIO:
+    def create_file(self, digest: str) -> Optional[PendingFile]:
         return None
 
-    def commit_file(self, file: PendingFile, desc: str = "") -> bool:
+    def commit_file(self, file: PendingFile, desc: str = '') -> bool:
         return False
 
     def exists(self, filename: str) -> bool:
         return False
 
     def describe(self, digest: str) -> str:
-        raise KeyError("File not found.")
+        raise KeyError('File not found.')
 
     def get_size(self, digest: str) -> int:
-        raise KeyError("File not found.")
+        raise KeyError('File not found.')
 
     def delete(self, digest: str):
         pass
@@ -188,14 +186,14 @@ class FilesystemStorage(Storage):
         # Create the directory if it doesn't exist
         path.mkdir(parents=True, exist_ok=True)
 
-    def get_file(self, filename: str) -> BinaryIO:
+    def get_file(self, filename: str) -> IO[bytes]:
         """See FileCacherBackend.get_file()."""
         file_path = self.path / filename
 
         if not file_path.is_file():
-            raise KeyError("File not found.")
+            raise KeyError('File not found.')
 
-        return file_path.open("rb")
+        return file_path.open('rb')
 
     def create_file(self, filename: str) -> Optional[PendingFile]:
         """See FileCacherBackend.create_file()."""
@@ -208,11 +206,11 @@ class FilesystemStorage(Storage):
 
         # Create a temporary file in the same directory
         temp_file = tempfile.NamedTemporaryFile(
-            "wb", delete=False, prefix=".tmp.", suffix=filename, dir=self.path
+            'wb', delete=False, prefix='.tmp.', suffix=filename, dir=self.path
         )
         return PendingFile(fd=temp_file, filename=filename)
 
-    def commit_file(self, file: PendingFile, desc: str = "") -> bool:
+    def commit_file(self, file: PendingFile, desc: str = '') -> bool:
         """See FileCacherBackend.commit_file()."""
         file.fd.close()
 
@@ -241,16 +239,16 @@ class FilesystemStorage(Storage):
         file_path: pathlib.Path = self.path / filename
 
         if not file_path.is_file():
-            raise KeyError("File not found.")
+            raise KeyError('File not found.')
 
-        return ""
+        return ''
 
     def get_size(self, filename: str) -> int:
         """See FileCacherBackend.get_size()."""
         file_path: pathlib.Path = self.path / filename
 
         if not file_path.is_file():
-            raise KeyError("File not found.")
+            raise KeyError('File not found.')
 
         return file_path.stat().st_size
 
@@ -263,11 +261,11 @@ class FilesystemStorage(Storage):
     def list(self) -> List[FileWithDescription]:
         """See FileCacherBackend.list()."""
         res = []
-        for path in self.path.glob("*"):
+        for path in self.path.glob('*'):
             if path.is_file():
                 res.append(
                     FileWithDescription(
-                        filename=str(path.relative_to(self.path)), description=""
+                        filename=str(path.relative_to(self.path)), description=''
                     )
                 )
         return res
