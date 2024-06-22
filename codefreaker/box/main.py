@@ -1,4 +1,5 @@
 import shutil
+
 import typer
 
 from codefreaker import annotations, console, utils
