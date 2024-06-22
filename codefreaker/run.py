@@ -16,14 +16,14 @@ def main(
     dumped_problem = metadata.find_problem_by_anything(problem)
     if not dumped_problem:
         stderr_console.print(
-            f"[error]Problem with identifier [item]{problem}[/item] not found.[/error]"
+            f'[error]Problem with identifier [item]{problem}[/item] not found.[/error]'
         )
         return
 
     lang = get_config().get_language(language)
     if not lang:
         stderr_console.print(
-            f"[error]Language {language or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]"
+            f'[error]Language {language or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]'
         )
         return
 
@@ -36,7 +36,7 @@ def main(
 
     if not steps.compile(preprocess_cmds, sandbox_params, box, artifacts):
         stderr_console.print(
-            f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+            f'[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]'
         )
         return
 

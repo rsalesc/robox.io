@@ -44,15 +44,15 @@ def check(
     inputs = [
         GradingFileInput(
             src=testcase.inputPath,
-            dest=pathlib.PosixPath("input.txt"),
+            dest=pathlib.PosixPath('input.txt'),
         ),
         GradingFileInput(
             src=testcase.outputPath,
-            dest=pathlib.PosixPath("expected.txt"),
+            dest=pathlib.PosixPath('expected.txt'),
         ),
         GradingFileInput(
             src=program_output,
-            dest=pathlib.PosixPath("output.txt"),
+            dest=pathlib.PosixPath('output.txt'),
         ),
     ]
     checker_run_log = run_item(
@@ -60,13 +60,13 @@ def check(
         DigestOrSource.create(checker_digest),
         stderr=DigestOrDest.create(error),
         inputs=inputs,
-        extra_args="input.txt output.txt expected.txt",
+        extra_args='input.txt output.txt expected.txt',
     )
 
     if checker_run_log is None or checker_run_log.exitcode not in [0, 1, 2, 3]:
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
 
-    message = package.get_digest_as_string(error.value or "") or ""
+    message = package.get_digest_as_string(error.value or '') or ''
 
     result = CheckerResult(outcome=Outcome.ACCEPTED, message=message)
 

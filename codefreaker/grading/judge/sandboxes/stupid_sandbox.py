@@ -50,7 +50,7 @@ class StupidSandbox(SandboxBase):
 
         # Make box directory
         self._path = pathlib.Path(
-            tempfile.mkdtemp(dir=str(self.temp_dir), prefix="cfk-%s-" % (self.name))
+            tempfile.mkdtemp(dir=str(self.temp_dir), prefix='cfk-%s-' % (self.name))
         )
         self.initialize()
 
@@ -157,11 +157,11 @@ class StupidSandbox(SandboxBase):
         status = self.get_exit_status()
         if status == self.EXIT_OK:
             return (
-                "Execution successfully finished (with exit code %d)"
+                'Execution successfully finished (with exit code %d)'
                 % self.get_exit_code()
             )
         elif status == self.EXIT_SIGNAL:
-            return "Execution killed with signal %s" % self.get_killing_signal()
+            return 'Execution killed with signal %s' % self.get_killing_signal()
 
     def hydrate_logs(self):
         return
@@ -195,12 +195,12 @@ class StupidSandbox(SandboxBase):
         self.exec_num += 1
 
         logger.debug(
-            "Executing program in sandbox with command: `%s'.", " ".join(command)
+            "Executing program in sandbox with command: `%s'.", ' '.join(command)
         )
         with open(
-            self.relative_path(self.cmd_file), "at", encoding="utf-8"
+            self.relative_path(self.cmd_file), 'at', encoding='utf-8'
         ) as commands:
-            commands.write("%s\n" % command)
+            commands.write('%s\n' % command)
         try:
             p = subprocess.Popen(
                 command,
@@ -212,8 +212,8 @@ class StupidSandbox(SandboxBase):
             )
         except OSError:
             logger.critical(
-                "Failed to execute program in sandbox " "with command: `%s'.",
-                " ".join(command),
+                'Failed to execute program in sandbox ' "with command: `%s'.",
+                ' '.join(command),
                 exc_info=True,
             )
             raise
@@ -236,7 +236,7 @@ class StupidSandbox(SandboxBase):
 
         """
 
-        def preexec_fn(self: "StupidSandbox"):
+        def preexec_fn(self: 'StupidSandbox'):
             """Set limits for the child process."""
             if self.chdir:
                 os.chdir(self.chdir)
@@ -350,5 +350,5 @@ class StupidSandbox(SandboxBase):
         """See Sandbox.cleanup()."""
         # This sandbox doesn't have any cleanup, but we might want to delete.
         if delete:
-            logger.debug("Deleting sandbox in %s.", self._path)
+            logger.debug('Deleting sandbox in %s.', self._path)
             shutil.rmtree(str(self._path))

@@ -19,21 +19,21 @@ from codefreaker.schema import DumpedProblem, Problem
 
 
 def get_testcase_index(path: pathlib.Path) -> int:
-    return int(path.stem.split(".")[-1])
+    return int(path.stem.split('.')[-1])
 
 
 def get_testcases_io(
-    problem: DumpedProblem, root: pathlib.Path = pathlib.Path(".")
+    problem: DumpedProblem, root: pathlib.Path = pathlib.Path('.')
 ) -> List[steps.TestcaseIO]:
     testcases_per_index: Dict[int, steps.TestcaseIO] = {}
-    for input_file in root.glob(f"{problem.code}.*.in"):
+    for input_file in root.glob(f'{problem.code}.*.in'):
         try:
             index = get_testcase_index(input_file)
         except ValueError:
             continue
         testcases_per_index[index] = steps.TestcaseIO(index=index, input=input_file)
 
-    for output_file in root.glob(f"{problem.code}.*.out"):
+    for output_file in root.glob(f'{problem.code}.*.out'):
         index = get_testcase_index(output_file)
         try:
             index = get_testcase_index(output_file)
@@ -52,7 +52,7 @@ def _run_testcases(
     lang: Language,
     sandbox: SandboxBase,
     testcases: List[steps.TestcaseIO],
-    persist_root: Optional[pathlib.Path] = pathlib.Path("."),
+    persist_root: Optional[pathlib.Path] = pathlib.Path('.'),
 ) -> Optional[Dict[int, steps.TestcaseLog]]:
     logs: Dict[int, steps.TestcaseLog] = {}
 
@@ -66,7 +66,7 @@ def _run_testcases(
         transient=True,
     )
     with progress:
-        for testcase in progress.track(testcases, description="Running testcases..."):
+        for testcase in progress.track(testcases, description='Running testcases...'):
             params = grading_utils.build_run_sandbox_params(
                 problem, testcase.input is not None
             )
@@ -84,8 +84,8 @@ def _run_testcases(
                 continue
             logs[testcase.index] = steps.TestcaseLog(
                 **run_log.__dict__,
-                stdout_absolute_path=persist_root / f"stdout-{testcase.index}.txt",
-                stderr_absolute_path=persist_root / f"stderr-{testcase.index}.txt",
+                stdout_absolute_path=persist_root / f'stdout-{testcase.index}.txt',
+                stderr_absolute_path=persist_root / f'stderr-{testcase.index}.txt',
             )
 
     return logs
@@ -96,7 +96,7 @@ def _evaluate_testcases(
     sandbox: SandboxBase,
     testcases: List[steps.TestcaseIO],
     testcase_logs: Dict[int, steps.TestcaseLog],
-    persist_root: Optional[pathlib.Path] = pathlib.Path("."),
+    persist_root: Optional[pathlib.Path] = pathlib.Path('.'),
 ) -> List[steps.Evaluation]:
     evaluations = []
     artifacts = grading_utils.build_checker_run_grading_artifacts(
@@ -132,8 +132,8 @@ def _pretty_print_output_on_panel(file: pathlib.Path, title: str) -> Panel:
 def _pretty_print_side_by_side(result: steps.Evaluation):
     return Columns(
         [
-            _pretty_print_output_on_panel(result.testcase.output, "Expected"),
-            _pretty_print_output_on_panel(result.log.stdout_absolute_path, "Actual"),
+            _pretty_print_output_on_panel(result.testcase.output, 'Expected'),
+            _pretty_print_output_on_panel(result.log.stdout_absolute_path, 'Actual'),
         ],
         equal=True,
         expand=False,
@@ -142,10 +142,10 @@ def _pretty_print_side_by_side(result: steps.Evaluation):
 
 def _get_outcome_style(outcome: steps.Outcome) -> str:
     if outcome == steps.Outcome.ACCEPTED:
-        return "success"
+        return 'success'
     if outcome == steps.Outcome.JUDGE_FAILED or outcome == steps.Outcome.INTERNAL_ERROR:
-        return "warning"
-    return "error"
+        return 'warning'
+    return 'error'
 
 
 def _pretty_print_outcome_panel(
@@ -157,25 +157,25 @@ def _pretty_print_outcome_panel(
     )
 
     text = Text()
-    text.append("Outcome: ")
+    text.append('Outcome: ')
     text.append(
         result.outcome.value,
         style=_get_outcome_style(result.outcome),
     )
-    text.append(" " * 4)
-    text.append("Time: ")
-    text.append(f"{eval.log.time:.2f}s", style="error" if is_tle else "item")
-    text.append("\n")
+    text.append(' ' * 4)
+    text.append('Time: ')
+    text.append(f'{eval.log.time:.2f}s', style='error' if is_tle else 'item')
+    text.append('\n')
     if eval.testcase.input:
-        text.append(f"Input path: {eval.testcase.input.absolute()}")
-        text.append("\n")
+        text.append(f'Input path: {eval.testcase.input.absolute()}')
+        text.append('\n')
     if eval.testcase.output:
-        text.append(f"Expected path: {eval.testcase.output.absolute()}")
-        text.append("\n")
-    text.append(f"Answer path: {eval.log.stdout_absolute_path}")
+        text.append(f'Expected path: {eval.testcase.output.absolute()}')
+        text.append('\n')
+    text.append(f'Answer path: {eval.log.stdout_absolute_path}')
     return Panel(
         text,
-        title=f"[bold]Testcase [item]#{eval.testcase.index}[/item]",
+        title=f'[bold]Testcase [item]#{eval.testcase.index}[/item]',
         expand=False,
     )
 
@@ -189,13 +189,13 @@ def _pretty_print_evaluation_result(
     if eval.result.outcome != steps.Outcome.ACCEPTED:
         if interactive:
             console.print(
-                _pretty_print_output_on_panel(eval.log.stdout_absolute_path, "Output")
+                _pretty_print_output_on_panel(eval.log.stdout_absolute_path, 'Output')
             )
         else:
             console.print(_pretty_print_side_by_side(eval))
         if eval.result.message:
             console.print(
-                f"[error]Checker message:[/error] {eval.result.message.strip()}"
+                f'[error]Checker message:[/error] {eval.result.message.strip()}'
             )
     console.print()
 
@@ -204,20 +204,20 @@ def pretty_print_summary(
     problem: DumpedProblem,
     lang: Language,
     evals: List[steps.Evaluation],
-    root: pathlib.Path = pathlib.Path("."),
+    root: pathlib.Path = pathlib.Path('.'),
 ):
     submission_file = root / lang.get_submit_file(problem.code)
     passed = sum(1 for eval in evals if eval.result.outcome == steps.Outcome.ACCEPTED)
     total = len(evals)
-    console.print(f"Summary for problem [item]{problem.pretty_name()}[/item]:")
+    console.print(f'Summary for problem [item]{problem.pretty_name()}[/item]:')
 
     # Test summary.
     text = Text()
-    text.append("Passed tests: ")
-    text.append(f"{passed}/{total}", style="success" if passed == total else "error")
+    text.append('Passed tests: ')
+    text.append(f'{passed}/{total}', style='success' if passed == total else 'error')
     console.print(text)
 
-    console.print(f"Submission file: {submission_file.absolute()}")
+    console.print(f'Submission file: {submission_file.absolute()}')
 
 
 def pretty_print_evaluation_results(
@@ -239,14 +239,14 @@ def main(
     dumped_problem = metadata.find_problem_by_anything(problem)
     if not dumped_problem:
         console.print(
-            f"[error]Problem with identifier [item]{problem}[/item] not found.[/error]"
+            f'[error]Problem with identifier [item]{problem}[/item] not found.[/error]'
         )
         return
 
     lang = get_config().get_language(language)
     if not lang:
         console.print(
-            f"[error]Language {language or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]"
+            f'[error]Language {language or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]'
         )
         return
 
@@ -254,12 +254,12 @@ def main(
         testcases = []
         while True:
             console.print(
-                f"Providing IO for testcase [item]#{len(testcases)}[/item]..."
+                f'Providing IO for testcase [item]#{len(testcases)}[/item]...'
             )
-            input = multiline_prompt("Testcase input")
+            input = multiline_prompt('Testcase input')
             if not input.strip():
                 break
-            output = multiline_prompt("Testcase output")
+            output = multiline_prompt('Testcase output')
             input_path = pathlib.Path(tempfile.mktemp())
             output_path = pathlib.Path(tempfile.mktemp())
             input_path.write_text(input)
@@ -277,7 +277,7 @@ def main(
 
     if not testcases:
         console.print(
-            f"[error]No testcases found for the problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+            f'[error]No testcases found for the problem [item]{dumped_problem.pretty_name()}[/item].[/error]'
         )
         return
 
@@ -286,7 +286,7 @@ def main(
     persist_root = config.get_empty_app_persist_path()
 
     with console.status(
-        f"Preprocessing code for problem [item]{dumped_problem.pretty_name()}[/item] in language [item]{language or get_config().defaultLanguage}[/item]..."
+        f'Preprocessing code for problem [item]{dumped_problem.pretty_name()}[/item] in language [item]{language or get_config().defaultLanguage}[/item]...'
     ):
         if lang.preprocess:
             preprocess_cmds = grading_utils.build_preprocess_commands(
@@ -298,14 +298,14 @@ def main(
             )
             if not steps.compile(preprocess_cmds, sandbox_params, box, artifacts):
                 console.print(
-                    f"[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+                    f'[error]Failed to preprocess problem [item]{dumped_problem.pretty_name()}[/item].[/error]'
                 )
                 return
 
     with console.status(
-        f"Compiling checker for problem [item]{dumped_problem.pretty_name()}[/item]..."
+        f'Compiling checker for problem [item]{dumped_problem.pretty_name()}[/item]...'
     ):
-        command = "/usr/bin/g++ -std=c++17 -o checker checker.cpp"
+        command = '/usr/bin/g++ -std=c++17 -o checker checker.cpp'
         artifacts = grading_utils.build_checker_compile_grading_artifacts(
             dumped_problem, persist_root
         )
@@ -313,7 +313,7 @@ def main(
             [command], grading_utils.build_preprocess_sandbox_params(), box, artifacts
         ):
             console.print(
-                f"[error]Failed to compile checker for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+                f'[error]Failed to compile checker for problem [item]{dumped_problem.pretty_name()}[/item].[/error]'
             )
             return
 
@@ -321,19 +321,19 @@ def main(
 
     if not testcase_logs:
         console.print(
-            f"[error]Failed to run testcases for problem [item]{dumped_problem.pretty_name()}[/item]. Sandbox probably crashed.[/error]"
+            f'[error]Failed to run testcases for problem [item]{dumped_problem.pretty_name()}[/item]. Sandbox probably crashed.[/error]'
         )
         return
 
     with console.status(
-        f"Evaluating testcases for problem [item]{dumped_problem.pretty_name()}[/item]..."
+        f'Evaluating testcases for problem [item]{dumped_problem.pretty_name()}[/item]...'
     ):
         evals = _evaluate_testcases(
             dumped_problem, box, testcases, testcase_logs, persist_root
         )
     if not evals:
         console.print(
-            f"[error]Failed to evaluate testcases for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
+            f'[error]Failed to evaluate testcases for problem [item]{dumped_problem.pretty_name()}[/item].[/error]'
         )
         return
     pretty_print_evaluation_results(dumped_problem, evals, interactive=interactive)

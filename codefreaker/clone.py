@@ -22,9 +22,9 @@ from . import hydration
 
 def clear_loggers():
     for logger_name in [
-        "uvicorn",
-        "uvicorn.access",
-        "uvicorn.asgi",
+        'uvicorn',
+        'uvicorn.access',
+        'uvicorn.asgi',
     ]:
         logging.getLogger(logger_name).handlers.clear()
         logging.getLogger(logger_name).propagate = False
@@ -49,22 +49,22 @@ def create_problem_structure(
 
     if verbose:
         console.print(
-            f"Creating problem structure for [item]{problem_to_dump.pretty_name()}[/item]..."
+            f'Creating problem structure for [item]{problem_to_dump.pretty_name()}[/item]...'
         )
 
     code_path = root / lang.get_file(problem_to_dump.code)
-    json_path = root / f"{problem_to_dump.code}.cfk.json"
+    json_path = root / f'{problem_to_dump.code}.cfk.json'
 
     existing_problem = metadata.find_problem_by_code(problem_to_dump.code, root)
     if existing_problem:
         console.print(
-            f"[error]Problem with identifier [item]{problem_to_dump.code}[/item] already exists in this folder.[/error]"
+            f'[error]Problem with identifier [item]{problem_to_dump.code}[/item] already exists in this folder.[/error]'
         )
         if not utils.confirm_on_status(
-            status, "Do you want to overwrite it?", default=False
+            status, 'Do you want to overwrite it?', default=False
         ):
             console.print(
-                f"Skipping problem [item]{problem_to_dump.pretty_name()}[/item]."
+                f'Skipping problem [item]{problem_to_dump.pretty_name()}[/item].'
             )
             return None
 
@@ -74,7 +74,7 @@ def create_problem_structure(
 
     if verbose:
         console.print(
-            f"Problem structure for [item]{problem_to_dump.pretty_name()}[/item] created successfully."
+            f'Problem structure for [item]{problem_to_dump.pretty_name()}[/item] created successfully.'
         )
     return problem_to_dump
 
@@ -83,15 +83,15 @@ def process_problems(
     problems: List[Problem], lang: Language, status: rich.status.Status
 ):
     console.print(
-        f"Creating problem structure for [item]{len(problems)}[/item] problems..."
+        f'Creating problem structure for [item]{len(problems)}[/item] problems...'
     )
 
     should_simplify = False
     if providers.should_simplify_contest_problems(problems):
-        console.print("Detected the parsed problems are from a contest.")
+        console.print('Detected the parsed problems are from a contest.')
         if utils.confirm_on_status(
             status,
-            "Do you want to identify these problems by their letters?",
+            'Do you want to identify these problems by their letters?',
             default=True,
         ):
             should_simplify = True
@@ -104,7 +104,7 @@ def process_problems(
         )
         if dumped_problem:
             dumped_problems.append(dumped_problem)
-    console.print(f"Hydrating [item]{len(dumped_problems)}[/item] problems...")
+    console.print(f'Hydrating [item]{len(dumped_problems)}[/item] problems...')
     for problem in dumped_problems:
         hydration.hydrate_problem(root, problem)
 
@@ -112,7 +112,7 @@ def process_problems(
 def main(lang: Optional[str] = None):
     if get_config().get_language(lang) is None:
         console.print(
-            f"[error]Language {lang or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]"
+            f'[error]Language {lang or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]'
         )
         return
 
@@ -135,33 +135,33 @@ def main(lang: Optional[str] = None):
         if problem.batch.id not in batch_to_left:
             if len(batch_to_left) > 0:
                 console.print(
-                    f"[error]Ignoring extra batch [item]{problem.batch.id}[/item] since other batch is being parsed.[/error]"
+                    f'[error]Ignoring extra batch [item]{problem.batch.id}[/item] since other batch is being parsed.[/error]'
                 )
                 ignored.add(problem.batch.id)
                 batch_to_left_lock.release()
                 return True
             if problem.batch.size > 1:
                 saved_status.update(
-                    f"[cfk]Codefreaker[/cfk] is parsing problems from group [item]{problem.group}[/item]"
+                    f'[cfk]Codefreaker[/cfk] is parsing problems from group [item]{problem.group}[/item]'
                 )
             else:
-                saved_status.update("[cfk]Codefreaker[/cfk] is parsing problems...")
+                saved_status.update('[cfk]Codefreaker[/cfk] is parsing problems...')
             console.print(
-                f"Started parsing batch [item]{problem.batch.id}[/item] with size [item]{problem.batch.size}[/item]."
+                f'Started parsing batch [item]{problem.batch.id}[/item] with size [item]{problem.batch.size}[/item].'
             )
             batch_to_left[problem.batch.id] = problem.batch.size
-        console.print(f"Parsing problem [item]{problem.name}[/item]...")
+        console.print(f'Parsing problem [item]{problem.name}[/item]...')
         problems_to_process.append(problem)
         finished = False
         if batch_to_left[problem.batch.id] == 1:
             finished = True
             if problem.batch.size > 1:
                 console.print(
-                    f"[status][cfk]Codefreaker[/cfk] parsed all problems from group [item]{problem.group}[/item].[/status]"
+                    f'[status][cfk]Codefreaker[/cfk] parsed all problems from group [item]{problem.group}[/item].[/status]'
                 )
             else:
                 console.print(
-                    f"[status][cfk]Codefreaker[/cfk] parsed problem from [item]{problem.url}[/item].[/status]"
+                    f'[status][cfk]Codefreaker[/cfk] parsed problem from [item]{problem.url}[/item].[/status]'
                 )
         else:
             batch_to_left[problem.batch.id] -= 1
@@ -170,7 +170,7 @@ def main(lang: Optional[str] = None):
 
     clock = None
 
-    @app.post("/")
+    @app.post('/')
     async def parse(problem: Problem, background_tasks: fastapi.BackgroundTasks):
         nonlocal clock
         if clock is None:
@@ -178,7 +178,7 @@ def main(lang: Optional[str] = None):
         if not process_batch_item(problem):
             duration = time.monotonic() - clock
             console.print(
-                f"Parsed all problems in [item]{duration:.2f}[/item] seconds."
+                f'Parsed all problems in [item]{duration:.2f}[/item] seconds.'
             )
             background_tasks.add_task(shutdown)
         return {}
@@ -186,9 +186,9 @@ def main(lang: Optional[str] = None):
     config = uvicorn.Config(app, port=1327)
     server = uvicorn.Server(config=config)
     clear_loggers()
-    with console.status("Waiting for Competitive Companion request...") as status:
+    with console.status('Waiting for Competitive Companion request...') as status:
         saved_status = status
         server.run()
 
-    with console.status("Processing parsed problems...") as status:
+    with console.status('Processing parsed problems...') as status:
         process_problems(problems_to_process, get_config().get_language(lang), status)

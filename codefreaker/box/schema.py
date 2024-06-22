@@ -7,17 +7,17 @@ from codefreaker.autoenum import AutoEnum, alias
 
 
 class ExpectedOutcome(AutoEnum):
-    ACCEPTED = alias("accepted", "ac", "correct")
-    WRONG_ANSWER = alias("wrong answer", "wa")
-    INCORRECT = alias("fail", "incorrect")
-    RUNTIME_ERROR = alias("runtime error", "rte", "re")
-    TIME_LIMIT_EXCEEDED = alias("time limit exceeded", "timeout", "tle")
-    MEMORY_LIMIT_EXCEEDED = alias("memory limit exceeded", "mle")
-    TLE_OR_RTE = alias("tle or rte", "tle/rte", "tle+rte")
+    ACCEPTED = alias('accepted', 'ac', 'correct')
+    WRONG_ANSWER = alias('wrong answer', 'wa')
+    INCORRECT = alias('fail', 'incorrect')
+    RUNTIME_ERROR = alias('runtime error', 'rte', 're')
+    TIME_LIMIT_EXCEEDED = alias('time limit exceeded', 'timeout', 'tle')
+    MEMORY_LIMIT_EXCEEDED = alias('memory limit exceeded', 'mle')
+    TLE_OR_RTE = alias('tle or rte', 'tle/rte', 'tle+rte')
 
 
 class CodeItem(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # The path of a file containing the code, relative to the package directory.
     path: pathlib.Path
@@ -31,7 +31,7 @@ class CodeItem(BaseModel):
 
 
 class Testcase(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # The path of the input file, relative to the package directory.
     inputPath: pathlib.Path
@@ -41,7 +41,7 @@ class Testcase(BaseModel):
 
 
 class GeneratorCall(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # The identifier of the generator to call.
     name: str
@@ -51,7 +51,7 @@ class GeneratorCall(BaseModel):
 
 
 class TestcaseGroup(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # The name of this test group.
     name: str
@@ -86,7 +86,7 @@ class TestcaseGroup(BaseModel):
 
 
 class Generator(CodeItem):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # The name of this generator.
     # This can be further referenced in testcase groups and
@@ -95,14 +95,14 @@ class Generator(CodeItem):
 
 
 class Solution(CodeItem):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # The expected outcome of this solution.
     outcome: ExpectedOutcome
 
 
 class Package(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # Name of the problem.
     name: str

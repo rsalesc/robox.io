@@ -39,7 +39,7 @@ class IsolateSandbox(SandboxBase):
     # If the command line starts with this command name, we are just
     # going to execute it without sandboxing, and with all permissions
     # on the current directory.
-    SECURE_COMMANDS = ["/bin/cp", "/bin/mv", "/usr/bin/zip", "/usr/bin/unzip"]
+    SECURE_COMMANDS = ['/bin/cp', '/bin/mv', '/usr/bin/zip', '/usr/bin/unzip']
 
     def __init__(
         self,
@@ -69,43 +69,43 @@ class IsolateSandbox(SandboxBase):
         # But we don't want everybody on the system to, which is why the
         # outer directory exists with no read permissions.
         self._outer_dir = pathlib.Path(
-            tempfile.mkdtemp(dir=str(self.temp_dir), prefix="cms-%s-" % (self.name))
+            tempfile.mkdtemp(dir=str(self.temp_dir), prefix='cms-%s-' % (self.name))
         )
-        self._home = self._outer_dir / "home"
-        self._home_dest = pathlib.PosixPath("/tmp")
+        self._home = self._outer_dir / 'home'
+        self._home_dest = pathlib.PosixPath('/tmp')
         self._home.mkdir(parents=True, exist_ok=True)
         self.allow_writing_all()
 
-        self.exec_name = "isolate"
+        self.exec_name = 'isolate'
         self.box_exec = self.detect_box_executable()
         # Used for -M - the meta file ends up in the outer directory. The
         # actual filename will be <info_basename>.<execution_number>.
-        self.info_basename = self._outer_dir / "run.log"
+        self.info_basename = self._outer_dir / 'run.log'
         self.log = None
         self.exec_num = -1
-        self.cmd_file = self._outer_dir / "commands.log"
+        self.cmd_file = self._outer_dir / 'commands.log'
         self.chdir = self._home_dest
         self.debug = debug
         logger.debug(
             "Sandbox in `%s' created, using box `%s'.", self._home, self.box_exec
         )
 
-        self.add_mapped_directory(self._home, dest=self._home_dest, options="rw")
+        self.add_mapped_directory(self._home, dest=self._home_dest, options='rw')
 
         # Set common environment variables.
         # Specifically needed by Python, that searches the home for
         # packages.
-        self.params.set_env["HOME"] = str(self._home_dest)
+        self.params.set_env['HOME'] = str(self._home_dest)
 
         # Needed on Ubuntu by PHP (and more), since /usr/bin only contains a
         # symlink to one out of many alternatives.
-        self.maybe_add_mapped_directory(pathlib.PosixPath("/etc/alternatives"))
+        self.maybe_add_mapped_directory(pathlib.PosixPath('/etc/alternatives'))
 
         # Likewise, needed by C# programs. The Mono runtime looks in
         # /etc/mono/config to obtain the default DllMap, which includes, in
         # particular, the System.Native assembly.
         self.maybe_add_mapped_directory(
-            pathlib.PosixPath("/etc/mono"), options="noexec"
+            pathlib.PosixPath('/etc/mono'), options='noexec'
         )
 
         # Tell isolate to get the sandbox ready. We do our best to cleanup
@@ -224,10 +224,10 @@ class IsolateSandbox(SandboxBase):
 
         """
         paths: List[pathlib.Path] = [
-            pathlib.PosixPath("./isolate") / self.exec_name,
-            pathlib.PosixPath(".") / self.exec_name,
+            pathlib.PosixPath('./isolate') / self.exec_name,
+            pathlib.PosixPath('.') / self.exec_name,
             get_app_path() / self.exec_name,
-            pathlib.PosixPath("/usr/local/bin") / self.exec_name,
+            pathlib.PosixPath('/usr/local/bin') / self.exec_name,
             pathlib.PosixPath(self.exec_name),
         ]
         for path in paths:
@@ -250,63 +250,63 @@ class IsolateSandbox(SandboxBase):
         """
         res = list()
         if self.box_id is not None:
-            res += [f"--box-id={self.box_id}"]
+            res += [f'--box-id={self.box_id}']
         if self.params.cgroup:
-            res += ["--cg"]
+            res += ['--cg']
         if self.chdir is not None:
-            res += [f"--chdir={str(self.chdir)}"]
+            res += [f'--chdir={str(self.chdir)}']
         for dirmount in self.params.dirs:
-            s = str(dirmount.dst) + "=" + str(dirmount.src)
+            s = str(dirmount.dst) + '=' + str(dirmount.src)
             if dirmount.options is not None:
-                s += ":" + dirmount.options
-            res += [f"--dir={s}"]
+                s += ':' + dirmount.options
+            res += [f'--dir={s}']
         if self.params.preserve_env:
-            res += ["--full-env"]
+            res += ['--full-env']
         for var in self.params.inherit_env:
-            res += [f"--env={var}"]
+            res += [f'--env={var}']
         for var, value in self.params.set_env.items():
-            res += [f"--env={var}={value}"]
+            res += [f'--env={var}={value}']
         if self.params.fsize is not None:
             # Isolate wants file size as KiB.
             fsize = self.params.fsize
-            res += [f"--fsize={fsize}"]
+            res += [f'--fsize={fsize}']
         if self.params.stdin_file is not None:
             inner_stdin = self.inner_absolute_path(self.params.stdin_file)
-            res += ["--stdin=%s" % str(inner_stdin)]
+            res += ['--stdin=%s' % str(inner_stdin)]
         if self.params.stack_space is not None:
             # Isolate wants stack size as KiB.
             stack_space = self.params.stack_space * 1024
-            res += [f"--stack={stack_space}"]
+            res += [f'--stack={stack_space}']
         if self.params.address_space is not None:
             # Isolate wants memory size as KiB.
             address_space = self.params.address_space * 1024
             if self.params.cgroup:
-                res += [f"--cg-mem={address_space}"]
+                res += [f'--cg-mem={address_space}']
             else:
-                res += [f"--mem={address_space}"]
+                res += [f'--mem={address_space}']
         if self.params.stdout_file is not None:
             inner_stdout = self.inner_absolute_path(self.params.stdout_file)
-            res += ["--stdout=%s" % str(inner_stdout)]
+            res += ['--stdout=%s' % str(inner_stdout)]
         if self.params.max_processes is not None:
-            res += [f"--processes={self.params.max_processes}"]
+            res += [f'--processes={self.params.max_processes}']
         else:
-            res += ["--processes"]
+            res += ['--processes']
         if self.params.stderr_file is not None:
             inner_stderr = self.inner_absolute_path(self.params.stderr_file)
-            res += ["--stderr=%s" % str(inner_stderr)]
+            res += ['--stderr=%s' % str(inner_stderr)]
         if self.params.timeout is not None:
             # Isolate wants time in seconds.
             timeout = float(self.params.timeout) / 1000
-            res += ["--time=%g" % timeout]
-        res += ["--verbose"] * self.params.verbosity
+            res += ['--time=%g' % timeout]
+        res += ['--verbose'] * self.params.verbosity
         if self.params.wallclock_timeout is not None:
             wallclock_timeout = float(self.params.wallclock_timeout) / 1000
-            res += ["--wall-time=%g" % wallclock_timeout]
+            res += ['--wall-time=%g' % wallclock_timeout]
         if self.params.extra_timeout is not None:
             extra_timeout = float(self.params.extra_timeout) / 1000
-            res += ["--extra-time=%g" % extra_timeout]
-        res += ["--meta=%s" % ("%s.%d" % (self.info_basename, self.exec_num))]
-        res += ["--run"]
+            res += ['--extra-time=%g' % extra_timeout]
+        res += ['--meta=%s' % ('%s.%d' % (self.info_basename, self.exec_num))]
+        res += ['--run']
         return res
 
     def hydrate_logs(self):
@@ -319,18 +319,18 @@ class IsolateSandbox(SandboxBase):
         # self.log is a dictionary of lists (usually lists of length
         # one).
         self.log = {}
-        info_file = pathlib.Path("%s.%d" % (self.info_basename, self.exec_num))
+        info_file = pathlib.Path('%s.%d' % (self.info_basename, self.exec_num))
         try:
             with self.get_file_text(info_file) as log_file:
                 for line in log_file:
-                    key, value = line.strip().split(":", 1)
+                    key, value = line.strip().split(':', 1)
                     if key in self.log:
                         self.log[key].append(value)
                     else:
                         self.log[key] = [value]
         except OSError as error:
             raise OSError(
-                "Error while reading execution log file %s. %r" % (info_file, error)
+                'Error while reading execution log file %s. %r' % (info_file, error)
             )
 
     def get_execution_time(self) -> float:
@@ -340,8 +340,8 @@ class IsolateSandbox(SandboxBase):
         return (float): time spent in the sandbox.
 
         """
-        if "time" in self.log:
-            return float(self.log["time"][0])
+        if 'time' in self.log:
+            return float(self.log['time'][0])
         return None
 
     def get_execution_wall_clock_time(self) -> float:
@@ -351,8 +351,8 @@ class IsolateSandbox(SandboxBase):
         return (float): total time the sandbox was alive.
 
         """
-        if "time-wall" in self.log:
-            return float(self.log["time-wall"][0])
+        if 'time-wall' in self.log:
+            return float(self.log['time-wall'][0])
         return None
 
     def get_memory_used(self) -> int:
@@ -362,9 +362,9 @@ class IsolateSandbox(SandboxBase):
         return (int): memory used by the sandbox (in kbytes).
 
         """
-        if "cg-mem" in self.log:
+        if 'cg-mem' in self.log:
             # Isolate returns memory measurements in KiB.
-            return int(self.log["cg-mem"][0])
+            return int(self.log['cg-mem'][0])
         return None
 
     def get_killing_signal(self) -> int:
@@ -374,8 +374,8 @@ class IsolateSandbox(SandboxBase):
         return (int): offending signal, or 0.
 
         """
-        if "exitsig" in self.log:
-            return int(self.log["exitsig"][0])
+        if 'exitsig' in self.log:
+            return int(self.log['exitsig'][0])
         return 0
 
     def get_exit_code(self) -> int:
@@ -385,8 +385,8 @@ class IsolateSandbox(SandboxBase):
         return (int): exitcode, or 0.
 
         """
-        if "exitcode" in self.log:
-            return int(self.log["exitcode"][0])
+        if 'exitcode' in self.log:
+            return int(self.log['exitcode'][0])
         return 0
 
     def get_status_list(self) -> List[str]:
@@ -396,8 +396,8 @@ class IsolateSandbox(SandboxBase):
         return (list): list of statuses of the sandbox.
 
         """
-        if "status" in self.log:
-            return self.log["status"]
+        if 'status' in self.log:
+            return self.log['status']
         return []
 
     def get_exit_status(self) -> str:
@@ -408,16 +408,16 @@ class IsolateSandbox(SandboxBase):
 
         """
         status_list = self.get_status_list()
-        if "XX" in status_list:
+        if 'XX' in status_list:
             return self.EXIT_SANDBOX_ERROR
-        elif "TO" in status_list:
-            if "message" in self.log and "wall" in self.log["message"][0]:
+        elif 'TO' in status_list:
+            if 'message' in self.log and 'wall' in self.log['message'][0]:
                 return self.EXIT_TIMEOUT_WALL
             else:
                 return self.EXIT_TIMEOUT
-        elif "SG" in status_list:
+        elif 'SG' in status_list:
             return self.EXIT_SIGNAL
-        elif "RE" in status_list:
+        elif 'RE' in status_list:
             return self.EXIT_NONZERO_RETURN
         # OK status is not reported in the log file, it's implicit.
         return self.EXIT_OK
@@ -433,19 +433,19 @@ class IsolateSandbox(SandboxBase):
         status = self.get_exit_status()
         if status == self.EXIT_OK:
             return (
-                "Execution successfully finished (with exit code %d)"
+                'Execution successfully finished (with exit code %d)'
                 % self.get_exit_code()
             )
         elif status == self.EXIT_SANDBOX_ERROR:
-            return "Execution failed because of sandbox error"
+            return 'Execution failed because of sandbox error'
         elif status == self.EXIT_TIMEOUT:
-            return "Execution timed out"
+            return 'Execution timed out'
         elif status == self.EXIT_TIMEOUT_WALL:
-            return "Execution timed out (wall clock limit exceeded)"
+            return 'Execution timed out (wall clock limit exceeded)'
         elif status == self.EXIT_SIGNAL:
-            return "Execution killed with signal %s" % self.get_killing_signal()
+            return 'Execution killed with signal %s' % self.get_killing_signal()
         elif status == self.EXIT_NONZERO_RETURN:
-            return "Execution failed because the return code was nonzero"
+            return 'Execution failed because the return code was nonzero'
 
     def inner_absolute_path(self, path: pathlib.Path) -> pathlib.Path:
         """Translate from a relative path inside the sandbox to an
@@ -488,15 +488,15 @@ class IsolateSandbox(SandboxBase):
         # not depend on the user input.
         if command[0] in IsolateSandbox.SECURE_COMMANDS:
             logger.debug(
-                "Executing non-securely: %s at %s",
+                'Executing non-securely: %s at %s',
                 str(command),
                 self._home,
             )
             try:
                 prev_permissions = stat.S_IMODE(self._home.stat().st_mode)
                 self._home.chmod(0o700)
-                with open(self.cmd_file, "at", encoding="utf-8") as cmds:
-                    cmds.write("%s\n" % str(command))
+                with open(self.cmd_file, 'at', encoding='utf-8') as cmds:
+                    cmds.write('%s\n' % str(command))
                 p = subprocess.Popen(
                     command,
                     cwd=str(self._home),
@@ -511,20 +511,20 @@ class IsolateSandbox(SandboxBase):
                 # are "setup" commands, which should not fail or
                 # provide information for the contestants.
                 if self.params.stdout_file:
-                    (self._home / self.params.stdout_file).open("wb").close()
+                    (self._home / self.params.stdout_file).open('wb').close()
                 if self.params.stderr_file:
-                    (self._home / self.params.stderr_file).open("wb").close()
+                    (self._home / self.params.stderr_file).open('wb').close()
                 self._write_empty_run_log(self.exec_num)
             except OSError:
                 logger.critical(
-                    "Failed to execute program in sandbox with command: %s",
+                    'Failed to execute program in sandbox with command: %s',
                     str(command),
                     exc_info=True,
                 )
                 raise
             return p
 
-        args = [self.box_exec] + self.build_box_options() + ["--"] + command
+        args = [self.box_exec] + self.build_box_options() + ['--'] + command
         logger.debug(
             "Executing program in sandbox with command: `%s'.",
             str(args),
@@ -532,8 +532,8 @@ class IsolateSandbox(SandboxBase):
         # Temporarily allow writing new files.
         prev_permissions = stat.S_IMODE(self._home.stat().st_mode)
         self._home.chmod(0o700)
-        with open(self.cmd_file, "at", encoding="utf-8") as commands:
-            commands.write("%s\n" % (str(args)))
+        with open(self.cmd_file, 'at', encoding='utf-8') as commands:
+            commands.write('%s\n' % (str(args)))
         self._home.chmod(prev_permissions)
         try:
             p = subprocess.Popen(
@@ -541,7 +541,7 @@ class IsolateSandbox(SandboxBase):
             )
         except OSError:
             logger.critical(
-                "Failed to execute program in sandbox " "with command: %s",
+                'Failed to execute program in sandbox ' 'with command: %s',
                 str(args),
                 exc_info=True,
             )
@@ -551,12 +551,12 @@ class IsolateSandbox(SandboxBase):
 
     def _write_empty_run_log(self, index: int):
         """Write a fake run.log file with no information."""
-        info_file = pathlib.PosixPath("%s.%d" % (self.info_basename, index))
-        with info_file.open("wt", encoding="utf-8") as f:
-            f.write("time:0.000\n")
-            f.write("time-wall:0.000\n")
-            f.write("max-rss:0\n")
-            f.write("cg-mem:0\n")
+        info_file = pathlib.PosixPath('%s.%d' % (self.info_basename, index))
+        with info_file.open('wt', encoding='utf-8') as f:
+            f.write('time:0.000\n')
+            f.write('time-wall:0.000\n')
+            f.write('max-rss:0\n')
+            f.write('cg-mem:0\n')
 
     def execute_without_std(
         self, command: List[str], wait: bool = False
@@ -616,19 +616,19 @@ class IsolateSandbox(SandboxBase):
         elif exitcode == 2:
             return False
         else:
-            raise Exception("Sandbox exit status (%d) unknown" % exitcode)
+            raise Exception('Sandbox exit status (%d) unknown' % exitcode)
 
     def initialize(self):
         """Initialize isolate's box."""
         init_cmd = (
             [self.box_exec]
-            + (["--cg"] if self.params.cgroup else [])
-            + ["--box-id=%d" % self.box_id, "--init"]
+            + (['--cg'] if self.params.cgroup else [])
+            + ['--box-id=%d' % self.box_id, '--init']
         )
         try:
             subprocess.check_call(init_cmd)
         except subprocess.CalledProcessError as e:
-            raise Exception("Failed to initialize sandbox") from e
+            raise Exception('Failed to initialize sandbox') from e
 
     def cleanup(self, delete: bool = False):
         """See Sandbox.cleanup()."""
@@ -641,8 +641,8 @@ class IsolateSandbox(SandboxBase):
 
         exe = (
             [self.box_exec]
-            + (["--cg"] if self.params.cgroup else [])
-            + ["--box-id=%d" % self.box_id]
+            + (['--cg'] if self.params.cgroup else [])
+            + ['--box-id=%d' % self.box_id]
         )
 
         if delete:
@@ -650,12 +650,12 @@ class IsolateSandbox(SandboxBase):
             subprocess.call(
                 exe
                 + [
-                    "--dir=%s=%s:rw" % (str(self._home_dest), str(self._home)),
-                    "--run",
-                    "--",
-                    "/bin/chmod",
-                    "777",
-                    "-R",
+                    '--dir=%s=%s:rw' % (str(self._home_dest), str(self._home)),
+                    '--run',
+                    '--',
+                    '/bin/chmod',
+                    '777',
+                    '-R',
                     str(self._home_dest),
                 ],
                 stdout=subprocess.DEVNULL,
@@ -664,10 +664,10 @@ class IsolateSandbox(SandboxBase):
 
         # Tell isolate to cleanup the sandbox.
         subprocess.check_call(
-            exe + ["--cleanup"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+            exe + ['--cleanup'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
         )
 
         if delete:
-            logger.debug("Deleting sandbox in %s.", self._outer_dir)
+            logger.debug('Deleting sandbox in %s.', self._outer_dir)
             # Delete the working directory.
             shutil.rmtree(str(self._outer_dir))

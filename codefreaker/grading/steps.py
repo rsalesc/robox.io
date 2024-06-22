@@ -17,14 +17,14 @@ MAX_STDOUT_LEN = 1024 * 1024 * 128  # 128 MB
 
 
 class Outcome(Enum):
-    ACCEPTED = "accepted"
-    WRONG_ANSWER = "wrong-answer"
-    JUDGE_FAILED = "judge-failed"
-    RUNTIME_ERROR = "runtime-error"
-    TIME_LIMIT_EXCEEDED = "time-limit-exceeded"
-    MEMORY_LIMIT_EXCEEDED = "memory-limit-exceeded"
-    OUTPUT_LIMIT_EXCEEDED = "output-limit-exceeded"
-    INTERNAL_ERROR = "internal-error"
+    ACCEPTED = 'accepted'
+    WRONG_ANSWER = 'wrong-answer'
+    JUDGE_FAILED = 'judge-failed'
+    RUNTIME_ERROR = 'runtime-error'
+    TIME_LIMIT_EXCEEDED = 'time-limit-exceeded'
+    MEMORY_LIMIT_EXCEEDED = 'memory-limit-exceeded'
+    OUTPUT_LIMIT_EXCEEDED = 'output-limit-exceeded'
+    INTERNAL_ERROR = 'internal-error'
 
 
 class DigestHolder(BaseModel):
@@ -32,7 +32,7 @@ class DigestHolder(BaseModel):
 
 
 class GradingLogsHolder(BaseModel):
-    run: Optional["RunLog"] = None
+    run: Optional['RunLog'] = None
 
 
 class DigestOrSource(BaseModel):
@@ -42,7 +42,7 @@ class DigestOrSource(BaseModel):
     digest: Optional[DigestHolder] = None
 
     @staticmethod
-    def create(data: Union[pathlib.Path, DigestHolder, str]) -> "DigestOrSource":
+    def create(data: Union[pathlib.Path, DigestHolder, str]) -> 'DigestOrSource':
         if isinstance(data, str):
             return DigestOrSource(digest=DigestHolder(value=data))
         if isinstance(data, DigestHolder):
@@ -52,9 +52,9 @@ class DigestOrSource(BaseModel):
     def expand(self) -> Dict[str, Any]:
         res = {}
         if self.src is not None:
-            res["src"] = self.src
+            res['src'] = self.src
         if self.digest is not None:
-            res["digest"] = self.digest
+            res['digest'] = self.digest
         return res
 
 
@@ -65,7 +65,7 @@ class DigestOrDest(BaseModel):
     digest: Optional[DigestHolder] = None
 
     @staticmethod
-    def create(data: Union[pathlib.Path, DigestHolder, str]) -> "DigestOrDest":
+    def create(data: Union[pathlib.Path, DigestHolder, str]) -> 'DigestOrDest':
         if isinstance(data, str):
             return DigestOrDest(digest=DigestHolder(value=data))
         if isinstance(data, DigestHolder):
@@ -75,9 +75,9 @@ class DigestOrDest(BaseModel):
     def expand(self) -> Dict[str, Any]:
         res = {}
         if self.dest is not None:
-            res["dest"] = self.dest
+            res['dest'] = self.dest
         if self.digest is not None:
-            res["digest"] = self.digest
+            res['digest'] = self.digest
         return res
 
 
@@ -111,7 +111,7 @@ class GradingFileOutput(BaseModel):
 
 class GradingArtifacts(BaseModel):
     # Root directory for the produced artifacts.
-    root: Optional[pathlib.Path] = pathlib.PosixPath(".")
+    root: Optional[pathlib.Path] = pathlib.PosixPath('.')
     # List of input files to copy to the sandbox.
     inputs: Optional[List[GradingFileInput]] = []
     # List of output files to copy from the sandbox.
@@ -145,7 +145,7 @@ class TestcaseLog(RunLog):
 
 class CheckerResult(BaseModel):
     outcome: Outcome
-    message: str = ""
+    message: str = ''
     no_tle_outcome: Optional[Outcome] = None
 
 
@@ -181,7 +181,7 @@ def _process_output_artifacts(
             if output_artifact.optional:
                 continue
             console.print(
-                f"[error]Artifact [item]{output_artifact.src}[/item] does not exist.[/error]"
+                f'[error]Artifact [item]{output_artifact.src}[/item] does not exist.[/error]'
             )
             return False
         if output_artifact.digest is not None:
@@ -193,7 +193,7 @@ def _process_output_artifacts(
         dst: pathlib.Path = artifacts.root / output_artifact.dest
         copyfileobj(
             sandbox.get_file(output_artifact.src),
-            dst.open("wb"),
+            dst.open('wb'),
             maxlen=output_artifact.maxlen,
         )
         if output_artifact.executable:
@@ -202,7 +202,7 @@ def _process_output_artifacts(
 
 
 def testlib_grading_input() -> GradingFileInput:
-    return GradingFileInput(src=get_testlib(), dest=pathlib.Path("testlib.h"))
+    return GradingFileInput(src=get_testlib(), dest=pathlib.Path('testlib.h'))
 
 
 def compile(
@@ -222,12 +222,12 @@ def compile(
 
     for i, command in enumerate(commands):
         cmd = shlex.split(command)
-        stderr_file = f"compile-{i}.stderr"
+        stderr_file = f'compile-{i}.stderr'
         sandbox.params.set_stdall(stderr=stderr_file)
 
         if not sandbox.execute_without_std(cmd, wait=True):
             console.print(
-                "[error]Sandbox crashed while processing command:[/error]",
+                '[error]Sandbox crashed while processing command:[/error]',
                 utils.highlight_json_obj(cmd),
             )
             return False
@@ -238,7 +238,7 @@ def compile(
             log=(
                 sandbox.get_file_to_string(stderr_file, maxlen=None)
                 if sandbox.file_exists(stderr_file)
-                else ""
+                else ''
             ),
         )
         logs.append(log)
@@ -248,11 +248,11 @@ def compile(
 
     if logs and logs[-1].exitcode != 0:
         console.print(
-            "Preprocessing [error]failed[/error] with command",
+            'Preprocessing [error]failed[/error] with command',
             utils.highlight_json_obj(logs[-1].cmd),
         )
-        console.print(f"Exit code: [error]{logs[-1].exitcode}[/error]")
-        console.print(Text.from_ansi(logs[-1].log), style="default")
+        console.print(f'Exit code: [error]{logs[-1].exitcode}[/error]')
+        console.print(Text.from_ansi(logs[-1].log), style='default')
         return False
 
     return _process_output_artifacts(artifacts, sandbox)
@@ -270,7 +270,7 @@ def run(
 
     if not sandbox.execute_without_std(cmd, wait=True):
         console.print(
-            "[error]Sandbox crashed while processing command:[/error]",
+            '[error]Sandbox crashed while processing command:[/error]',
             utils.highlight_json_obj(cmd),
         )
         return None
@@ -304,8 +304,8 @@ def get_checker_sandbox_params() -> SandboxParams:
         max_processes=None,
         preserve_env=True,
     )
-    params.add_mapped_directory(pathlib.Path("/usr"))
-    params.add_mapped_directory(pathlib.Path("/etc"))
+    params.add_mapped_directory(pathlib.Path('/usr'))
+    params.add_mapped_directory(pathlib.Path('/etc'))
     return params
 
 
@@ -324,29 +324,29 @@ def _check(
 
     sandbox.params.set_stdall(
         stdin=None,
-        stdout="stdout.txt",
-        stderr="stderr.txt",
+        stdout='stdout.txt',
+        stderr='stderr.txt',
     )
 
     sandbox.create_file_from_string(
-        "expected.txt", testcase.output.read_text(), override=True
+        'expected.txt', testcase.output.read_text(), override=True
     )
     sandbox.create_file_from_string(
-        "output.txt", output_path.read_text(), override=True
+        'output.txt', output_path.read_text(), override=True
     )
     sandbox.create_file_from_string(
-        "input.txt", testcase.input.read_text(), override=True
+        'input.txt', testcase.input.read_text(), override=True
     )
 
     if not sandbox.execute_without_std(
-        ["./checker", "input.txt", "output.txt", "expected.txt"], wait=True
+        ['./checker', 'input.txt', 'output.txt', 'expected.txt'], wait=True
     ):
         console.print(
-            "[error]Sandbox crashed while running checker.[/error]",
+            '[error]Sandbox crashed while running checker.[/error]',
         )
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
 
-    stderr = sandbox.get_file_to_string("stderr.txt", maxlen=None)
+    stderr = sandbox.get_file_to_string('stderr.txt', maxlen=None)
     if sandbox.get_exit_code() in [1, 2]:
         return CheckerResult(outcome=Outcome.WRONG_ANSWER, message=stderr)
     if sandbox.get_exit_code() == 3:

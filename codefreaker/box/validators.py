@@ -50,7 +50,7 @@ def _validate_testcase(
         stdin=DigestOrSource.create(testcase),
         stderr=DigestOrDest.create(message_digest),
     )
-    message = package.get_digest_as_string(message_digest.value or "")
+    message = package.get_digest_as_string(message_digest.value or '')
     return (run_log is not None and run_log.exitcode == 0, message)
 
 

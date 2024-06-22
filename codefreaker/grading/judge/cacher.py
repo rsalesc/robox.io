@@ -74,13 +74,13 @@ class FileCacher:
             atexit.register(lambda: shutil.rmtree(str(self.file_dir)))
         else:
             assert folder is not None
-            self.file_dir = folder / "fs-cache-shared"
+            self.file_dir = folder / 'fs-cache-shared'
         self._create_directory_or_die(self.file_dir)
 
         # Temp dir must be a subdirectory of file_dir to avoid cross-filesystem
         # moves.
         self.temp_dir = pathlib.Path(
-            tempfile.mkdtemp(dir=self.file_dir, prefix="_temp")
+            tempfile.mkdtemp(dir=self.file_dir, prefix='_temp')
         )
         atexit.register(lambda: shutil.rmtree(str(self.temp_dir)))
         # Just to make sure it was created.
@@ -108,8 +108,8 @@ class FileCacher:
             None if the cache was already locked.
 
         """
-        lock_file = self.file_dir / "cache_lock"
-        fobj = lock_file.open("w")
+        lock_file = self.file_dir / 'cache_lock'
+        fobj = lock_file.open('w')
         returned = False
         try:
             fcntl.flock(fobj, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -142,15 +142,15 @@ class FileCacher:
                 return
         else:
             try:
-                return cache_file_path.open("rb")
+                return cache_file_path.open('rb')
             except FileNotFoundError:
                 pass
 
-        logger.debug("File %s not in cache, downloading " "from database.", digest)
+        logger.debug('File %s not in cache, downloading ' 'from database.', digest)
 
         ftmp_handle, temp_file_path = tempfile.mkstemp(dir=self.temp_dir, text=False)
         temp_file_path = pathlib.Path(temp_file_path)
-        with open(ftmp_handle, "wb") as ftmp, self.backend.get_file(digest) as fobj:
+        with open(ftmp_handle, 'wb') as ftmp, self.backend.get_file(digest) as fobj:
             storage.copyfileobj(fobj, ftmp, self.CHUNK_SIZE)
 
         if not cache_only:
@@ -159,13 +159,13 @@ class FileCacher:
             # longer exist an instant after we create it. Opening the
             # temporary file before renaming it circumvents this issue.
             # (Note that the temporary file may not be manually deleted!)
-            fd = temp_file_path.open("rb")
+            fd = temp_file_path.open('rb')
 
         # Then move it to its real location (this operation is atomic
         # by POSIX requirement)
         temp_file_path.rename(cache_file_path)
 
-        logger.debug("File %s downloaded.", digest)
+        logger.debug('File %s downloaded.', digest)
 
         if not cache_only:
             return fd
@@ -213,7 +213,7 @@ class FileCacher:
         if digest == storage.TOMBSTONE:
             raise TombstoneError()
 
-        logger.debug("Getting file %s.", digest)
+        logger.debug('Getting file %s.', digest)
 
         return self._load(digest, False)
 
@@ -271,10 +271,10 @@ class FileCacher:
         if digest == storage.TOMBSTONE:
             raise TombstoneError()
         with self.get_file(digest) as src:
-            with dst_path.open("wb") as dst:
+            with dst_path.open('wb') as dst:
                 storage.copyfileobj(src, dst, self.CHUNK_SIZE)
 
-    def put_file_from_fobj(self, src: BinaryIO, desc: str = "") -> str:
+    def put_file_from_fobj(self, src: BinaryIO, desc: str = '') -> str:
         """Store a file in the storage.
 
         If it's already (for some reason...) in the cache send that
@@ -292,7 +292,7 @@ class FileCacher:
         return (unicode): the digest of the stored file.
 
         """
-        logger.debug("Reading input file to store on the database.")
+        logger.debug('Reading input file to store on the database.')
 
         # Unfortunately, we have to read the whole file-obj to compute
         # the digest but we take that chance to save it to a temporary
@@ -302,7 +302,7 @@ class FileCacher:
         # compressed or require network communication).
         # XXX We're *almost* reimplementing copyfileobj.
         with tempfile.NamedTemporaryFile(
-            "wb", delete=False, dir=str(self.temp_dir)
+            'wb', delete=False, dir=str(self.temp_dir)
         ) as dst:
             d = digester.Digester()
             buf = src.read(self.CHUNK_SIZE)
@@ -319,7 +319,7 @@ class FileCacher:
             digest = d.digest()
             dst.flush()
 
-            logger.debug("File has digest %s.", digest)
+            logger.debug('File has digest %s.', digest)
 
             cache_file_path = self.file_dir / digest
 
@@ -330,7 +330,7 @@ class FileCacher:
             # We read from the temporary file before moving it to
             # cache_file_path because the latter might be deleted before
             # we get a chance to open it.
-            with open(dst.name, "rb") as src:
+            with open(dst.name, 'rb') as src:
                 pending_file = self.backend.create_file(digest)
                 if pending_file is not None:
                     storage.copyfileobj(src, pending_file.fd, self.CHUNK_SIZE)
@@ -340,7 +340,7 @@ class FileCacher:
 
         return digest
 
-    def put_file_content(self, content: bytes, desc: str = "") -> str:
+    def put_file_content(self, content: bytes, desc: str = '') -> str:
         """Store a file in the storage.
 
         See `put_file_from_fobj'. This method will read the content of
@@ -356,10 +356,10 @@ class FileCacher:
         with io.BytesIO(content) as src:
             return self.put_file_from_fobj(src, desc)
 
-    def put_file_text(self, text: str, desc: str = "") -> str:
-        return self.put_file_content(text.encode("utf-8"), desc)
+    def put_file_text(self, text: str, desc: str = '') -> str:
+        return self.put_file_content(text.encode('utf-8'), desc)
 
-    def put_file_from_path(self, src_path: pathlib.Path, desc: str = "") -> str:
+    def put_file_from_path(self, src_path: pathlib.Path, desc: str = '') -> str:
         """Store a file in the storage.
 
         See `put_file_from_fobj'. This method will read the content of
@@ -373,7 +373,7 @@ class FileCacher:
         return (unicode): the digest of the stored file.
 
         """
-        with src_path.open("rb") as src:
+        with src_path.open('rb') as src:
             return self.put_file_from_fobj(src, desc)
 
     def describe(self, digest: str) -> str:
@@ -449,7 +449,7 @@ class FileCacher:
 
         """
         if self.is_shared():
-            raise Exception("You may not destroy a shared cache.")
+            raise Exception('You may not destroy a shared cache.')
         shutil.rmtree(str(self.file_dir))
 
     def list(self) -> List[storage.FileWithDescription]:
@@ -486,7 +486,7 @@ class FileCacher:
             computed_digest = d.digest()
             if digest != computed_digest:
                 logger.error(
-                    "File with hash %s actually has hash %s", digest, computed_digest
+                    'File with hash %s actually has hash %s', digest, computed_digest
                 )
                 if delete:
                     self.delete(digest)

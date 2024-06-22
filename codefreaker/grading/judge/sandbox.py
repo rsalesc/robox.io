@@ -18,7 +18,7 @@ from . import cacher
 
 logger = logging.getLogger(__name__)
 
-MERGE_STDERR = pathlib.PosixPath("/dev/stdout")
+MERGE_STDERR = pathlib.PosixPath('/dev/stdout')
 
 
 def wait_without_std(
@@ -174,13 +174,13 @@ class SandboxBase(abc.ABC):
 
     """
 
-    EXIT_SANDBOX_ERROR = "sandbox error"
-    EXIT_OK = "ok"
-    EXIT_SIGNAL = "signal"
-    EXIT_TIMEOUT = "timeout"
-    EXIT_TIMEOUT_WALL = "wall timeout"
-    EXIT_NONZERO_RETURN = "nonzero return"
-    EXIT_MEMORY_LIMIT_EXCEEDED = "memory limit exceeded"
+    EXIT_SANDBOX_ERROR = 'sandbox error'
+    EXIT_OK = 'ok'
+    EXIT_SIGNAL = 'signal'
+    EXIT_TIMEOUT = 'timeout'
+    EXIT_TIMEOUT_WALL = 'wall timeout'
+    EXIT_NONZERO_RETURN = 'nonzero return'
+    EXIT_MEMORY_LIMIT_EXCEEDED = 'memory limit exceeded'
 
     file_cacher: cacher.FileCacher
     name: str
@@ -207,17 +207,17 @@ class SandboxBase(abc.ABC):
 
         """
         self.file_cacher = file_cacher or storage.NullStorage()
-        self.name = name if name is not None else "unnamed"
+        self.name = name if name is not None else 'unnamed'
         self.temp_dir = temp_dir
 
-        self.cmd_file = "commands.log"
+        self.cmd_file = 'commands.log'
 
         self.params = params or SandboxParams()
 
         # Set common environment variables.
         # Specifically needed by Python, that searches the home for
         # packages.
-        self.params.set_env["HOME"] = "./"
+        self.params.set_env['HOME'] = './'
 
     def set_multiprocess(self, multiprocess: bool):
         """Set the sandbox to (dis-)allow multiple threads and processes.
@@ -240,15 +240,15 @@ class SandboxBase(abc.ABC):
         """
         execution_time = self.get_execution_time()
         if execution_time is not None:
-            time_str = f"{execution_time:.3f} sec"
+            time_str = f'{execution_time:.3f} sec'
         else:
-            time_str = "(time unknown)"
+            time_str = '(time unknown)'
         memory_used = self.get_memory_used()
         if memory_used is not None:
-            mem_str = f"{memory_used / (1024 * 1024):.2f} MB"
+            mem_str = f'{memory_used / (1024 * 1024):.2f} MB'
         else:
-            mem_str = "(memory usage unknown)"
-        return f"[{time_str} - {mem_str}]"
+            mem_str = '(memory usage unknown)'
+        return f'[{time_str} - {mem_str}]'
 
     @abc.abstractmethod
     def get_root_path(self) -> pathlib.Path:
@@ -339,20 +339,20 @@ class SandboxBase(abc.ABC):
 
         """
         if executable:
-            logger.debug("Creating executable file %s in sandbox.", path)
+            logger.debug('Creating executable file %s in sandbox.', path)
         else:
-            logger.debug("Creating plain file %s in sandbox.", path)
+            logger.debug('Creating plain file %s in sandbox.', path)
         real_path = self.relative_path(path)
         if override:
             real_path.unlink(missing_ok=True)
         try:
             file_fd = os.open(str(real_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            file_ = open(file_fd, "wb")
+            file_ = open(file_fd, 'wb')
         except OSError as e:
             logger.error(
-                "Failed create file %s in sandbox. Unable to "
-                "evalulate this submission. This may be due to "
-                "cheating. %s",
+                'Failed create file %s in sandbox. Unable to '
+                'evalulate this submission. This may be due to '
+                'cheating. %s',
                 real_path,
                 e,
                 exc_info=True,
@@ -413,7 +413,7 @@ class SandboxBase(abc.ABC):
 
         """
         return self.create_file_from_bytes(
-            path, content.encode("utf-8"), executable, override=override
+            path, content.encode('utf-8'), executable, override=override
         )
 
     def get_file(self, path: pathlib.Path, trunc_len: Optional[int] = None) -> BinaryIO:
@@ -426,9 +426,9 @@ class SandboxBase(abc.ABC):
         return (file): the file opened in read binary mode.
 
         """
-        logger.debug(f"Retrieving file {path} from sandbox.")
+        logger.debug(f'Retrieving file {path} from sandbox.')
         real_path = self.relative_path(path)
-        file_ = real_path.open("rb")
+        file_ = real_path.open('rb')
         if trunc_len is not None:
             file_ = Truncator(file_, trunc_len)
         return file_
@@ -447,9 +447,9 @@ class SandboxBase(abc.ABC):
         return (file): the file opened in read binary mode.
 
         """
-        logger.debug("Retrieving text file %s from sandbox.", path)
+        logger.debug('Retrieving text file %s from sandbox.', path)
         real_path = self.relative_path(path)
-        file_ = real_path.open("rt", encoding="utf-8")
+        file_ = real_path.open('rt', encoding='utf-8')
         if trunc_len is not None:
             file_ = Truncator(file_, trunc_len)
         return file_
@@ -482,10 +482,10 @@ class SandboxBase(abc.ABC):
         return (string): the content of the file up to maxlen bytes.
 
         """
-        return self.get_file_to_bytes(path, maxlen).decode("utf-8")
+        return self.get_file_to_bytes(path, maxlen).decode('utf-8')
 
     def get_file_to_storage(
-        self, path: pathlib.Path, description: str = "", trunc_len: int = None
+        self, path: pathlib.Path, description: str = '', trunc_len: int = None
     ) -> str:
         """Put a sandbox file in FS and return its digest.
 
@@ -661,4 +661,4 @@ class Truncator(io.RawIOBase):
 
     def write(self, _):
         """See io.RawIOBase.write."""
-        raise io.UnsupportedOperation("write")
+        raise io.UnsupportedOperation('write')

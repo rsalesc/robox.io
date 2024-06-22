@@ -17,16 +17,16 @@ from . import utils
 
 app = typer.Typer(no_args_is_help=True)
 
-APP_NAME = "codefreaker"
-_RESOURCES_PKG = "resources"
-_CONFIG_FILE_NAME = "default_config.json"
+APP_NAME = 'codefreaker'
+_RESOURCES_PKG = 'resources'
+_CONFIG_FILE_NAME = 'default_config.json'
 
 
 def format_vars(template: str, **kwargs) -> str:
     res = template
     for key, value in kwargs.items():
-        key = key.replace("_", "-")
-        res = res.replace(f"%{{{key}}}", value)
+        key = key.replace('_', '-')
+        res = res.replace(f'%{{{key}}}', value)
     return res
 
 
@@ -59,7 +59,7 @@ class Language(BaseModel):
         )
 
     def get_template(self) -> str:
-        return get_app_file(pathlib.Path("templates") / self.template).read_text()
+        return get_app_file(pathlib.Path('templates') / self.template).read_text()
 
 
 SubmitorConfig = Dict[str, Any]
@@ -72,7 +72,7 @@ class Config(BaseModel):
     editor: Optional[str] = None
     submitor: Dict[str, SubmitorConfig]
     credentials: Credentials
-    boxEnvironment: Optional[str] = "default"
+    boxEnvironment: Optional[str] = 'default'
 
     def get_default_language(self) -> Optional[Language]:
         return self.languages.get(self.defaultLanguage)
@@ -87,7 +87,7 @@ def get_app_path() -> pathlib.Path:
 
 
 def get_empty_app_persist_path() -> pathlib.Path:
-    app_dir = get_app_path() / "persist"
+    app_dir = get_app_path() / 'persist'
     shutil.rmtree(str(app_dir), ignore_errors=True)
     app_dir.mkdir(parents=True, exist_ok=True)
     return app_dir
@@ -103,45 +103,45 @@ def get_app_file(path: pathlib.Path) -> pathlib.Path:
     ) as file:
         if file.is_file():
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            copyfileobj(file.open("rb"), file_path.open("wb"))
+            copyfileobj(file.open('rb'), file_path.open('wb'))
     return file_path
 
 
 def _download_checker(name: str, save_at: pathlib.Path):
-    console.print(f"Downloading checker {name}...")
+    console.print(f'Downloading checker {name}...')
     r = requests.get(
-        f"https://raw.githubusercontent.com/MikeMirzayanov/testlib/master/checkers/{name}"
+        f'https://raw.githubusercontent.com/MikeMirzayanov/testlib/master/checkers/{name}'
     )
 
     if r.ok:
         save_at.parent.mkdir(parents=True, exist_ok=True)
-        with save_at.open("wb") as f:
+        with save_at.open('wb') as f:
             f.write(r.content)
 
 
 def _download_testlib(name: str, save_at: pathlib.Path):
-    console.print("Downloading testlib.h...")
+    console.print('Downloading testlib.h...')
     r = requests.get(
-        "https://raw.githubusercontent.com/MikeMirzayanov/testlib/master/testlib.h"
+        'https://raw.githubusercontent.com/MikeMirzayanov/testlib/master/testlib.h'
     )
 
     if r.ok:
         save_at.parent.mkdir(parents=True, exist_ok=True)
-        with save_at.open("wb") as f:
+        with save_at.open('wb') as f:
             f.write(r.content)
 
 
 def get_builtin_checker(name: str) -> pathlib.Path:
-    app_file = get_app_file(pathlib.Path("checkers") / name)
+    app_file = get_app_file(pathlib.Path('checkers') / name)
     if not app_file.exists():
         _download_checker(name, app_file)
     return app_file
 
 
 def get_testlib() -> pathlib.Path:
-    app_file = get_app_file(pathlib.Path("testlib.h"))
+    app_file = get_app_file(pathlib.Path('testlib.h'))
     if not app_file.exists():
-        _download_testlib("testlib.h", app_file)
+        _download_testlib('testlib.h', app_file)
     return app_file
 
 
@@ -157,16 +157,16 @@ def get_default_config() -> Config:
 
 
 def get_config_path() -> pathlib.Path:
-    return get_app_path() / "config.json"
+    return get_app_path() / 'config.json'
 
 
 def get_editor():
-    return get_config().editor or os.environ.get("EDITOR", None)
+    return get_config().editor or os.environ.get('EDITOR', None)
 
 
 def open_editor(path: pathlib.Path, *args):
     if get_editor() is None:
-        raise Exception("No editor found. Please set the EDITOR environment variable.")
+        raise Exception('No editor found. Please set the EDITOR environment variable.')
     subprocess.run([get_editor(), str(path), *[str(arg) for arg in args]])
 
 
@@ -187,7 +187,7 @@ def path():
     console.print(get_config_path())
 
 
-@app.command("list, ls")
+@app.command('list, ls')
 def list():
     """
     Pretty print the config file.
@@ -200,14 +200,14 @@ def reset():
     """
     Reset the config file to the default one.
     """
-    if not typer.confirm("Do you really want to reset your config to the default one?"):
+    if not typer.confirm('Do you really want to reset your config to the default one?'):
         return
     cfg_path = get_config_path()
     cfg_path.unlink(missing_ok=True)
     get_config()  # Reset the config.
 
 
-@app.command("edit, e")
+@app.command('edit, e')
 def edit():
     """
     Open the config in an editor.

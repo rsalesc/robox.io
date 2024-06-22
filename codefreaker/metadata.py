@@ -44,7 +44,7 @@ def find_problem_path_by_code(
     if not root:
         root = pathlib.Path()
 
-    metadata_path = root / f"{code}.cfk.json"
+    metadata_path = root / f'{code}.cfk.json'
     if not metadata_path.is_file():
         return None
     return metadata_path
@@ -57,7 +57,7 @@ def find_problem_path_by_alias(
         root = pathlib.Path()
 
     candidates: Tuple[pathlib.Path, DumpedProblem] = []
-    for metadata_path in root.glob("*.cfk.json"):
+    for metadata_path in root.glob('*.cfk.json'):
         problem = DumpedProblem.model_validate_json(metadata_path.read_text())
         if _find_alias(alias, problem.aliases) is not None:
             candidates.append((metadata_path, problem))
@@ -100,6 +100,6 @@ def find_problems(root: Optional[pathlib.Path] = None) -> List[DumpedProblem]:
         root = pathlib.Path()
 
     problems = []
-    for metadata_path in root.glob("*.cfk.json"):
+    for metadata_path in root.glob('*.cfk.json'):
         problems.append(DumpedProblem.model_validate_json(metadata_path.read_text()))
     return problems

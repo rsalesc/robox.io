@@ -15,28 +15,28 @@ from . import run as run_pkg
 from . import submit as submit_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
-app.add_typer(main.app, name="box", cls=annotations.AliasGroup)
+app.add_typer(main.app, name='box', cls=annotations.AliasGroup)
 app.add_typer(
     config.app,
-    name="config, cfg",
+    name='config, cfg',
     cls=annotations.AliasGroup,
-    help="Manage the configuration of the tool.",
+    help='Manage the configuration of the tool.',
 )
 app.add_typer(
     testcase.app,
-    name="testcase, tc",
+    name='testcase, tc',
     cls=annotations.AliasGroup,
-    help="Commands to manage the testcases of a problem.",
+    help='Commands to manage the testcases of a problem.',
 )
 app.add_typer(
     checker.app,
-    name="checker, check",
+    name='checker, check',
     cls=annotations.AliasGroup,
-    help="Commands to manage the checker of a problem.",
+    help='Commands to manage the checker of a problem.',
 )
 
 
-@app.command("clone, c")
+@app.command('clone, c')
 def clone(lang: annotations.Language):
     """
     Clones by waiting for a set of problems to be sent through Competitive Companion.
@@ -44,7 +44,7 @@ def clone(lang: annotations.Language):
     clone_pkg.main(lang=lang)
 
 
-@app.command("new, n")
+@app.command('new, n')
 def new(
     name: str,
     language: annotations.Language,
@@ -58,7 +58,7 @@ def new(
     create_pkg.main(name, language, timelimit, memorylimit, multitest)
 
 
-@app.command("edit, e")
+@app.command('edit, e')
 def edit(
     problem: annotations.Problem, language: annotations.LanguageWithDefault = None
 ):
@@ -68,13 +68,13 @@ def edit(
     edit_pkg.main(problem, language)
 
 
-@app.command("test, t")
+@app.command('test, t')
 def test(
     problem: annotations.Problem,
     language: annotations.LanguageWithDefault = None,
     keep_sandbox: bool = False,
     index: annotations.TestcaseIndex = None,
-    interactive: Annotated[bool, typer.Option("--interactive", "--int")] = False,
+    interactive: Annotated[bool, typer.Option('--interactive', '--int')] = False,
 ):
     """
     Test a problem using the provided language.
@@ -88,7 +88,7 @@ def test(
     )
 
 
-@app.command("run, r")
+@app.command('run, r')
 def run(
     problem: annotations.Problem,
     language: annotations.LanguageWithDefault = None,
@@ -104,7 +104,7 @@ def run(
     )
 
 
-@app.command("submit, s")
+@app.command('submit, s')
 def submit(
     problem: annotations.Problem,
     language: annotations.LanguageWithDefault = None,

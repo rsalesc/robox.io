@@ -13,7 +13,7 @@ from .console import console
 def get_testcase_paths(
     root: pathlib.Path, problem: DumpedProblem, i: int
 ) -> Tuple[pathlib.Path, pathlib.Path]:
-    return (root / f"{problem.code}.{i}.in", root / f"{problem.code}.{i}.out")
+    return (root / f'{problem.code}.{i}.in', root / f'{problem.code}.{i}.out')
 
 
 def hydrate_problem(root: pathlib.Path, problem: DumpedProblem):
@@ -27,7 +27,7 @@ def add_testcase(root: pathlib.Path, problem: DumpedProblem, testcase: Testcase)
     problem_path = metadata.find_problem_path_by_code(problem.code, root)
     if not problem_path.is_file():
         console.print(
-            f"[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]"
+            f'[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]'
         )
         return
 
@@ -38,7 +38,7 @@ def add_testcase(root: pathlib.Path, problem: DumpedProblem, testcase: Testcase)
     out_path.write_text(testcase.output)
 
     console.print(
-        f"Added testcase [item]{i}[/item] to problem [item]{problem.pretty_name()}[/item]."
+        f'Added testcase [item]{i}[/item] to problem [item]{problem.pretty_name()}[/item].'
     )
 
 
@@ -46,7 +46,7 @@ def remove_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
     problem_path = metadata.find_problem_path_by_code(problem.code, root)
     if not problem_path.is_file():
         console.print(
-            f"[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]"
+            f'[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]'
         )
         return
 
@@ -54,14 +54,14 @@ def remove_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
     testcases = [testcase for testcase in testcases if testcase.index == i]
     if not testcases:
         console.print(
-            f"[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item].[/error]"
+            f'[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item].[/error]'
         )
         return
     testcases[0].input.unlink(missing_ok=True)
     testcases[0].output.unlink(missing_ok=True)
 
     console.print(
-        f"Removed testcase [item]{i}[/item] from problem [item]{problem.pretty_name()}[/item]."
+        f'Removed testcase [item]{i}[/item] from problem [item]{problem.pretty_name()}[/item].'
     )
 
 
@@ -69,7 +69,7 @@ def edit_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
     problem_path = metadata.find_problem_path_by_code(problem.code, root)
     if not problem_path.is_file():
         console.print(
-            f"[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]"
+            f'[error]Problem [item]{problem.pretty_name()}[/item] not found.[/error]'
         )
         return
 
@@ -77,7 +77,7 @@ def edit_testcase(root: pathlib.Path, problem: DumpedProblem, i: int):
     testcases = [testcase for testcase in testcases if testcase.index == i]
     if not testcases:
         console.print(
-            f"[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item].[/error]"
+            f'[error]Testcase [item]{i}[/item] not found in problem [item]{problem.pretty_name()}[/item].[/error]'
         )
         return
 
@@ -97,6 +97,6 @@ def main(problem: Optional[str] = None):
 
     for dumped_problem in problems_to_hydrate:
         console.print(
-            f"Hydrating problem [item]{dumped_problem.pretty_name()}[/item]..."
+            f'Hydrating problem [item]{dumped_problem.pretty_name()}[/item]...'
         )
         hydration.hydrate_problem(root, dumped_problem)

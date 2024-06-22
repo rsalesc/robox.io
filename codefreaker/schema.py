@@ -21,13 +21,13 @@ class Batch(BaseModel):
 
 class Problem(BaseModel):
     name: str
-    group: Optional[str] = ""
-    url: Optional[str] = ""
+    group: Optional[str] = ''
+    url: Optional[str] = ''
     interactive: Optional[bool] = False
     memoryLimit: int
     timeLimit: int
     tests: Optional[List[Testcase]] = []
-    testType: Optional[str] = "single"
+    testType: Optional[str] = 'single'
     batch: Batch
 
     def get_code(self):
@@ -43,21 +43,21 @@ class DumpedProblem(Problem):
     checker: Optional[str] = None
 
     @staticmethod
-    def from_problem(problem: Problem, **kwargs) -> "DumpedProblem":
+    def from_problem(problem: Problem, **kwargs) -> 'DumpedProblem':
         return DumpedProblem(**problem.model_dump(), **kwargs)
 
     def pretty_name(self) -> str:
         if self.name == self.code:
             return self.name
-        return f"{self.name} ({self.code})"
+        return f'{self.name} ({self.code})'
 
     def get_vars(self) -> Dict[str, str]:
         return {
-            "problem_name": self.name,
-            "problem_code": self.code,
-            "problem_url": self.url,
-            "problem_contest": self.group,
-            "problem_time_limit": f"{self.timeLimit}ms",
-            "problem_memory_limit": f"{self.memoryLimit}MB",
-            "problem_test_type": self.testType,
+            'problem_name': self.name,
+            'problem_code': self.code,
+            'problem_url': self.url,
+            'problem_contest': self.group,
+            'problem_time_limit': f'{self.timeLimit}ms',
+            'problem_memory_limit': f'{self.memoryLimit}MB',
+            'problem_test_type': self.testType,
         }

@@ -34,11 +34,11 @@ def _compile_generator(generator: CodeItem) -> str:
 
 
 def _get_group_input(group_path: pathlib.Path, i: int) -> pathlib.Path:
-    return group_path / f"{i:03d}.in"
+    return group_path / f'{i:03d}.in'
 
 
 def _get_group_output(group_path: pathlib.Path, i: int) -> pathlib.Path:
-    return group_path / f"{i:03d}.out"
+    return group_path / f'{i:03d}.out'
 
 
 def _copy_testcase_over(testcase: Testcase, group_path: pathlib.Path, i: int):
@@ -69,8 +69,8 @@ def _run_generator(
 
     if not run_log or run_log.exitcode != 0:
         console.console.print(
-            f"Failed generating test {i} from group path {group_path}",
-            style="error",
+            f'Failed generating test {i} from group path {group_path}',
+            style='error',
         )
 
 
@@ -106,8 +106,8 @@ def generate_outputs_for_testcases():
                 continue
             if main_solution is None:
                 console.console.print(
-                    "No main solution found to generate outputs for testcases",
-                    style="error",
+                    'No main solution found to generate outputs for testcases',
+                    style='error',
                 )
                 raise typer.Exit(1)
 
@@ -121,13 +121,13 @@ def generate_outputs_for_testcases():
 
             if run_log is None or run_log.exitcode != 0:
                 console.console.print(
-                    f"Failed generating output for {input_path}",
-                    style="error",
+                    f'Failed generating output for {input_path}',
+                    style='error',
                 )
                 if run_log is not None:
                     console.console.print(
-                        f"Program exited with code {run_log.exitcode}",
-                        style="error",
+                        f'Program exited with code {run_log.exitcode}',
+                        style='error',
                     )
                 raise typer.Exit(1)
 
@@ -163,9 +163,9 @@ def generate_testcases():
             matched_inputs = sorted(PosixPath().glob(testcase.testcaseGlob))
 
             for input_path in matched_inputs:
-                if not input_path.is_file() or input_path.suffix != ".in":
+                if not input_path.is_file() or input_path.suffix != '.in':
                     continue
-                output_path = input_path.parent / f"{input_path.stem}.out"
+                output_path = input_path.parent / f'{input_path.stem}.out'
                 tc = Testcase(inputPath=input_path, outputPath=output_path)
                 _copy_testcase_over(tc, group_path, i)
                 i += 1
@@ -174,7 +174,7 @@ def generate_testcases():
         for generator_call in testcase.generators:
             generator = package.get_generator(generator_call.name)
             if generator.name not in compiled_generators:
-                console.console.print(f"Generator {generator.name} not compiled")
+                console.console.print(f'Generator {generator.name} not compiled')
                 raise typer.Exit(1)
 
             _run_generator(
@@ -199,7 +199,7 @@ def generate_testcases():
 
             if run_log is None or run_log.exitcode != 0:
                 console.console.print(
-                    f"Could not run generator script for group {testcase.name}"
+                    f'Could not run generator script for group {testcase.name}'
                 )
                 raise typer.Exit(1)
 
@@ -215,7 +215,7 @@ def generate_testcases():
                 generator_name = shlex.split(line)[0]
                 generator = package.get_generator(generator_name)
                 if generator.name not in compiled_generators:
-                    console.console.print(f"Generator {generator.name} not compiled")
+                    console.console.print(f'Generator {generator.name} not compiled')
                     raise typer.Exit(1)
 
                 _run_generator(

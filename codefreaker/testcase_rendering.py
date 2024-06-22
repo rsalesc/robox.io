@@ -21,7 +21,7 @@ def split_and_truncate_in_lines(
 
     def end_line(wrap: bool = False):
         nonlocal current_line, current_line_idx
-        lines.append((current_line_idx, "".join(current_line)))
+        lines.append((current_line_idx, ''.join(current_line)))
         current_line = []
         if not wrap:
             current_line_idx += 1
@@ -29,7 +29,7 @@ def split_and_truncate_in_lines(
     printable = set(string.printable)
     truncate = False
     for c in s:
-        if c == "\n":
+        if c == '\n':
             end_line()
             continue
         if c not in printable:
@@ -61,17 +61,17 @@ def render(s: str):
     last_number = 0
     for line in truncated.lines:
         number, content = line
-        number_str = "" if last_number == number else str(number)
-        text.append(f"{number_str:>{number_len}}", style="lnumber")
-        text.append(" " * 3)
+        number_str = '' if last_number == number else str(number)
+        text.append(f'{number_str:>{number_len}}', style='lnumber')
+        text.append(' ' * 3)
         text.append(content)
-        text.append("\n")
+        text.append('\n')
 
         last_number = number
     if truncated.truncate:
-        text.append(f"{'':>{number_len}}", style="lnumber")
-        text.append(" " * 3)
-        text.append("... (truncated)")
+        text.append(f"{'':>{number_len}}", style='lnumber')
+        text.append(' ' * 3)
+        text.append('... (truncated)')
     return text
 
 

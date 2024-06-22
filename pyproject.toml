@@ -28,3 +28,9 @@ pytest = "^8.2.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"

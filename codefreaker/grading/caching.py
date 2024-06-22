@@ -34,14 +34,14 @@ def _check_digests(artifacts_list: List[GradingArtifacts]):
             if input.digest.value is not None:
                 continue
             if id(input.digest) not in produced:
-                raise ValueError("Digests must be produced before being consumed")
+                raise ValueError('Digests must be produced before being consumed')
         for output in artifacts.outputs:
             if output.digest is None:
                 continue
             if output.digest.value is not None:
                 continue
             if id(output.digest) in produced:
-                raise ValueError("A digest cannot be produced more than once")
+                raise ValueError('A digest cannot be produced more than once')
             produced.add(id(output.digest))
 
 
@@ -61,7 +61,7 @@ def _build_fingerprint_list(artifacts_list: List[GradingArtifacts]) -> List[str]
         for input in artifacts.inputs:
             if input.src is None:
                 continue
-            fingerprints.append(digest_cooperatively(input.src.open("rb")))
+            fingerprints.append(digest_cooperatively(input.src.open('rb')))
     return fingerprints
 
 
@@ -123,7 +123,7 @@ class DependencyCacheBlock:
 
     def __init__(
         self,
-        cache: "DependencyCache",
+        cache: 'DependencyCache',
         commands: List[str],
         artifact_list: List[GradingArtifacts],
     ):
@@ -157,7 +157,7 @@ class DependencyCache:
         atexit.register(lambda: self.db.close())
 
     def _cache_name(self) -> str:
-        return str(self.root / ".cache_db")
+        return str(self.root / '.cache_db')
 
     def _find_in_cache(self, key: str) -> Optional[CacheFingerprint]:
         return self.db.get(key)

@@ -18,25 +18,25 @@ def hydrate(problem: annotations.ProblemOption = None):
     hydration.main(problem=problem)
 
 
-@app.command("add, a")
+@app.command('add, a')
 def add(problem: annotations.Problem):
     """
     Add a testcase to a problem.
     """
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
-        console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
+        console.print(f'[error]Problem [item]{problem}[/item] not found.[/error]')
         return
 
-    input = multiline_prompt("Testcase input")
-    output = multiline_prompt("Testcase output")
+    input = multiline_prompt('Testcase input')
+    output = multiline_prompt('Testcase output')
 
     hydration.add_testcase(
         pathlib.Path(), dumped_problem, Testcase(input=input, output=output)
     )
 
 
-@app.command("delete, d")
+@app.command('delete, d')
 def delete(
     problem: annotations.Problem,
     i: annotations.TestcaseIndex,
@@ -46,20 +46,20 @@ def delete(
     """
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
-        console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
+        console.print(f'[error]Problem [item]{problem}[/item] not found.[/error]')
         return
 
     hydration.remove_testcase(pathlib.Path(), dumped_problem, i)
 
 
-@app.command("edit, e")
+@app.command('edit, e')
 def edit(problem: annotations.Problem, i: annotations.TestcaseIndex):
     """
     Edit the testcases of a problem.
     """
     dumped_problem = metadata.find_problem_by_anything(problem)
     if dumped_problem is None:
-        console.print(f"[error]Problem [item]{problem}[/item] not found.[/error]")
+        console.print(f'[error]Problem [item]{problem}[/item] not found.[/error]')
         return
 
     hydration.edit_testcase(pathlib.Path(), dumped_problem, i)

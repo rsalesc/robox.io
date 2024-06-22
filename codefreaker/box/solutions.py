@@ -45,12 +45,12 @@ def run_solution(
         testcases = find_built_testcases(group)
         for i, testcase in enumerate(testcases):
             runs_dir = package.get_problem_runs_dir()
-            output_path = runs_dir / f"{index}" / group.name / testcase.outputPath.name
+            output_path = runs_dir / f'{index}' / group.name / testcase.outputPath.name
             error_path = (
                 runs_dir
-                / f"{index}"
+                / f'{index}'
                 / group.name
-                / testcase.outputPath.with_suffix(".err").name
+                / testcase.outputPath.with_suffix('.err').name
             )
             output_path.parent.mkdir(parents=True, exist_ok=True)
             run_log = run_item(

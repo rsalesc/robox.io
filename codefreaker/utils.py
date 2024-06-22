@@ -12,7 +12,7 @@ import yaml
 
 from .console import console
 
-T = TypeVar("T", bound=BaseModel)
+T = TypeVar('T', bound=BaseModel)
 
 
 def create_and_write(path: pathlib.Path, *args, **kwargs):
@@ -32,16 +32,16 @@ def highlight_json_obj(obj: Any) -> text.Text:
 
 
 def normalize_with_underscores(s: str) -> str:
-    res = s.replace(" ", "_").replace(".", "_").strip("_")
+    res = s.replace(' ', '_').replace('.', '_').strip('_')
     final = []
 
-    last = ""
+    last = ''
     for c in res:
-        if c == "_" and last == c:
+        if c == '_' and last == c:
             continue
         last = c
         final.append(c)
-    return "".join(final)
+    return ''.join(final)
 
 
 def model_json(model: BaseModel) -> str:

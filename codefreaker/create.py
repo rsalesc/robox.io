@@ -17,7 +17,7 @@ def main(
 ):
     if get_config().get_language(lang) is None:
         console.print(
-            f"[error]Language {lang or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]"
+            f'[error]Language {lang or get_config().defaultLanguage} not found in config. Please check your configuration.[/error]'
         )
         return
 
@@ -25,7 +25,7 @@ def main(
         name=name,
         timeLimit=timelimit,
         memoryLimit=memorylimit,
-        testType="multiNumber" if multitest else "single",
+        testType='multiNumber' if multitest else 'single',
         batch=Batch.create(),
     )
     create_problem_structure(

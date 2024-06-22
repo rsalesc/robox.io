@@ -9,35 +9,35 @@ from codefreaker.grading.judge.sandbox import SandboxBase, SandboxParams
 from codefreaker.grading.judge.sandboxes.isolate import IsolateSandbox
 from codefreaker.grading.judge.sandboxes.stupid_sandbox import StupidSandbox
 
-T = TypeVar("T", bound=BaseModel)
+T = TypeVar('T', bound=BaseModel)
 
 
 class FileMapping(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # Path where to copy the stdin file to before running the program,
     # relative to the sandbox root.
-    input: Optional[str] = "stdin"
+    input: Optional[str] = 'stdin'
 
     # Path where to output the stdout file after running the program,
     # relative to the sandbox root.
-    output: Optional[str] = "stdout"
+    output: Optional[str] = 'stdout'
 
     # Path where to output the stderr file after running the program,
     # relative to the sandbox root.
-    error: Optional[str] = "stderr"
+    error: Optional[str] = 'stderr'
 
     # Path where to copy the compilable file to before compiling the program,
     # relative to the sandbox root.
-    compilable: Optional[str] = "compilable"
+    compilable: Optional[str] = 'compilable'
 
     # Path to where to output the executable file after compiling the program,
     # relative to the sandbox root.
-    executable: Optional[str] = "executable"
+    executable: Optional[str] = 'executable'
 
 
 class EnvironmentSandbox(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # Max. number of process to allow to run concurrently for the program.
     maxProcesses: Optional[int] = 1
@@ -70,7 +70,7 @@ class CompilationConfig(BaseModel):
 
 
 class ExecutionConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # Command to run the program.
     command: Optional[str] = None
@@ -80,7 +80,7 @@ class ExecutionConfig(BaseModel):
 
 
 class EnvironmentLanguage(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # Identifier of this language within this environment.
     name: str
@@ -102,7 +102,7 @@ class EnvironmentLanguage(BaseModel):
 
 
 class Environment(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra='forbid')
 
     # Default mapping for files within the sandbox. Fields in the mapping can be
     # individually overridden in the language configuration.
@@ -124,7 +124,7 @@ class Environment(BaseModel):
 
 
 def get_environment_path(env: str) -> pathlib.Path:
-    return config.get_app_file(pathlib.PosixPath("envs") / f"{env}.cfk.yml")
+    return config.get_app_file(pathlib.PosixPath('envs') / f'{env}.cfk.yml')
 
 
 @functools.cache
@@ -132,7 +132,7 @@ def get_environment(env: Optional[str] = None) -> Environment:
     env_path = get_environment_path(env or config.get_config().boxEnvironment)
     if not env_path.is_file():
         console.console.print(
-            f"Environment file [item]{env_path}[/item] not found.", style="error"
+            f'Environment file [item]{env_path}[/item] not found.', style='error'
         )
         raise typer.Exit()
     return utils.model_from_yaml(Environment, env_path.read_text())
@@ -143,7 +143,7 @@ def get_language(name: str) -> EnvironmentLanguage:
     for lang in get_environment().languages:
         if lang.name == name:
             return lang
-    console.console.print(f"Language [item]{name}[/item] not found.", style="error")
+    console.console.print(f'Language [item]{name}[/item] not found.', style='error')
     raise typer.Exit()
 
 
@@ -166,7 +166,7 @@ def merge_compilation_configs(
         wallTimeLimit=10000,
         memoryLimit=512,
         preserveEnv=True,
-        mirrorDirs=["/etc", "/usr"],
+        mirrorDirs=['/etc', '/usr'],
     )
     for cfg in compilation_configs:
         if cfg is None:
@@ -224,9 +224,9 @@ def get_file_mapping(language: str) -> FileMapping:
 @functools.cache
 def get_sandbox_type() -> Type[SandboxBase]:
     used_sandbox = get_environment().sandbox
-    if used_sandbox == "stupid":
+    if used_sandbox == 'stupid':
         return StupidSandbox
-    if used_sandbox == "isolate":
+    if used_sandbox == 'isolate':
         return IsolateSandbox
     return StupidSandbox
 
