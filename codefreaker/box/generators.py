@@ -9,6 +9,8 @@ from codefreaker.box.testcases import find_built_testcases
 from codefreaker.box import package
 from codefreaker.box.code import compile_item, find_language_name, run_item
 from codefreaker.box.environment import (
+    EnvironmentSandbox,
+    ExecutionConfig,
     get_execution_config,
     get_file_mapping,
     get_mapped_command,
@@ -87,6 +89,12 @@ def generate_outputs_for_testcases():
     if main_solution is not None:
         solution_digest = compile_item(main_solution)
 
+    sandbox = EnvironmentSandbox()
+    sandbox.timeLimit = pkg.timeLimit * 2
+    sandbox.wallTimeLimit = pkg.timeLimit * 2
+    sandbox.memoryLimit = pkg.memoryLimit
+    extra_config = ExecutionConfig(sandbox=sandbox)
+
     for group in pkg.testcases:
         group_testcases = built_testcases[group.name]
 
@@ -108,6 +116,7 @@ def generate_outputs_for_testcases():
                 DigestOrSource.create(solution_digest),
                 stdin=DigestOrSource.create(input_path),
                 stdout=DigestOrDest.create(output_path),
+                extra_config=extra_config,
             )
 
             if run_log is None or run_log.exitcode != 0:
