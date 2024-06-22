@@ -120,15 +120,13 @@ class GradingArtifacts(BaseModel):
     logs: Optional[GradingLogsHolder] = None
 
 
-@dataclasses.dataclass
-class TestcaseIO:
+class TestcaseIO(BaseModel):
     index: int
     input: Optional[pathlib.Path] = None
     output: Optional[pathlib.Path] = None
 
 
-@dataclasses.dataclass
-class PreprocessLog:
+class PreprocessLog(BaseModel):
     cmd: List[str]
     exitcode: int
     log: str
@@ -140,25 +138,21 @@ class RunLog(BaseModel):
     time: float
 
 
-@dataclasses.dataclass
 class TestcaseLog(RunLog):
     stdout_absolute_path: pathlib.Path
     stderr_absolute_path: pathlib.Path
 
 
-@dataclasses.dataclass
-class TestcaseEvaluation:
-    testcase: TestcaseIO
-    log: TestcaseLog
-    outcome: Outcome
-    message: str = ""
-
-
-@dataclasses.dataclass
-class CheckerResult:
+class CheckerResult(BaseModel):
     outcome: Outcome
     message: str = ""
     no_tle_outcome: Optional[Outcome] = None
+
+
+class Evaluation(BaseModel):
+    result: CheckerResult
+    testcase: TestcaseIO
+    log: TestcaseLog
 
 
 def _process_input_artifacts(artifacts: GradingArtifacts, sandbox: SandboxBase):
@@ -367,17 +361,19 @@ def evaluate(
     log: TestcaseLog,
     artifacts: GradingArtifacts,
     should_use_python_checker: bool = False,
-) -> TestcaseEvaluation:
+) -> Evaluation:
     if log.exitstatus != SandboxBase.EXIT_OK:
-        return TestcaseEvaluation(
+        return Evaluation(
             testcase=testcase,
             log=log,
-            outcome=Outcome.RUNTIME_ERROR,
+            result=CheckerResult(outcome=Outcome.RUNTIME_ERROR),
         )
 
     if not testcase.output:
         # No output to compare.
-        return TestcaseEvaluation(testcase=testcase, log=log, outcome=Outcome.ACCEPTED)
+        return Evaluation(
+            testcase=testcase, log=log, result=CheckerResult(outcome=Outcome.ACCEPTED)
+        )
 
     _process_input_artifacts(artifacts, sandbox)
     checker_result = _check(
@@ -386,9 +382,8 @@ def evaluate(
         log.stdout_absolute_path,
         should_use_python_checker=should_use_python_checker,
     )
-    return TestcaseEvaluation(
+    return Evaluation(
         testcase=testcase,
         log=log,
-        outcome=checker_result.outcome,
-        message=checker_result.message,
+        result=checker_result,
     )

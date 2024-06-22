@@ -25,7 +25,7 @@ def get_testcase_index(path: pathlib.Path) -> int:
 def get_testcases_io(
     problem: DumpedProblem, root: pathlib.Path = pathlib.Path(".")
 ) -> List[steps.TestcaseIO]:
-    testcases_per_index = {}
+    testcases_per_index: Dict[int, steps.TestcaseIO] = {}
     for input_file in root.glob(f"{problem.code}.*.in"):
         try:
             index = get_testcase_index(input_file)
@@ -40,9 +40,7 @@ def get_testcases_io(
         except ValueError:
             continue
         if index in testcases_per_index:
-            testcases_per_index[index] = dataclasses.replace(
-                testcases_per_index[index], output=output_file
-            )
+            testcases_per_index[index].output = output_file
             continue
         testcases_per_index[index] = steps.TestcaseIO(index=index, output=output_file)
 
@@ -99,7 +97,7 @@ def _evaluate_testcases(
     testcases: List[steps.TestcaseIO],
     testcase_logs: Dict[int, steps.TestcaseLog],
     persist_root: Optional[pathlib.Path] = pathlib.Path("."),
-) -> List[steps.TestcaseEvaluation]:
+) -> List[steps.Evaluation]:
     evaluations = []
     artifacts = grading_utils.build_checker_run_grading_artifacts(
         problem,
@@ -131,7 +129,7 @@ def _pretty_print_output_on_panel(file: pathlib.Path, title: str) -> Panel:
     )
 
 
-def _pretty_print_side_by_side(result: steps.TestcaseEvaluation):
+def _pretty_print_side_by_side(result: steps.Evaluation):
     return Columns(
         [
             _pretty_print_output_on_panel(result.testcase.output, "Expected"),
@@ -151,10 +149,11 @@ def _get_outcome_style(outcome: steps.Outcome) -> str:
 
 
 def _pretty_print_outcome_panel(
-    problem: DumpedProblem, result: steps.TestcaseEvaluation
+    problem: DumpedProblem, eval: steps.Evaluation
 ) -> Panel:
+    result: steps.CheckerResult = eval.result
     is_tle = result.outcome == steps.Outcome.TIME_LIMIT_EXCEEDED or (
-        problem.timeLimit and result.log.time * 1000 > problem.timeLimit
+        problem.timeLimit and eval.log.time * 1000 > problem.timeLimit
     )
 
     text = Text()
@@ -165,49 +164,51 @@ def _pretty_print_outcome_panel(
     )
     text.append(" " * 4)
     text.append("Time: ")
-    text.append(f"{result.log.time:.2f}s", style="error" if is_tle else "item")
+    text.append(f"{eval.log.time:.2f}s", style="error" if is_tle else "item")
     text.append("\n")
-    if result.testcase.input:
-        text.append(f"Input path: {result.testcase.input.absolute()}")
+    if eval.testcase.input:
+        text.append(f"Input path: {eval.testcase.input.absolute()}")
         text.append("\n")
-    if result.testcase.output:
-        text.append(f"Expected path: {result.testcase.output.absolute()}")
+    if eval.testcase.output:
+        text.append(f"Expected path: {eval.testcase.output.absolute()}")
         text.append("\n")
-    text.append(f"Answer path: {result.log.stdout_absolute_path}")
+    text.append(f"Answer path: {eval.log.stdout_absolute_path}")
     return Panel(
         text,
-        title=f"[bold]Testcase [item]#{result.testcase.index}[/item]",
+        title=f"[bold]Testcase [item]#{eval.testcase.index}[/item]",
         expand=False,
     )
 
 
 def _pretty_print_evaluation_result(
     problem: DumpedProblem,
-    result: steps.TestcaseEvaluation,
+    eval: steps.Evaluation,
     interactive: bool = False,
 ):
-    console.print(_pretty_print_outcome_panel(problem, result))
-    if result.outcome != steps.Outcome.ACCEPTED:
+    console.print(_pretty_print_outcome_panel(problem, eval))
+    if eval.result.outcome != steps.Outcome.ACCEPTED:
         if interactive:
             console.print(
-                _pretty_print_output_on_panel(result.log.stdout_absolute_path, "Output")
+                _pretty_print_output_on_panel(eval.log.stdout_absolute_path, "Output")
             )
         else:
-            console.print(_pretty_print_side_by_side(result))
-        if result.message:
-            console.print(f"[error]Checker message:[/error] {result.message.strip()}")
+            console.print(_pretty_print_side_by_side(eval))
+        if eval.result.message:
+            console.print(
+                f"[error]Checker message:[/error] {eval.result.message.strip()}"
+            )
     console.print()
 
 
 def pretty_print_summary(
     problem: DumpedProblem,
     lang: Language,
-    results: List[steps.TestcaseEvaluation],
+    evals: List[steps.Evaluation],
     root: pathlib.Path = pathlib.Path("."),
 ):
     submission_file = root / lang.get_submit_file(problem.code)
-    passed = sum(1 for result in results if result.outcome == steps.Outcome.ACCEPTED)
-    total = len(results)
+    passed = sum(1 for eval in evals if eval.result.outcome == steps.Outcome.ACCEPTED)
+    total = len(evals)
     console.print(f"Summary for problem [item]{problem.pretty_name()}[/item]:")
 
     # Test summary.
@@ -221,11 +222,11 @@ def pretty_print_summary(
 
 def pretty_print_evaluation_results(
     problem: DumpedProblem,
-    results: List[steps.TestcaseEvaluation],
+    evals: List[steps.Evaluation],
     interactive: bool = False,
 ):
-    for result in results:
-        _pretty_print_evaluation_result(problem, result, interactive=interactive)
+    for eval in evals:
+        _pretty_print_evaluation_result(problem, eval, interactive=interactive)
 
 
 def main(
@@ -327,13 +328,13 @@ def main(
     with console.status(
         f"Evaluating testcases for problem [item]{dumped_problem.pretty_name()}[/item]..."
     ):
-        results = _evaluate_testcases(
+        evals = _evaluate_testcases(
             dumped_problem, box, testcases, testcase_logs, persist_root
         )
-    if not results:
+    if not evals:
         console.print(
             f"[error]Failed to evaluate testcases for problem [item]{dumped_problem.pretty_name()}[/item].[/error]"
         )
         return
-    pretty_print_evaluation_results(dumped_problem, results, interactive=interactive)
-    pretty_print_summary(dumped_problem, lang, results)
+    pretty_print_evaluation_results(dumped_problem, evals, interactive=interactive)
+    pretty_print_summary(dumped_problem, lang, evals)

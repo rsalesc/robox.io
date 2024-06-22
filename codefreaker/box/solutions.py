@@ -10,7 +10,10 @@ from codefreaker.grading.steps import (
     CheckerResult,
     DigestOrDest,
     DigestOrSource,
+    Evaluation,
     RunLog,
+    TestcaseIO,
+    TestcaseLog,
 )
 
 
@@ -27,7 +30,7 @@ def compile_solutions():
 
 def run_solution(
     solution: Solution, compiled_digest: str, checker_digest: str, index: int
-) -> Dict[str, List[CheckerResult]]:
+) -> Dict[str, List[Evaluation]]:
     pkg = package.find_problem_package_or_die()
 
     sandbox = EnvironmentSandbox()
@@ -40,7 +43,7 @@ def run_solution(
 
     for group in pkg.testcases:
         testcases = find_built_testcases(group)
-        for testcase in testcases:
+        for i, testcase in enumerate(testcases):
             runs_dir = package.get_problem_runs_dir()
             output_path = runs_dir / f"{index}" / group.name / testcase.outputPath.name
             error_path = (
@@ -65,12 +68,24 @@ def run_solution(
                 testcase,
                 program_output=output_path,
             )
-            res[group.name].append(checker_result)
+            res[group.name].append(
+                Evaluation(
+                    result=checker_result,
+                    testcase=TestcaseIO(
+                        index=i, input=testcase.inputPath, output=testcase.outputPath
+                    ),
+                    log=TestcaseLog(
+                        **run_log.model_dump(),
+                        stdout_absolute_path=output_path.absolute(),
+                        stderr_absolute_path=error_path.absolute(),
+                    ),
+                )
+            )
 
     return dict(res)
 
 
-def run_solutions() -> List[Dict[str, List[CheckerResult]]]:
+def run_solutions() -> List[Dict[str, List[Evaluation]]]:
     pkg = package.find_problem_package_or_die()
 
     checker_digest = checkers.compile_checker()
