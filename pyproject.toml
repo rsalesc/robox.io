@@ -24,6 +24,7 @@ cfk = "codefreaker.main:app"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"
+ruff = "^0.4.10"
 
 [build-system]
 requires = ["poetry-core"]
