@@ -26,6 +26,7 @@ cbox = "codefreaker.box.main:app"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"
 ruff = "^0.4.10"
+pre-commit = "^3.7.1"
 
 [build-system]
 requires = ["poetry-core"]
