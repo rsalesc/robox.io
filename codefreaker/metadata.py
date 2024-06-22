@@ -1,7 +1,7 @@
 import pathlib
 from typing import List, Optional, Tuple
 
-from .schema import DumpedProblem
+from codefreaker.schema import DumpedProblem
 
 
 def _normalize_alias(alias: str) -> str:

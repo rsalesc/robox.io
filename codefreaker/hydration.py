@@ -1,12 +1,10 @@
 import pathlib
 from typing import List, Optional, Tuple
 
-from codefreaker import config
+from codefreaker import config, hydration, metadata
+from codefreaker.console import console
+from codefreaker.schema import DumpedProblem, Testcase
 from codefreaker.test import get_testcases_io
-
-from . import hydration, metadata
-from .console import console
-from .schema import DumpedProblem, Testcase
 
 
 def get_testcase_paths(

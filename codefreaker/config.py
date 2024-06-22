@@ -11,10 +11,9 @@ import requests
 import typer
 from pydantic import BaseModel
 
+from codefreaker import utils
+from codefreaker.console import console
 from codefreaker.grading.judge.storage import copyfileobj
-
-from . import utils
-from .console import console
 
 app = typer.Typer(no_args_is_help=True)
 

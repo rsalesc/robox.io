@@ -10,7 +10,7 @@ from typing import BinaryIO, List, Optional
 
 import gevent
 
-from . import digester, storage
+from codefreaker.grading.judge import digester, storage
 
 logger = logging.getLogger(__name__)
 

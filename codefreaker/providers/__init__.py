@@ -1,9 +1,8 @@
 from typing import List
 
+from codefreaker.providers.codeforces import CodeforcesProvider
+from codefreaker.providers.provider import ProviderInterface
 from codefreaker.schema import Problem
-
-from .codeforces import CodeforcesProvider
-from .provider import ProviderInterface
 
 ALL_PROVIDERS: List[ProviderInterface] = [
     CodeforcesProvider(),

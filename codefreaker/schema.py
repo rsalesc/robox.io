@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
-from . import utils
+from codefreaker import utils
 
 
 class Testcase(BaseModel):

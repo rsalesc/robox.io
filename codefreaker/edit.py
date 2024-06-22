@@ -1,7 +1,5 @@
-from codefreaker import metadata
-
-from . import annotations, console
-from .config import get_config, open_editor
+from codefreaker import annotations, console, metadata
+from codefreaker.config import get_config, open_editor
 
 
 def main(problem: str, language: annotations.LanguageWithDefault = None):

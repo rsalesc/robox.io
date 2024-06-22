@@ -22,7 +22,7 @@ def get_testcase_index(path: pathlib.Path) -> int:
 
 
 def get_testcases_io(
-    problem: DumpedProblem, root: pathlib.Path = pathlib.Path('.')
+    problem: DumpedProblem, root: pathlib.Path = pathlib.Path()
 ) -> List[steps.TestcaseIO]:
     testcases_per_index: Dict[int, steps.TestcaseIO] = {}
     for input_file in root.glob(f'{problem.code}.*.in'):
@@ -51,7 +51,7 @@ def _run_testcases(
     lang: Language,
     sandbox: SandboxBase,
     testcases: List[steps.TestcaseIO],
-    persist_root: Optional[pathlib.Path] = pathlib.Path('.'),
+    persist_root: Optional[pathlib.Path] = pathlib.Path(),
 ) -> Optional[Dict[int, steps.TestcaseLog]]:
     logs: Dict[int, steps.TestcaseLog] = {}
 
@@ -95,7 +95,7 @@ def _evaluate_testcases(
     sandbox: SandboxBase,
     testcases: List[steps.TestcaseIO],
     testcase_logs: Dict[int, steps.TestcaseLog],
-    persist_root: Optional[pathlib.Path] = pathlib.Path('.'),
+    persist_root: Optional[pathlib.Path] = pathlib.Path(),
 ) -> List[steps.Evaluation]:
     evaluations = []
     artifacts = grading_utils.build_checker_run_grading_artifacts(
@@ -203,7 +203,7 @@ def pretty_print_summary(
     problem: DumpedProblem,
     lang: Language,
     evals: List[steps.Evaluation],
-    root: pathlib.Path = pathlib.Path('.'),
+    root: pathlib.Path = pathlib.Path(),
 ):
     submission_file = root / lang.get_submit_file(problem.code)
     passed = sum(1 for eval in evals if eval.result.outcome == steps.Outcome.ACCEPTED)

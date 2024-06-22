@@ -17,9 +17,9 @@ def testdata_path() -> pathlib.Path:
 def cleandir() -> Iterator[pathlib.Path]:
     with tempfile.TemporaryDirectory() as newpath:
         abspath = pathlib.Path(newpath).absolute()
-        old_cwd = os.getcwd()
+        old_cwd = pathlib.Path.cwd()
         os.chdir(newpath)
         try:
             yield abspath
         finally:
-            os.chdir(old_cwd)
+            os.chdir(str(old_cwd))

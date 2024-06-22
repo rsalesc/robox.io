@@ -1,10 +1,10 @@
 import pathlib
 
-from . import annotations
-from .clone import create_problem_structure
-from .config import get_config
-from .console import console
-from .schema import Batch, Problem
+from codefreaker import annotations
+from codefreaker.clone import create_problem_structure
+from codefreaker.config import get_config
+from codefreaker.console import console
+from codefreaker.schema import Batch, Problem
 
 
 def main(

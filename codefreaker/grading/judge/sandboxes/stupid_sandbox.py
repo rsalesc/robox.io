@@ -13,9 +13,12 @@ from typing import BinaryIO, List, Optional
 import gevent
 
 from codefreaker.grading.judge import sandbox
-
-from ..cacher import FileCacher
-from ..sandbox import SandboxBase, SandboxParams, wait_without_std
+from codefreaker.grading.judge.cacher import FileCacher
+from codefreaker.grading.judge.sandbox import (
+    SandboxBase,
+    SandboxParams,
+    wait_without_std,
+)
 
 logger = logging.getLogger(__name__)
 

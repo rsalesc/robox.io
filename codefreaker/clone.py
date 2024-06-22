@@ -11,10 +11,10 @@ import rich.prompt
 import rich.status
 import uvicorn
 
-from . import hydration, metadata, providers, utils
-from .config import Language, get_config
-from .console import console
-from .schema import DumpedProblem, Problem
+from codefreaker import hydration, metadata, providers, utils
+from codefreaker.config import Language, get_config
+from codefreaker.console import console
+from codefreaker.schema import DumpedProblem, Problem
 
 
 def clear_loggers():

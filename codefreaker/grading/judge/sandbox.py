@@ -12,9 +12,7 @@ from typing import BinaryIO, Dict, List, Optional, Union
 
 import pydantic
 
-from codefreaker.grading.judge import storage
-
-from . import cacher
+from codefreaker.grading.judge import cacher, storage
 
 logger = logging.getLogger(__name__)
 

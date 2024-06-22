@@ -2,9 +2,9 @@ import pathlib
 
 import typer
 
-from . import annotations, hydration, metadata
-from .console import console, multiline_prompt
-from .schema import Testcase
+from codefreaker import annotations, hydration, metadata
+from codefreaker.console import console, multiline_prompt
+from codefreaker.schema import Testcase
 
 app = typer.Typer()
 

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from rich import text
 from rich.highlighter import JSONHighlighter
 
-from .console import console
+from codefreaker.console import console
 
 T = TypeVar('T', bound=BaseModel)
 

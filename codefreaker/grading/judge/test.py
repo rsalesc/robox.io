@@ -3,8 +3,8 @@ import pathlib
 
 from rich.console import Console
 
-from . import cacher, storage
-from .sandboxes import stupid_sandbox
+from codefreaker.grading.judge import cacher, storage
+from codefreaker.grading.judge.sandboxes import stupid_sandbox
 
 console = Console()
 

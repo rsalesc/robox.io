@@ -4,9 +4,8 @@ import pathlib
 from rich.console import Console
 
 from codefreaker import grading_utils
+from codefreaker.grading.judge import cacher, storage
 from codefreaker.grading.judge.sandboxes.isolate import IsolateSandbox
-
-from . import cacher, storage
 
 console = Console()
 
