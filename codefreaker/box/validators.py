@@ -12,6 +12,7 @@ from codefreaker.grading.steps import (
     DigestOrDest,
     DigestOrSource,
 )
+from codefreaker.utils import StatusProgress
 
 
 class TestcaseValidationInfo(BaseModel):
@@ -39,7 +40,9 @@ def _validate_testcase(
     return (run_log is not None and run_log.exitcode == 0, message)
 
 
-def compile_validators() -> Dict[str, str]:
+def compile_validators(
+    progress: Optional[StatusProgress] = None,
+) -> Dict[str, str]:
     pkg = package.find_problem_package_or_die()
 
     group_to_compiled_digest = {}
@@ -48,15 +51,25 @@ def compile_validators() -> Dict[str, str]:
         validator = group.validator or pkg.validator
         if validator is None:
             continue
+        if progress:
+            progress.update(
+                f'Compiling validator for group [item]{group.name}[/item]...'
+            )
         group_to_compiled_digest[group.name] = _compile_validator(validator)
 
     return group_to_compiled_digest
 
 
-def validate_testcases() -> List[TestcaseValidationInfo]:
+def validate_testcases(
+    progress: Optional[StatusProgress] = None,
+) -> List[TestcaseValidationInfo]:
+    def step():
+        if progress is not None:
+            progress.step()
+
     pkg = package.find_problem_package_or_die()
 
-    group_to_compiled_digest = compile_validators()
+    group_to_compiled_digest = compile_validators(progress)
 
     validation_info = []
 
@@ -80,5 +93,6 @@ def validate_testcases() -> List[TestcaseValidationInfo]:
                     message=message,
                 )
             )
+            step()
 
     return validation_info

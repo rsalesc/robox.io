@@ -20,6 +20,7 @@ from codefreaker.grading.steps import (
     DigestOrDest,
     DigestOrSource,
 )
+from codefreaker.utils import StatusProgress
 
 
 def _compile_generator(generator: CodeItem) -> str:
@@ -73,13 +74,19 @@ def get_all_built_testcases() -> Dict[str, List[Testcase]]:
     return res
 
 
-def generate_outputs_for_testcases():
+def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
+    def step():
+        if progress is not None:
+            progress.step()
+
     pkg = package.find_problem_package_or_die()
 
     built_testcases = get_all_built_testcases()
     main_solution = package.get_main_solution()
 
     if main_solution is not None:
+        if progress:
+            progress.update('Compiling main solution...')
         solution_digest = compile_item(main_solution)
 
     sandbox = EnvironmentSandbox()
@@ -125,23 +132,34 @@ def generate_outputs_for_testcases():
                     )
                 raise typer.Exit(1)
 
+            step()
 
-def compile_generators() -> Dict[str, str]:
+
+def compile_generators(progress: Optional[StatusProgress] = None) -> Dict[str, str]:
+    def update_status(text: str):
+        if progress is not None:
+            progress.update(text)
+
     pkg = package.find_problem_package_or_die()
 
     generator_to_compiled_digest = {}
 
     for generator in pkg.generators:
+        update_status(f'Compiling generator [item]{generator.name}[/item]')
         generator_to_compiled_digest[generator.name] = _compile_generator(generator)
 
     return generator_to_compiled_digest
 
 
-def generate_testcases():
+def generate_testcases(progress: Optional[StatusProgress] = None):
+    def step():
+        if progress is not None:
+            progress.step()
+
     pkg = package.find_problem_package_or_die()
     cacher = package.get_file_cacher()
 
-    compiled_generators = compile_generators()
+    compiled_generators = compile_generators(progress=progress)
 
     for testcase in pkg.testcases:
         group_path = package.get_build_testgroup_path(testcase.name)
@@ -151,6 +169,7 @@ def generate_testcases():
         for tc in testcase.testcases or []:
             _copy_testcase_over(tc, group_path, i)
             i += 1
+            step()
 
         # Glob testcases.
         if testcase.testcaseGlob:
@@ -163,6 +182,7 @@ def generate_testcases():
                 tc = Testcase(inputPath=input_path, outputPath=output_path)
                 _copy_testcase_over(tc, group_path, i)
                 i += 1
+                step()
 
         # Run single generators.
         for generator_call in testcase.generators:
@@ -179,6 +199,7 @@ def generate_testcases():
                 i,
             )
             i += 1
+            step()
 
         # Run generator script.
         if testcase.generatorScript is not None:
@@ -221,3 +242,4 @@ def generate_testcases():
                     i,
                 )
                 i += 1
+                step()

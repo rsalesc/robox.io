@@ -63,3 +63,35 @@ def confirm_on_status(status: Optional[rich.status.Status], *args, **kwargs) -> 
     if status:
         status.start()
     return res
+
+
+class StatusProgress(rich.status.Status):
+    _message: str
+    processed: int
+    keep: bool
+
+    def __init__(
+        self, message: str, formatted_message: Optional[str] = None, keep: bool = False
+    ):
+        self._message = formatted_message or message
+        self.keep = keep
+        self.processed = 0
+        super().__init__(message.format(processed=0), console=console)
+        self.start()
+
+    def __enter__(self):
+        super().__enter__()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        super().__exit__(*args, **kwargs)
+        if self.keep:
+            console.print(self._message.format(processed=self.processed))
+
+    def update_with_progress(self, processed: int):
+        self.processed = processed
+        self.update(self._message.format(processed=processed))
+
+    def step(self, delta: int = 1):
+        self.processed += delta
+        self.update_with_progress(self.processed)

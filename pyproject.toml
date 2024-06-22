@@ -20,6 +20,7 @@ requests = "^2.32.3"
 
 [tool.poetry.scripts]
 cfk = "codefreaker.main:app"
+cbox = "codefreaker.box.main:app"
 
 
 [tool.poetry.group.dev.dependencies]
