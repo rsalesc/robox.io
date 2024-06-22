@@ -1,13 +1,12 @@
 import pathlib
 from typing import Optional
-from typing_extensions import Annotated
-import typer
 
-from codefreaker import annotations, metadata, utils
-from codefreaker import config
+import typer
+from typing_extensions import Annotated
+
+from codefreaker import annotations, config, metadata, utils
 from codefreaker.config import get_builtin_checker, get_testlib
 from codefreaker.console import console
-
 
 app = typer.Typer(no_args_is_help=True)
 

@@ -1,8 +1,8 @@
 import pathlib
+
 from codefreaker.config import Language, get_config
 from codefreaker.schema import Problem
 from codefreaker.submitors.codeforces import CodeforcesSubmitor
-
 
 _SUBMITORS = [CodeforcesSubmitor()]
 

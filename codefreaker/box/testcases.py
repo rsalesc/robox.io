@@ -2,9 +2,10 @@ import pathlib
 from typing import List
 
 import typer
+
+from codefreaker import console
 from codefreaker.box.package import get_build_testgroup_path
 from codefreaker.box.schema import Testcase, TestcaseGroup
-from codefreaker import console
 
 
 def find_built_testcases(group: TestcaseGroup) -> List[Testcase]:

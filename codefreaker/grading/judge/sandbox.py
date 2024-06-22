@@ -1,12 +1,12 @@
 import abc
 import dataclasses
 import io
+import logging
 import os
+import pathlib
 import select
 import stat
-import pathlib
 import subprocess
-import logging
 import sys
 from typing import BinaryIO, Dict, List, Optional, Union
 

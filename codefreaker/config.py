@@ -1,19 +1,20 @@
+import functools
+import importlib
+import importlib.resources
 import os
+import pathlib
 import shutil
 import subprocess
 from typing import Any, Dict, List, Optional
-import importlib.resources
+
 import requests
 import typer
-import functools
-import pathlib
-import importlib
 from pydantic import BaseModel
 
 from codefreaker.grading.judge.storage import copyfileobj
 
-from .console import console
 from . import utils
+from .console import console
 
 app = typer.Typer(no_args_is_help=True)
 

@@ -1,16 +1,16 @@
-from enum import Enum
 import pathlib
 import shlex
+from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 from rich.text import Text
 
 from codefreaker import utils
+from codefreaker.config import get_testlib
 from codefreaker.console import console
 from codefreaker.grading.judge.sandbox import SandboxBase, SandboxParams
 from codefreaker.grading.judge.storage import copyfileobj
-from codefreaker.config import get_testlib
 
 MAX_STDOUT_LEN = 1024 * 1024 * 128  # 128 MB
 

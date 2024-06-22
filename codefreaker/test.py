@@ -2,13 +2,13 @@ import atexit
 import pathlib
 import tempfile
 from typing import Dict, List, Optional
+
 from rich.columns import Columns
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, MofNCompleteColumn
+from rich.progress import MofNCompleteColumn, Progress, SpinnerColumn
 from rich.text import Text
 
-from codefreaker import annotations, grading_utils, metadata, testcase_rendering
-from codefreaker import config
+from codefreaker import annotations, config, grading_utils, metadata, testcase_rendering
 from codefreaker.config import Language, get_config
 from codefreaker.console import console, multiline_prompt
 from codefreaker.grading import steps

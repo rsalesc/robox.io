@@ -3,12 +3,14 @@ import importlib.resources
 import pathlib
 import re
 from typing import List, Optional
+
 import typer
 from typing_extensions import Annotated
 
-from .config import _RESOURCES_PKG, get_config
-from . import metadata
 from codefreaker import config
+
+from . import metadata
+from .config import _RESOURCES_PKG, get_config
 
 
 def _get_language_options():

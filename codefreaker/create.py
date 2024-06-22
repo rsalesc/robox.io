@@ -1,10 +1,10 @@
 import pathlib
 
-from .console import console
-from .config import get_config
-from .schema import Batch, Problem
 from . import annotations
 from .clone import create_problem_structure
+from .config import get_config
+from .console import console
+from .schema import Batch, Problem
 
 
 def main(

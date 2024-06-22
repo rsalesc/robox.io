@@ -1,8 +1,9 @@
 import functools
 import pathlib
 from typing import List, Optional, Type, TypeVar
-from pydantic import BaseModel, ConfigDict
+
 import typer
+from pydantic import BaseModel, ConfigDict
 
 from codefreaker import config, console, utils
 from codefreaker.grading.judge.sandbox import SandboxBase, SandboxParams

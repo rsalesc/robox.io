@@ -13,11 +13,11 @@ from codefreaker.box.schema import (
     Package,
     Solution,
 )
+from codefreaker.config import get_builtin_checker
 from codefreaker.grading.caching import DependencyCache
 from codefreaker.grading.judge.cacher import FileCacher
 from codefreaker.grading.judge.sandbox import SandboxBase
 from codefreaker.grading.judge.storage import FilesystemStorage, Storage
-from codefreaker.config import get_builtin_checker
 
 YAML_NAME = 'problem.cfk.yml'
 _DEFAULT_CHECKER = 'wcmp.cpp'

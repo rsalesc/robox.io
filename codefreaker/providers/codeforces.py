@@ -1,6 +1,6 @@
 import re
-
 from typing import List
+
 from codefreaker.providers.provider import ProviderInterface
 from codefreaker.schema import Problem
 

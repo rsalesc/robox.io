@@ -2,9 +2,9 @@ import importlib
 import importlib.resources
 import pathlib
 
-import rich.tree
-import rich.text
 import rich.markup
+import rich.text
+import rich.tree
 from rich.filesize import decimal
 
 from codefreaker import console

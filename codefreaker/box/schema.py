@@ -1,5 +1,6 @@
 import pathlib
 from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict
 
 from codefreaker.autoenum import AutoEnum, alias

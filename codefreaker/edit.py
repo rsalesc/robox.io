@@ -1,7 +1,7 @@
 from codefreaker import metadata
-from . import console
+
+from . import annotations, console
 from .config import get_config, open_editor
-from . import annotations
 
 
 def main(problem: str, language: annotations.LanguageWithDefault = None):

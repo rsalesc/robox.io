@@ -1,11 +1,10 @@
 import atexit
 import pathlib
 
-from . import storage
-from . import cacher
-from .sandboxes import stupid_sandbox
-
 from rich.console import Console
+
+from . import cacher, storage
+from .sandboxes import stupid_sandbox
 
 console = Console()
 

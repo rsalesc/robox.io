@@ -1,18 +1,16 @@
-from typing_extensions import Annotated
 import typer
+from typing_extensions import Annotated
 
 from codefreaker import checker
 from codefreaker.box import main
 
-from . import annotations
+from . import annotations, config, testcase
 from . import clone as clone_pkg
-from . import config
-from . import testcase
 from . import create as create_pkg
 from . import edit as edit_pkg
-from . import test as test_pkg
 from . import run as run_pkg
 from . import submit as submit_pkg
+from . import test as test_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(main.app, name='box', cls=annotations.AliasGroup)

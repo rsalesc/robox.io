@@ -1,5 +1,6 @@
-from typing import Dict, List, Optional
 import uuid
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel
 
 from . import utils

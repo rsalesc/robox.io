@@ -5,7 +5,6 @@ from codefreaker.schema import Problem
 from .codeforces import CodeforcesProvider
 from .provider import ProviderInterface
 
-
 ALL_PROVIDERS: List[ProviderInterface] = [
     CodeforcesProvider(),
 ]

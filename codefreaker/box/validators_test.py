@@ -1,8 +1,9 @@
 import pathlib
+
 import pytest
 
-from codefreaker.box.validators import validate_testcases
 from codefreaker.box.generators import generate_testcases
+from codefreaker.box.validators import validate_testcases
 
 
 @pytest.mark.test_pkg('box1')

@@ -1,6 +1,7 @@
 import atexit
 import os
 import shlex
+
 from codefreaker import annotations, grading_utils, metadata
 from codefreaker.config import get_config
 from codefreaker.console import stderr_console

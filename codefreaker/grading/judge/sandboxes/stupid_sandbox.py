@@ -1,19 +1,21 @@
-from functools import partial
+import logging
 import os
-import stat
 import pathlib
 import resource
 import shutil
+import stat
 import subprocess
 import tempfile
-import logging
+from functools import partial
 from time import monotonic
 from typing import BinaryIO, List, Optional
 
 import gevent
+
+from codefreaker.grading.judge import sandbox
+
 from ..cacher import FileCacher
 from ..sandbox import SandboxBase, SandboxParams, wait_without_std
-from codefreaker.grading.judge import sandbox
 
 logger = logging.getLogger(__name__)
 

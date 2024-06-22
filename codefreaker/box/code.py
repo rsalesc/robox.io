@@ -1,9 +1,10 @@
-from pathlib import PosixPath
 import pathlib
 import shlex
+from pathlib import PosixPath
 from typing import List, Optional
 
 import typer
+
 from codefreaker.box import package
 from codefreaker.box.environment import (
     ExecutionConfig,
@@ -17,6 +18,7 @@ from codefreaker.box.environment import (
     merge_execution_configs,
 )
 from codefreaker.box.schema import CodeItem
+from codefreaker.grading import steps
 from codefreaker.grading.steps import (
     DigestHolder,
     DigestOrDest,
@@ -27,7 +29,6 @@ from codefreaker.grading.steps import (
     GradingLogsHolder,
     RunLog,
 )
-from codefreaker.grading import steps
 
 
 def get_extension(code: CodeItem) -> str:

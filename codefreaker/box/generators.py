@@ -1,11 +1,12 @@
-from pathlib import PosixPath
 import pathlib
 import shlex
 import shutil
+from pathlib import PosixPath
 from typing import Dict, List
 
 import typer
-from codefreaker.box.testcases import find_built_testcases
+
+from codefreaker import console
 from codefreaker.box import package
 from codefreaker.box.code import compile_item, run_item
 from codefreaker.box.environment import (
@@ -13,12 +14,12 @@ from codefreaker.box.environment import (
     ExecutionConfig,
 )
 from codefreaker.box.schema import CodeItem, Generator, Testcase
+from codefreaker.box.testcases import find_built_testcases
 from codefreaker.grading.steps import (
     DigestHolder,
     DigestOrDest,
     DigestOrSource,
 )
-from codefreaker import console
 
 
 def _compile_generator(generator: CodeItem) -> str:

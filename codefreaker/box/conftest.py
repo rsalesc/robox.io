@@ -1,11 +1,12 @@
-from collections.abc import Iterator
 import os
 import pathlib
 import shutil
+from collections.abc import Iterator
+
 import pytest
 
-from codefreaker.box import package
 from codefreaker import testing_utils
+from codefreaker.box import package
 
 
 @pytest.fixture

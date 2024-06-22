@@ -1,9 +1,8 @@
-import typer
 import pathlib
 
-from . import annotations
-from . import hydration
-from . import metadata
+import typer
+
+from . import annotations, hydration, metadata
 from .console import console, multiline_prompt
 from .schema import Testcase
 

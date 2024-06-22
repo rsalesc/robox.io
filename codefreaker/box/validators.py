@@ -2,10 +2,11 @@ import pathlib
 from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
-from codefreaker.box.testcases import find_built_testcase_inputs
+
+from codefreaker.box import package
 from codefreaker.box.code import compile_item, run_item
 from codefreaker.box.schema import CodeItem
-from codefreaker.box import package
+from codefreaker.box.testcases import find_built_testcase_inputs
 from codefreaker.grading.steps import (
     DigestHolder,
     DigestOrDest,

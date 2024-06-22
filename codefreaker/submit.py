@@ -1,5 +1,6 @@
 import atexit
 from pathlib import PosixPath
+
 from codefreaker import annotations, metadata, submitors, utils
 from codefreaker.config import get_config
 from codefreaker.console import console

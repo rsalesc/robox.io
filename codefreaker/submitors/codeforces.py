@@ -3,9 +3,10 @@ import pathlib
 from typing import Any
 
 import mechanize
+
+from codefreaker.console import console
 from codefreaker.schema import Problem
 from codefreaker.submitors.submitor import Submitor
-from codefreaker.console import console
 
 _SUBMITOR_KEY = 'codeforces'
 

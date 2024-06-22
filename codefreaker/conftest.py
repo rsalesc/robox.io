@@ -1,7 +1,8 @@
-from collections.abc import Iterator
 import os
 import pathlib
 import tempfile
+from collections.abc import Iterator
+
 import pytest
 
 from codefreaker.testing_utils import get_testdata_path

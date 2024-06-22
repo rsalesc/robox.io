@@ -2,13 +2,13 @@ import json
 import pathlib
 from typing import Any, Optional, Type, TypeVar
 
-from pydantic import BaseModel
 import rich
 import rich.prompt
 import rich.status
+import yaml
+from pydantic import BaseModel
 from rich import text
 from rich.highlighter import JSONHighlighter
-import yaml
 
 from .console import console
 

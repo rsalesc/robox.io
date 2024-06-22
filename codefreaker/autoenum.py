@@ -1,5 +1,5 @@
-from typing import Any, Union, Tuple, Optional, Dict, Set, List
 from enum import Enum, auto
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 
 class alias(auto):

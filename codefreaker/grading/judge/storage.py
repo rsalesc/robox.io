@@ -1,12 +1,11 @@
 import dataclasses
-import pathlib
-from typing import List, BinaryIO, IO, Optional, TypeVar
-
-import logging
 import io
+import logging
 import os
+import pathlib
 import tempfile
 from abc import ABC, abstractmethod
+from typing import IO, BinaryIO, List, Optional, TypeVar
 
 import gevent
 

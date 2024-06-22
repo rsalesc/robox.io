@@ -4,10 +4,9 @@ from typing import List, Optional, Tuple
 from codefreaker import config
 from codefreaker.test import get_testcases_io
 
-from . import metadata
-from . import hydration
-from .schema import DumpedProblem, Testcase
+from . import hydration, metadata
 from .console import console
+from .schema import DumpedProblem, Testcase
 
 
 def get_testcase_paths(

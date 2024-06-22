@@ -5,8 +5,8 @@ from rich.console import Console
 
 from codefreaker import grading_utils
 from codefreaker.grading.judge.sandboxes.isolate import IsolateSandbox
-from . import storage
-from . import cacher
+
+from . import cacher, storage
 
 console = Console()
 

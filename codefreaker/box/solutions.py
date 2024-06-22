@@ -1,11 +1,11 @@
 import collections
 from typing import Dict, List
-from codefreaker.box import checkers
-from codefreaker.box.testcases import find_built_testcases
+
+from codefreaker.box import checkers, package
+from codefreaker.box.code import compile_item, run_item
 from codefreaker.box.environment import EnvironmentSandbox, ExecutionConfig
 from codefreaker.box.schema import Solution
-from codefreaker.box.code import compile_item, run_item
-from codefreaker.box import package
+from codefreaker.box.testcases import find_built_testcases
 from codefreaker.grading.steps import (
     DigestOrDest,
     DigestOrSource,

@@ -1,6 +1,7 @@
+import sys
+
 from rich.console import Console
 from rich.theme import Theme
-import sys
 
 theme = Theme(
     {

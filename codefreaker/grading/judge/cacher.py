@@ -10,8 +10,7 @@ from typing import BinaryIO, List, Optional
 
 import gevent
 
-from . import digester
-from . import storage
+from . import digester, storage
 
 logger = logging.getLogger(__name__)
 

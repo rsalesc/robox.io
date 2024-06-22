@@ -1,7 +1,9 @@
 import pathlib
-from codefreaker.box.schema import Testcase
-from codefreaker.box.code import compile_item, run_item
+
 from codefreaker.box import package
+from codefreaker.box.code import compile_item, run_item
+from codefreaker.box.schema import Testcase
+from codefreaker.grading.judge.sandbox import SandboxBase
 from codefreaker.grading.steps import (
     CheckerResult,
     DigestHolder,
@@ -11,7 +13,6 @@ from codefreaker.grading.steps import (
     Outcome,
     RunLog,
 )
-from codefreaker.grading.judge.sandbox import SandboxBase
 
 
 def compile_checker() -> str:

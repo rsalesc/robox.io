@@ -1,11 +1,12 @@
 import pathlib
+
 import pytest
 
-from codefreaker.box.solutions import run_solutions
 from codefreaker.box.generators import (
     generate_outputs_for_testcases,
     generate_testcases,
 )
+from codefreaker.box.solutions import run_solutions
 from codefreaker.grading.steps import Outcome
 
 
