@@ -8,18 +8,18 @@ from codefreaker.schema import Problem
 def _add_underscores(matches: List[str]) -> List[str]:
     if len(matches) <= 2:
         return matches
-    return [f'{x}_' for x in matches[:-2]] + matches[-2:]
+    return [f"{x}_" for x in matches[:-2]] + matches[-2:]
 
 
 _PATTERNS = [
-    r'https?://(?:.*\.)?codeforces.(?:com|ml|es)/(?:contest|gym)/(\d+)/problem/([^/]+)',
-    r'https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemset/problem/(\d+)/([^/]+)',
+    r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/(?:contest|gym)/(\d+)/problem/([^/]+)",
+    r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemset/problem/(\d+)/([^/]+)",
     (
-        r'https?://(?:.*\.)?codeforces.(?:com|ml|es)/group/([^/]+)/contest/(\d+)/problem/([^/]+)',
+        r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/group/([^/]+)/contest/(\d+)/problem/([^/]+)",
         _add_underscores,
     ),
-    r'https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemset/(gym)Problem/([^/]+)',
-    r'https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemsets/(acm)sguru/problem/(?:\d+)/([^/]+)',
+    r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemset/(gym)Problem/([^/]+)",
+    r"https?://(?:.*\.)?codeforces.(?:com|ml|es)/problemsets/(acm)sguru/problem/(?:\d+)/([^/]+)",
     # TODO: add EDU
 ]
 
@@ -48,7 +48,7 @@ def get_code_tuple(url: str) -> List[str]:
 
 class CodeforcesProvider(ProviderInterface):
     def should_handle(self, url: str) -> bool:
-        return 'codeforces.com/' in url
+        return "codeforces.com/" in url
 
     def should_simplify_contest_problems(self) -> bool:
         return True
@@ -60,7 +60,7 @@ class CodeforcesProvider(ProviderInterface):
         code_tuple = get_code_tuple(problem.url)
         if not code_tuple:
             return super().get_code(problem)
-        return ''.join(code_tuple)
+        return "".join(code_tuple)
 
     def get_aliases(self, problem: Problem) -> List[str]:
         code_tuple = get_code_tuple(problem.url)
@@ -69,5 +69,5 @@ class CodeforcesProvider(ProviderInterface):
 
         aliases = []
         for i in range(len(code_tuple)):
-            aliases.append(''.join(code_tuple[i:]))
+            aliases.append("".join(code_tuple[i:]))
         return aliases

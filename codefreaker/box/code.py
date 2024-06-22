@@ -75,14 +75,13 @@ def compile_item(code: CodeItem) -> str:
     )
 
     with dependency_cache(commands, [artifacts]) as is_cached:
-        if not is_cached:
-            if not steps.compile(
-                commands=commands,
-                params=sandbox_params,
-                artifacts=artifacts,
-                sandbox=sandbox,
-            ):
-                raise typer.Exit(1)
+        if not is_cached and not steps.compile(
+            commands=commands,
+            params=sandbox_params,
+            artifacts=artifacts,
+            sandbox=sandbox,
+        ):
+            raise typer.Exit(1)
 
     return compiled_digest.value
 

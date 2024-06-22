@@ -332,7 +332,7 @@ class IsolateSandbox(SandboxBase):
         except OSError as error:
             raise OSError(
                 'Error while reading execution log file %s. %r' % (info_file, error)
-            )
+            ) from error
 
     def get_execution_time(self) -> float:
         """Return the time spent in the sandbox, reading the logs if
