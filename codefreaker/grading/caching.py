@@ -59,7 +59,8 @@ def _build_fingerprint_list(artifacts_list: List[GradingArtifacts]) -> List[str]
         for input in artifacts.inputs:
             if input.src is None:
                 continue
-            fingerprints.append(digest_cooperatively(input.src.open('rb')))
+            with input.src.open('rb') as f:
+                fingerprints.append(digest_cooperatively(f))
     return fingerprints
 
 

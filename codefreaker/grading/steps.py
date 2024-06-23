@@ -194,11 +194,13 @@ def _process_output_artifacts(
             continue
         assert output_artifact.dest
         dst: pathlib.Path = artifacts.root / output_artifact.dest
-        copyfileobj(
-            sandbox.get_file(output_artifact.src),
-            dst.open('wb'),
-            maxlen=output_artifact.maxlen,
-        )
+        with dst.open('wb') as f:
+            with sandbox.get_file(output_artifact.src) as sb_f:
+                copyfileobj(
+                    sb_f,
+                    f,
+                    maxlen=output_artifact.maxlen,
+                )
         if output_artifact.executable:
             dst.chmod(0o755)
     return True

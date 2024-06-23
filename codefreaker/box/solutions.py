@@ -1,4 +1,5 @@
 import collections
+import pathlib
 from typing import Dict, List, Optional, Set
 
 import rich
@@ -22,7 +23,7 @@ from codefreaker.utils import StatusProgress, model_to_yaml
 def compile_solutions(
     progress: Optional[StatusProgress] = None,
     tracked_solutions: Optional[Set[str]] = None,
-):
+) -> Dict[pathlib.Path, str]:
     pkg = package.find_problem_package_or_die()
 
     compiled_solutions = {}

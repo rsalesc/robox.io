@@ -60,6 +60,7 @@ def wait_without_std(
     # because of insufficient buffering (and without allocating too
     # much memory). Unix specific.
     to_consume = get_to_consume()
+
     while len(to_consume) > 0:
         to_read = select.select(to_consume, [], [], 1.0)[0]
         for file_ in to_read:

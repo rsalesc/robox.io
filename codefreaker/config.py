@@ -103,7 +103,9 @@ def get_app_file(path: pathlib.Path) -> pathlib.Path:
     ) as file:
         if file.is_file():
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            copyfileobj(file.open('rb'), file_path.open('wb'))
+            with file.open('rb') as fr:
+                with file_path.open('wb') as fw:
+                    copyfileobj(fr, fw)
     return file_path
 
 

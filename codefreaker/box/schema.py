@@ -72,6 +72,8 @@ class GeneratorCall(BaseModel):
     name: str
 
     # The args to pass to this generator.
+    # In case of a generator being called from a Stress test,
+    # these args can contain patterns such as `[1..10]` or `(abc|def)`.
     args: Optional[str] = None
 
 
@@ -126,6 +128,25 @@ class Solution(CodeItem):
     outcome: ExpectedOutcome
 
 
+class Stress(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    # The name of this stress test.
+    name: str
+
+    # Generator pattern to call during stress-test.
+    # E.g. "gen1 10 [5..10] abacaba"
+    generator: GeneratorCall
+
+    # Path of the solutions to be stress-tested.
+    # If empty, will stress-test only the main solution for
+    # non-WA verdicts.
+    solutions: List[str] = []
+
+    # What verdict to look for while stress-testing.
+    outcome: ExpectedOutcome = ExpectedOutcome.INCORRECT
+
+
 class Package(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
@@ -155,3 +176,6 @@ class Package(BaseModel):
 
     # Test groups for the problem.
     testcases: List[TestcaseGroup] = []
+
+    # List of pre-defined stress tests.
+    stresses: List[Stress] = []

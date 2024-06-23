@@ -2,7 +2,7 @@ import pathlib
 import shlex
 import shutil
 from pathlib import PosixPath
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import typer
 
@@ -66,6 +66,7 @@ def _run_generator(
             f'Failed generating test {i} from group path {group_path}',
             style='error',
         )
+        raise typer.Exit(1)
 
 
 def get_all_built_testcases() -> Dict[str, List[Testcase]]:
@@ -83,6 +84,7 @@ def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
 
     built_testcases = get_all_built_testcases()
     main_solution = package.get_main_solution()
+    solution_digest: Optional[str] = None
 
     if main_solution is not None:
         if progress:
@@ -105,7 +107,7 @@ def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
             assert output_path is not None
             if output_path.is_file():
                 continue
-            if main_solution is None:
+            if main_solution is None or solution_digest is None:
                 console.console.print(
                     'No main solution found to generate outputs for testcases',
                     style='error',
@@ -135,7 +137,10 @@ def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
             step()
 
 
-def compile_generators(progress: Optional[StatusProgress] = None) -> Dict[str, str]:
+def compile_generators(
+    progress: Optional[StatusProgress] = None,
+    tracked_generators: Optional[Set[str]] = None,
+) -> Dict[str, str]:
     def update_status(text: str):
         if progress is not None:
             progress.update(text)
@@ -145,6 +150,8 @@ def compile_generators(progress: Optional[StatusProgress] = None) -> Dict[str, s
     generator_to_compiled_digest = {}
 
     for generator in pkg.generators:
+        if tracked_generators is not None and generator.name not in tracked_generators:
+            continue
         update_status(f'Compiling generator [item]{generator.name}[/item]')
         generator_to_compiled_digest[generator.name] = _compile_generator(generator)
 

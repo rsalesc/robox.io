@@ -5,7 +5,7 @@ from typing import Annotated, Optional
 import typer
 
 from codefreaker import annotations, config, console, utils
-from codefreaker.box import package
+from codefreaker.box import package, stresses
 from codefreaker.box.environment import get_environment_path
 from codefreaker.box.generators import (
     generate_outputs_for_testcases,
@@ -69,6 +69,14 @@ def run(solution: Annotated[Optional[str], typer.Argument()] = None):
     console.console.print()
     console.console.rule('[status]Run report[/status]', style='status')
     print_run_report(evals_per_solution, console.console)
+
+
+@app.command('stress')
+def stress(name: str):
+    with utils.StatusProgress('Running stress...'):
+        findings = stresses.run_stress(name, 10)
+
+    console.console.print(findings)
 
 
 @app.command('environment, env')

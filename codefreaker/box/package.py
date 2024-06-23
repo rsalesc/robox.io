@@ -12,6 +12,7 @@ from codefreaker.box.schema import (
     Generator,
     Package,
     Solution,
+    Stress,
 )
 from codefreaker.config import get_builtin_checker
 from codefreaker.grading.caching import DependencyCache
@@ -140,7 +141,7 @@ def get_generator(name: str, root: pathlib.Path = pathlib.Path()) -> Generator:
     for generator in package.generators:
         if generator.name == name:
             return generator
-    console.console.print(f'Generator {name} not found', style='error')
+    console.console.print(f'Generator [item]{name}[/item] not found', style='error')
     raise typer.Exit(1)
 
 
@@ -165,3 +166,22 @@ def get_main_solution(root: pathlib.Path = pathlib.Path()) -> Optional[Solution]
         if solution.outcome == ExpectedOutcome.ACCEPTED:
             return solution
     return None
+
+
+@functools.cache
+def get_solution(name: str, root: pathlib.Path = pathlib.Path()) -> Solution:
+    for solution in get_solutions(root):
+        if str(solution.path) == name:
+            return solution
+    console.console.print(f'Solution [item]{name}[/item] not found', style='error')
+    raise typer.Exit(1)
+
+
+@functools.cache
+def get_stress(name: str, root: pathlib.Path = pathlib.Path()) -> Stress:
+    pkg = find_problem_package_or_die(root)
+    for stress in pkg.stresses:
+        if stress.name == name:
+            return stress
+    console.console.print(f'Stress [item]{name}[/item] not found', style='error')
+    raise typer.Exit(1)
