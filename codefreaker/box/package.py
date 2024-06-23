@@ -13,6 +13,7 @@ from codefreaker.box.schema import (
     Package,
     Solution,
     Stress,
+    TestcaseGroup,
 )
 from codefreaker.config import get_builtin_checker
 from codefreaker.grading.caching import DependencyCache
@@ -58,6 +59,17 @@ def find_problem(root: pathlib.Path = pathlib.Path()) -> pathlib.Path:
         console.console.print(f'Problem not found in {root.absolute()}', style='error')
         raise typer.Exit(1)
     return found.parent
+
+
+def save_package(
+    package: Optional[Package] = None, root: pathlib.Path = pathlib.Path()
+) -> None:
+    package = package or find_problem_package_or_die(root)
+    problem_yaml_path = find_problem_yaml(root)
+    if not problem_yaml_path:
+        console.console.print(f'Problem not found in {root.absolute()}', style='error')
+        raise typer.Exit(1)
+    problem_yaml_path.write_text(utils.model_to_yaml(package))
 
 
 @functools.cache
@@ -184,4 +196,14 @@ def get_stress(name: str, root: pathlib.Path = pathlib.Path()) -> Stress:
         if stress.name == name:
             return stress
     console.console.print(f'Stress [item]{name}[/item] not found', style='error')
+    raise typer.Exit(1)
+
+
+@functools.cache
+def get_testgroup(name: str, root: pathlib.Path = pathlib.Path()) -> TestcaseGroup:
+    pkg = find_problem_package_or_die(root)
+    for testgroup in pkg.testcases:
+        if testgroup.name == name:
+            return testgroup
+    console.console.print(f'Test group [item]{name}[/item] not found', style='error')
     raise typer.Exit(1)

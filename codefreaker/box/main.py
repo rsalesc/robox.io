@@ -2,6 +2,8 @@ import pathlib
 import shutil
 from typing import Annotated, Optional
 
+import rich
+import rich.prompt
 import typer
 
 from codefreaker import annotations, config, console, utils
@@ -77,6 +79,32 @@ def stress(name: str):
         findings = stresses.run_stress(name, 10, progress=s)
 
     console.console.print(findings)
+
+    # Add found tests.
+    res = rich.prompt.Confirm.ask(
+        'Do you want to add the tests that were found to a test group?',
+        console=console.console,
+    )
+    if not res:
+        return
+    testgroup = None
+    while testgroup is None or testgroup:
+        testgroup = rich.prompt.Prompt.ask(
+            'Enter the name of the test group, or empty to cancel',
+            console=console.console,
+        )
+        if not testgroup:
+            break
+        try:
+            testgroup = package.get_testgroup(testgroup)
+            testgroup.generators.extend(f.generator for f in findings)
+            package.save_package()
+            console.console.print(
+                f'Added [item]{len(findings)}[/item] tests to test group [item]{testgroup.name}[/item].'
+            )
+        except typer.Exit:
+            continue
+        break
 
 
 @app.command('environment, env')
