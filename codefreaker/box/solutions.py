@@ -134,17 +134,20 @@ def _get_testcase_markup_verdict(eval: Evaluation) -> str:
     return res
 
 
-def _get_evals_time(evals: List[Evaluation]) -> float:
-    return max(eval.log.time or 0.0 for eval in evals)
+def _get_evals_time_in_ms(evals: List[Evaluation]) -> int:
+    return max(int((eval.log.time or 0.0) * 1000) for eval in evals)
 
 
 def _get_evals_formatted_time(evals: List[Evaluation]) -> str:
-    max_time = _get_evals_time(evals)
-    return f'{max_time*1000:.0f} ms'
+    max_time = _get_evals_time_in_ms(evals)
+    return f'{max_time} ms'
 
 
 def _print_solution_outcome(
-    solution: Solution, evals: List[Evaluation], console: rich.console.Console
+    solution: Solution,
+    evals: List[Evaluation],
+    timeLimit: int,
+    console: rich.console.Console,
 ):
     bad_verdicts = set()
     for eval in evals:
@@ -154,6 +157,7 @@ def _print_solution_outcome(
     unmatched_bad_verdicts = set(
         v for v in bad_verdicts if not solution.outcome.match(v)
     )
+    matched_bad_verdicts = bad_verdicts - unmatched_bad_verdicts
 
     if unmatched_bad_verdicts:
         console.print('[error]FAILED[/error]', end=' ')
@@ -167,6 +171,15 @@ def _print_solution_outcome(
         console.print(f', got: {" ".join(unmatched_bad_verdicts_names)}', end='')
 
     console.print()
+    evals_time = _get_evals_time_in_ms(evals)
+    if (
+        not (matched_bad_verdicts - {Outcome.TIME_LIMIT_EXCEEDED})
+        and evals_time > timeLimit
+        and evals_time < timeLimit * 2
+    ):
+        console.print(
+            '[yellow]WARNING[/yellow] The solution still passed in double TL.'
+        )
     console.print(f'Time: {_get_evals_formatted_time(evals)}')
 
 
@@ -193,5 +206,5 @@ def print_run_report(
             console.print()
             all_evals.extend(evals)
 
-        _print_solution_outcome(solution, all_evals, console)
+        _print_solution_outcome(solution, all_evals, pkg.timeLimit, console)
         console.print()
