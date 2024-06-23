@@ -134,13 +134,20 @@ def _get_testcase_markup_verdict(eval: Evaluation) -> str:
     return res
 
 
+def _get_evals_time(evals: List[Evaluation]) -> float:
+    return max(eval.log.time or 0.0 for eval in evals)
+
+
+def _get_evals_formatted_time(evals: List[Evaluation]) -> str:
+    max_time = _get_evals_time(evals)
+    return f'{max_time*1000:.0f} ms'
+
+
 def _print_solution_outcome(
     solution: Solution, evals: List[Evaluation], console: rich.console.Console
 ):
     bad_verdicts = set()
-    max_time = 0.0
     for eval in evals:
-        max_time = max(max_time, eval.log.time or 0.0)
         if eval.result.outcome != Outcome.ACCEPTED:
             bad_verdicts.add(eval.result.outcome)
 
@@ -160,7 +167,7 @@ def _print_solution_outcome(
         console.print(f', got: {" ".join(unmatched_bad_verdicts_names)}', end='')
 
     console.print()
-    console.print(f'Time: {max_time*1000 or 0.0:.0f}ms')
+    console.print(f'Time: {_get_evals_formatted_time(evals)}')
 
 
 def print_run_report(
@@ -179,6 +186,7 @@ def print_run_report(
         all_evals = []
         for group, evals in evals_per_group.items():
             console.print(f'[bold][status]{group}[/status][/bold]', end=' ')
+            console.print(f'({_get_evals_formatted_time(evals)})', end=' ')
             for i, eval in enumerate(evals):
                 console.print(f'{i}/', end='')
                 console.print(_get_testcase_markup_verdict(eval), end=' ')
