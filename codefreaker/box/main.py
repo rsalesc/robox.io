@@ -1,9 +1,11 @@
+import pathlib
 import shutil
 from typing import Annotated, Optional
 
 import typer
 
 from codefreaker import annotations, config, console, utils
+from codefreaker.box import package
 from codefreaker.box.environment import get_environment_path
 from codefreaker.box.generators import (
     generate_outputs_for_testcases,
@@ -13,6 +15,15 @@ from codefreaker.box.solutions import print_run_report, run_solutions
 from codefreaker.box.validators import validate_testcases
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
+
+
+@app.command('edit')
+def edit():
+    console.console.print('Opening problem definition in editor...')
+    # Call this function just to raise exception in case we're no in
+    # a problem package.
+    package.find_problem()
+    config.open_editor(package.find_problem_yaml() or pathlib.Path())
 
 
 @app.command('build, b')
