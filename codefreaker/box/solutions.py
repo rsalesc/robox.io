@@ -137,25 +137,30 @@ def _get_testcase_markup_verdict(eval: Evaluation) -> str:
 def _print_solution_outcome(
     solution: Solution, evals: List[Evaluation], console: rich.console.Console
 ):
-    first_non_match = None
+    bad_verdicts = set()
     max_time = 0.0
     for eval in evals:
         max_time = max(max_time, eval.log.time or 0.0)
-        if not solution.outcome.match(eval.result.outcome):
-            first_non_match = eval
-            break
+        if eval.result.outcome != Outcome.ACCEPTED:
+            bad_verdicts.add(eval.result.outcome)
+
+    unmatched_bad_verdicts = set(
+        v for v in bad_verdicts if not solution.outcome.match(v)
+    )
+
+    if unmatched_bad_verdicts:
+        console.print('[error]FAILED[/error]', end=' ')
+    else:
+        console.print('[success]OK[/success]', end=' ')
 
     console.print(f'Expected: {solution.outcome}', end='')
-    if first_non_match is not None:
-        all_non_matching_outcomes = set(
-            eval.result.outcome.name
-            for eval in evals
-            if not solution.outcome.match(eval.result.outcome)
-        )
-        console.print(f', actually got: {" ".join(all_non_matching_outcomes)}', end='')
+
+    if unmatched_bad_verdicts:
+        unmatched_bad_verdicts_names = set(v.name for v in unmatched_bad_verdicts)
+        console.print(f', got: {" ".join(unmatched_bad_verdicts_names)}', end='')
+
     console.print()
-    if max_time > 1e-3:
-        console.print(f'Time: {max_time or 0.0:.2f}s')
+    console.print(f'Time: {max_time*1000 or 0.0:.0f}ms')
 
 
 def print_run_report(
@@ -181,3 +186,4 @@ def print_run_report(
             all_evals.extend(evals)
 
         _print_solution_outcome(solution, all_evals, console)
+        console.print()
