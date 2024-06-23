@@ -1,4 +1,5 @@
 import shutil
+from typing import Annotated, Optional
 
 import typer
 
@@ -42,11 +43,17 @@ def build(verify: bool = True):
 
 
 @app.command('run')
-def run():
+def run(solution: Annotated[Optional[str], typer.Argument()] = None):
     build()
 
     with utils.StatusProgress('Running solutions...') as s:
-        evals_per_solution = run_solutions(s)
+        tracked_solutions = None
+        if solution:
+            tracked_solutions = {solution}
+        evals_per_solution = run_solutions(
+            s,
+            tracked_solutions=tracked_solutions,
+        )
 
     console.console.print()
     console.console.rule('[status]Run report[/status]', style='status')

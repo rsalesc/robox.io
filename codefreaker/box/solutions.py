@@ -1,5 +1,5 @@
 import collections
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import rich
 
@@ -19,12 +19,20 @@ from codefreaker.grading.steps import (
 from codefreaker.utils import StatusProgress, model_to_yaml
 
 
-def compile_solutions(progress: Optional[StatusProgress] = None):
+def compile_solutions(
+    progress: Optional[StatusProgress] = None,
+    tracked_solutions: Optional[Set[str]] = None,
+):
     pkg = package.find_problem_package_or_die()
 
     compiled_solutions = {}
 
     for solution in pkg.solutions:
+        if (
+            tracked_solutions is not None
+            and str(solution.path) not in tracked_solutions
+        ):
+            continue
         if progress:
             progress.update(f'Compiling solution [item]{solution.path}[/item]...')
         compiled_solutions[solution.path] = compile_item(solution)
@@ -99,14 +107,25 @@ def run_solution(
     return dict(res)
 
 
-def run_solutions(progress: StatusProgress) -> List[Dict[str, List[Evaluation]]]:
+def run_solutions(
+    progress: StatusProgress,
+    tracked_solutions: Optional[Set[str]] = None,
+) -> List[Dict[str, List[Evaluation]]]:
     pkg = package.find_problem_package_or_die()
 
     checker_digest = checkers.compile_checker()
-    compiled_solutions = compile_solutions(progress=progress)
+    compiled_solutions = compile_solutions(
+        progress=progress, tracked_solutions=tracked_solutions
+    )
     res = []
 
     for i, solution in enumerate(pkg.solutions):
+        if (
+            tracked_solutions is not None
+            and str(solution.path) not in tracked_solutions
+        ):
+            res.append({})
+            continue
         results_per_group = run_solution(
             solution,
             compiled_solutions[solution.path],
@@ -189,9 +208,13 @@ def print_run_report(
 ):
     pkg = package.find_problem_package_or_die()
 
+    assert len(pkg.solutions) == len(evals_per_solution)
+
     for s, (solution, evals_per_group) in enumerate(
         zip(pkg.solutions, evals_per_solution)
     ):
+        if not evals_per_group:
+            continue
         solution_testdir = package.get_problem_runs_dir() / f'{s}'
         console.print(f'[item]{solution.path}[/item]', end=' ')
         console.print(f'({solution_testdir})')
