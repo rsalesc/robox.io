@@ -62,6 +62,11 @@ def environment(env: str):
         raise typer.Exit(1)
 
     cfg = config.get_config()
+    if env == cfg.boxEnvironment:
+        console.console.print(
+            f'Environment is already set to [item]{env}[/item].',
+        )
+        return
     console.console.print(
         f'Changing box environment from [item]{cfg.boxEnvironment}[/item] to [item]{env}[/item]...'
     )
