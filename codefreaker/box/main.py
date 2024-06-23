@@ -61,7 +61,11 @@ def run(solution: Annotated[Optional[str], typer.Argument()] = None):
 
 
 @app.command('environment, env')
-def environment(env: str):
+def environment(env: Annotated[Optional[str], typer.Argument()] = None):
+    if env is None:
+        cfg = config.get_config()
+        console.console.print(f'Current environment: [item]{cfg.boxEnvironment}[/item]')
+        return
     if not get_environment_path(env).is_file():
         console.console.print(
             f'[error]Environment [item]{env}[/item] does not exist.[/error]'
