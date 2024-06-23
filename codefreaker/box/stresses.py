@@ -19,7 +19,7 @@ from codefreaker.grading.steps import (
 )
 from codefreaker.utils import StatusProgress
 
-StressArg = Union[str, 'RandomInt', List['StressArg']]
+StressArg = Union[str, 'RandomInt', 'RandomHex', List['StressArg']]
 
 
 class StressFinding(BaseModel):
@@ -35,6 +35,16 @@ class RandomInt:
 
     def get(self) -> int:
         return random.randint(self.min, self.max)
+
+
+class RandomHex:
+    len: int
+
+    def __init__(self, len: int):
+        self.len = len
+
+    def get(self) -> str:
+        return ''.join(random.choice('0123456789abcdef') for _ in range(self.len))
 
 
 def _parse_random_int(pattern: str) -> RandomInt:
@@ -56,6 +66,8 @@ def _parse_single_pattern(pattern: str) -> StressArg:
         return _parse_random_int(pattern[1:-1])
     if pattern.startswith('(') and pattern.endswith(')'):
         return _parse_random_choice(pattern[1:-1])
+    if pattern == '@':
+        return RandomHex(len=8)
     return pattern
 
 
@@ -66,6 +78,8 @@ def parse_generator_pattern(args: str) -> List[StressArg]:
 def _expand_single_arg(arg: StressArg) -> str:
     if isinstance(arg, RandomInt):
         return str(arg.get())
+    if isinstance(arg, RandomHex):
+        return arg.get()
     if isinstance(arg, list):
         return _expand_single_arg(random.choice(arg))
     return str(arg)
