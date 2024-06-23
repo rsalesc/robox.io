@@ -7,6 +7,7 @@ from codefreaker.box.generators import (
     generate_outputs_for_testcases,
     generate_testcases,
 )
+from codefreaker.box.solutions import print_run_report, run_solutions
 from codefreaker.box.validators import validate_testcases
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
@@ -37,6 +38,18 @@ def build(verify: bool = True):
             validate_testcases(s)
 
     console.console.print('[success]Problem built successfully![/success]')
+
+
+@app.command('run')
+def run():
+    build()
+
+    with utils.StatusProgress('Running solutions...') as s:
+        evals_per_solution = run_solutions(s)
+
+    console.console.print()
+    console.console.rule('[status]Run report[/status]', style='status')
+    print_run_report(evals_per_solution, console.console)
 
 
 @app.command('clear')

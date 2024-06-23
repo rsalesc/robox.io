@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 from codefreaker.autoenum import AutoEnum, alias
+from codefreaker.grading.steps import Outcome
 
 
 class ExpectedOutcome(AutoEnum):
@@ -14,6 +15,30 @@ class ExpectedOutcome(AutoEnum):
     TIME_LIMIT_EXCEEDED = alias('time limit exceeded', 'timeout', 'tle')  # type: ignore
     MEMORY_LIMIT_EXCEEDED = alias('memory limit exceeded', 'mle')  # type: ignore
     TLE_OR_RTE = alias('tle or rte', 'tle/rte', 'tle+rte')  # type: ignore
+
+    def match(self, outcome: Outcome) -> bool:
+        match self:
+            case ExpectedOutcome.ACCEPTED:
+                return outcome == Outcome.ACCEPTED
+            case ExpectedOutcome.WRONG_ANSWER:
+                return outcome == Outcome.WRONG_ANSWER
+            case ExpectedOutcome.INCORRECT:
+                return outcome in {
+                    Outcome.WRONG_ANSWER,
+                    Outcome.RUNTIME_ERROR,
+                    Outcome.MEMORY_LIMIT_EXCEEDED,
+                    Outcome.TIME_LIMIT_EXCEEDED,
+                }
+            case ExpectedOutcome.RUNTIME_ERROR:
+                return outcome == Outcome.RUNTIME_ERROR
+            case ExpectedOutcome.TIME_LIMIT_EXCEEDED:
+                return outcome == Outcome.TIME_LIMIT_EXCEEDED
+            case ExpectedOutcome.MEMORY_LIMIT_EXCEEDED:
+                return outcome == Outcome.MEMORY_LIMIT_EXCEEDED
+            case ExpectedOutcome.TLE_OR_RTE:
+                return outcome in {Outcome.TIME_LIMIT_EXCEEDED, Outcome.RUNTIME_ERROR}
+            case _:
+                return False
 
 
 class CodeItem(BaseModel):
