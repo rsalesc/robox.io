@@ -2,7 +2,7 @@ import pathlib
 import random
 import shlex
 import time
-from typing import List, Union
+from typing import List, Optional, Union
 
 import typer
 from pydantic import BaseModel
@@ -17,6 +17,7 @@ from codefreaker.grading.steps import (
     DigestOrDest,
     DigestOrSource,
 )
+from codefreaker.utils import StatusProgress
 
 StressArg = Union[str, 'RandomInt', List['StressArg']]
 
@@ -75,7 +76,10 @@ def expand_stress_args(pattern: List[StressArg]) -> List[str]:
 
 
 def run_stress(
-    name: str, timeoutInSeconds: int, findingsLimit: int = 1
+    name: str,
+    timeoutInSeconds: int,
+    findingsLimit: int = 1,
+    progress: Optional[StatusProgress] = None,
 ) -> List[StressFinding]:
     stress = package.get_stress(name)
 
@@ -102,6 +106,13 @@ def run_stress(
     while len(findings) < findingsLimit:
         if time.monotonic() - startTime > timeoutInSeconds:
             break
+
+        if progress:
+            seconds = timeoutInSeconds - int(time.monotonic() - startTime)
+            progress.update(
+                f'Stress testing: found [item]{len(findings)}[/item] tests, '
+                f'[item]{seconds}[/item] second(s) remaining...'
+            )
 
         expanded_args = expand_stress_args(parsed_args)
         expanded_args_str = ' '.join(expanded_args)
@@ -147,6 +158,11 @@ def run_stress(
 
             if not stress.outcome.match(checker_result.outcome):
                 continue
+
+            if progress:
+                console.console.print(
+                    f'[error]FINDING[/error] Generator args are "[status]{generator.name} {expanded_args_str}[/status]"'
+                )
 
             findings.append(
                 StressFinding(

@@ -73,8 +73,8 @@ def run(solution: Annotated[Optional[str], typer.Argument()] = None):
 
 @app.command('stress')
 def stress(name: str):
-    with utils.StatusProgress('Running stress...'):
-        findings = stresses.run_stress(name, 10)
+    with utils.StatusProgress('Running stress...') as s:
+        findings = stresses.run_stress(name, 10, progress=s)
 
     console.console.print(findings)
 
