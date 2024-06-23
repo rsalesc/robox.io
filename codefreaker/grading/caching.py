@@ -89,7 +89,8 @@ def _fingerprints_match(
 
 
 def _build_cache_key(input: CacheInput) -> str:
-    return digest_cooperatively(io.BytesIO(input.model_dump_json().encode()))
+    with io.BytesIO(input.model_dump_json().encode()) as fobj:
+        return digest_cooperatively(fobj)
 
 
 def is_artifact_ok(artifact: GradingArtifacts, storage: Storage) -> bool:

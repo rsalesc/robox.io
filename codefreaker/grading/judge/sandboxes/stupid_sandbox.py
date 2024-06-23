@@ -345,7 +345,9 @@ class StupidSandbox(SandboxBase):
         # std*** to interfere with command. Otherwise we let the
         # caller handle these issues.
         if wait:
-            return self.translate_box_exitcode(wait_without_std([self.popen])[0])
+            with self.popen as p:
+                # Ensure popen fds are closed.
+                return self.translate_box_exitcode(wait_without_std([p])[0])
         else:
             return self.popen
 

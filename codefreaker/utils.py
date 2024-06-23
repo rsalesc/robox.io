@@ -1,5 +1,7 @@
+import fcntl
 import json
 import pathlib
+import resource
 from typing import Any, Optional, Type, TypeVar
 
 import rich
@@ -65,6 +67,18 @@ def confirm_on_status(status: Optional[rich.status.Status], *args, **kwargs) -> 
     if status:
         status.start()
     return res
+
+
+def get_open_fds():
+    fds = []
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    for fd in range(0, soft):
+        try:
+            fcntl.fcntl(fd, fcntl.F_GETFD)
+        except IOError:
+            continue
+        fds.append(fd)
+    return fds
 
 
 class StatusProgress(rich.status.Status):

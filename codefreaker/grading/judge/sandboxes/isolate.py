@@ -600,9 +600,10 @@ class IsolateSandbox(SandboxBase):
         # std*** to interfere with command. Otherwise we let the
         # caller handle these issues.
         if wait:
-            exitcode = self.translate_box_exitcode(
-                wait_without_std([popen], actually_pipe_to_stdout=self.debug)[0]
-            )
+            with popen as p:
+                exitcode = self.translate_box_exitcode(
+                    wait_without_std([p], actually_pipe_to_stdout=self.debug)[0]
+                )
             self.hydrate_logs()
             return exitcode
         else:
