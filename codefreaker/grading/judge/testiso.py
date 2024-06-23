@@ -34,7 +34,9 @@ int main() {
     sandbox.params.stdout_file = pathlib.PosixPath('run.out')
     sandbox.params.stderr_file = pathlib.PosixPath('run.err')
 
-    sandbox.execute_without_std(['/usr/bin/g++', 'run.cpp'], wait=True)
+    sandbox.execute_without_std(
+        ['/usr/bin/g++', '-std=c++17', '-o', 'executable', 'run.cpp'], wait=True
+    )
     try:
         sandbox.hydrate_logs()
     except Exception:
@@ -45,6 +47,7 @@ int main() {
     print(sandbox.get_stats())
 
     print(sandbox.get_file_to_string(pathlib.PosixPath('run.out')))
+    print(sandbox.get_file_to_string(pathlib.PosixPath('run.err')))
 
 
 if __name__ == '__main__':

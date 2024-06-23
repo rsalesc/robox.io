@@ -218,6 +218,14 @@ class SandboxBase(abc.ABC):
         # packages.
         self.params.set_env['HOME'] = './'
 
+    def set_params(self, params: SandboxParams):
+        """Set the parameters of the sandbox.
+
+        params (SandboxParams): the parameters to set.
+
+        """
+        self.params = params
+
     def set_multiprocess(self, multiprocess: bool):
         """Set the sandbox to (dis-)allow multiple threads and processes.
 

@@ -183,7 +183,7 @@ def _process_output_artifacts(
             if output_artifact.optional:
                 continue
             console.print(
-                f'[error]Artifact [item]{output_artifact.src}[/item] does not exist.[/error]'
+                f'[error]Output artifact [item]{output_artifact.src}[/item] does not exist.[/error]'
             )
             return False
         if output_artifact.digest is not None:
@@ -221,12 +221,13 @@ def compile(
         return True
 
     logs: List[PreprocessLog] = []
-    sandbox.params = params
+    sandbox.set_params(params)
 
     for i, command in enumerate(commands):
         cmd = shlex.split(command)
+        stdout_file = pathlib.PosixPath(f'compile-{i}.stdout')
         stderr_file = pathlib.PosixPath(f'compile-{i}.stderr')
-        sandbox.params.set_stdall(stderr=stderr_file)
+        sandbox.params.set_stdall(stdout=stdout_file, stderr=stderr_file)
 
         if not sandbox.execute_without_std(cmd, wait=True):
             console.print(
@@ -235,14 +236,19 @@ def compile(
             )
             return False
 
+        std_outputs = [
+            sandbox.get_file_to_string(stderr_file, maxlen=None)
+            if sandbox.file_exists(stderr_file)
+            else '<No stderr produced by command>',
+            sandbox.get_file_to_string(stdout_file, maxlen=None)
+            if sandbox.file_exists(stdout_file)
+            else '<No stdout produced by command>',
+        ]
+
         log = PreprocessLog(
             cmd=cmd,
             exitcode=sandbox.get_exit_code(),
-            log=(
-                sandbox.get_file_to_string(stderr_file, maxlen=None)
-                if sandbox.file_exists(stderr_file)
-                else ''
-            ),
+            log='\n'.join(std_outputs),
         )
         logs.append(log)
 
@@ -269,7 +275,7 @@ def run(
 ) -> Optional[RunLog]:
     _process_input_artifacts(artifacts, sandbox)
     cmd = shlex.split(command)
-    sandbox.params = params
+    sandbox.set_params(params)
 
     if not sandbox.execute_without_std(cmd, wait=True):
         console.print(

@@ -44,13 +44,13 @@ class EnvironmentSandbox(BaseModel):
     maxProcesses: Optional[int] = 1
 
     # Time limit in milliseconds to allow the program to run.
-    timeLimit: Optional[int] = 1000
+    timeLimit: Optional[int] = None
 
     # Wall time limit in milliseconds to allow the program to run.
-    wallTimeLimit: Optional[int] = 2000
+    wallTimeLimit: Optional[int] = None
 
     # Memory limit in MiB.
-    memoryLimit: Optional[int] = 256
+    memoryLimit: Optional[int] = None
 
     # Stack limit in MiB.
     stackLimit: Optional[int] = None
@@ -248,14 +248,10 @@ def get_sandbox_params_from_config(
 ) -> SandboxParams:
     config = config or EnvironmentSandbox()
     params = SandboxParams()
-    if config.timeLimit is not None:
-        params.timeout = config.timeLimit
-    if config.wallTimeLimit is not None:
-        params.wallclock_timeout = config.wallTimeLimit
-    if config.memoryLimit is not None:
-        params.address_space = config.memoryLimit
-    if config.maxProcesses is not None:
-        params.max_processes = config.maxProcesses
+    params.timeout = config.timeLimit
+    params.wallclock_timeout = config.wallTimeLimit
+    params.address_space = config.memoryLimit
+    params.max_processes = config.maxProcesses
     if config.preserveEnv:
         params.preserve_env = True
     if config.mirrorDirs:

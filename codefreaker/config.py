@@ -179,6 +179,12 @@ def get_config() -> Config:
     return Config.model_validate_json(config_path.read_text())
 
 
+def save_config(cfg: Config):
+    cfg_path = get_config_path()
+    cfg_path.write_text(utils.model_json(cfg))
+    get_config.cache_clear()
+
+
 @app.command()
 def path():
     """

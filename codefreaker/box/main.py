@@ -2,7 +2,8 @@ import shutil
 
 import typer
 
-from codefreaker import annotations, console, utils
+from codefreaker import annotations, config, console, utils
+from codefreaker.box.environment import get_environment_path
 from codefreaker.box.generators import (
     generate_outputs_for_testcases,
     generate_testcases,
@@ -50,6 +51,22 @@ def run():
     console.console.print()
     console.console.rule('[status]Run report[/status]', style='status')
     print_run_report(evals_per_solution, console.console)
+
+
+@app.command('environment, env')
+def environment(env: str):
+    if not get_environment_path(env).is_file():
+        console.console.print(
+            f'[error]Environment [item]{env}[/item] does not exist.[/error]'
+        )
+        raise typer.Exit(1)
+
+    cfg = config.get_config()
+    console.console.print(
+        f'Changing box environment from [item]{cfg.boxEnvironment}[/item] to [item]{env}[/item]...'
+    )
+    cfg.boxEnvironment = env
+    config.save_config(cfg)
 
 
 @app.command('clear')

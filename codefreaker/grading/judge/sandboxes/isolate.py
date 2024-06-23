@@ -93,23 +93,8 @@ class IsolateSandbox(SandboxBase):
             "Sandbox in `%s' created, using box `%s'.", self._home, self.box_exec
         )
 
-        self.add_mapped_directory(self._home, dest=self._home_dest, options='rw')
-
-        # Set common environment variables.
-        # Specifically needed by Python, that searches the home for
-        # packages.
-        self.params.set_env['HOME'] = str(self._home_dest)
-
-        # Needed on Ubuntu by PHP (and more), since /usr/bin only contains a
-        # symlink to one out of many alternatives.
-        self.maybe_add_mapped_directory(pathlib.PosixPath('/etc/alternatives'))
-
-        # Likewise, needed by C# programs. The Mono runtime looks in
-        # /etc/mono/config to obtain the default DllMap, which includes, in
-        # particular, the System.Native assembly.
-        self.maybe_add_mapped_directory(
-            pathlib.PosixPath('/etc/mono'), options='noexec'
-        )
+        # Ensure we add a few extra things to params.
+        self.set_params(params or SandboxParams())
 
         # Tell isolate to get the sandbox ready. We do our best to cleanup
         # after ourselves, but we might have missed something if a previous
@@ -117,6 +102,20 @@ class IsolateSandbox(SandboxBase):
         # idempotent cleanup.
         self.cleanup()
         self.initialize()
+
+    def set_params(self, params: SandboxParams):
+        """Set the parameters of the sandbox.
+
+        params (SandboxParams): the parameters to set.
+
+        """
+        super().set_params(params)
+        self.add_mapped_directory(self._home, dest=self._home_dest, options='rw')
+
+        # Set common environment variables.
+        # Specifically needed by Python, that searches the home for
+        # packages.
+        self.params.set_env['HOME'] = str(self._home_dest)
 
     def add_mapped_directory(
         self,
