@@ -16,7 +16,7 @@ from codefreaker.grading.steps import (
     TestcaseIO,
     TestcaseLog,
 )
-from codefreaker.utils import StatusProgress
+from codefreaker.utils import StatusProgress, model_to_yaml
 
 
 def compile_solutions(progress: Optional[StatusProgress] = None):
@@ -55,12 +55,8 @@ def run_solution(
             runs_dir = package.get_problem_runs_dir()
             assert testcase.outputPath is not None
             output_path = runs_dir / f'{index}' / group.name / testcase.outputPath.name
-            error_path = (
-                runs_dir
-                / f'{index}'
-                / group.name
-                / testcase.outputPath.with_suffix('.err').name
-            )
+            error_path = output_path.with_suffix('.err')
+            log_path = output_path.with_suffix('.log')
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             if progress:
@@ -82,19 +78,23 @@ def run_solution(
                 testcase,
                 program_output=output_path,
             )
-            res[group.name].append(
-                Evaluation(
-                    result=checker_result,
-                    testcase=TestcaseIO(
-                        index=i, input=testcase.inputPath, output=testcase.outputPath
-                    ),
-                    log=TestcaseLog(
-                        **(run_log.model_dump() if run_log is not None else {}),
-                        stdout_absolute_path=output_path.absolute(),
-                        stderr_absolute_path=error_path.absolute(),
-                    ),
-                )
+
+            eval = Evaluation(
+                result=checker_result,
+                testcase=TestcaseIO(
+                    index=i, input=testcase.inputPath, output=testcase.outputPath
+                ),
+                log=TestcaseLog(
+                    **(run_log.model_dump() if run_log is not None else {}),
+                    stdout_absolute_path=output_path.absolute(),
+                    stderr_absolute_path=error_path.absolute(),
+                    log_absolute_path=log_path.absolute(),
+                ),
             )
+
+            log_path.write_text(model_to_yaml(eval))
+
+            res[group.name].append(eval)
 
     return dict(res)
 

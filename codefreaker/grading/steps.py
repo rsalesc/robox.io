@@ -140,6 +140,7 @@ class RunLog(BaseModel):
 class TestcaseLog(RunLog):
     stdout_absolute_path: Optional[pathlib.Path] = None
     stderr_absolute_path: Optional[pathlib.Path] = None
+    log_absolute_path: Optional[pathlib.Path] = None
 
 
 class CheckerResult(BaseModel):

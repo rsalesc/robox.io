@@ -49,7 +49,9 @@ def model_json(model: BaseModel) -> str:
 
 
 def model_to_yaml(model: BaseModel) -> str:
-    return yaml.dump(model.model_dump(exclude_unset=True, exclude_none=True))
+    return yaml.dump(
+        model.model_dump(mode='json', exclude_unset=True, exclude_none=True)
+    )
 
 
 def model_from_yaml(model: Type[T], s: str) -> T:
