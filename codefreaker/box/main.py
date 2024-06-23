@@ -68,6 +68,9 @@ def environment(env: str):
     cfg.boxEnvironment = env
     config.save_config(cfg)
 
+    # Also clear cache when changing environments.
+    clear()
+
 
 @app.command('clear')
 def clear():
