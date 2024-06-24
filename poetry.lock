@@ -695,6 +695,20 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "latexbuild"
+version = "0.2.2"
+description = "Building Jinja2 templates with latex"
+optional = false
+python-versions = "*"
+files = [
+    {file = "latexbuild-0.2.2-py3-none-any.whl", hash = "sha256:8e12f423b54f04fa7cc20461598ab31d4314e63ec003fdebe4fb2b03ca0194ec"},
+    {file = "latexbuild-0.2.2.tar.gz", hash = "sha256:db6458cdc073c23d142ccd9466f8127d5d9e3bb22c1df465f3c1bfa66756d343"},
+]
+
+[package.dependencies]
+Jinja2 = ">=2.8"
+
+[[package]]
 name = "markdown-it-py"
 version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
@@ -1818,4 +1832,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "0dd2d942870ea00841d9da28aba1b68a257dd13e4ea6413e0e7ecc91a9af0262"
+content-hash = "e04de5c36de5d48778bef6f4d1d218ebe32ee53a25d3f8ad2ae6126aac6a1d9a"

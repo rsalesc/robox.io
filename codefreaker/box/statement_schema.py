@@ -17,12 +17,15 @@ PipelineStep = TexToPDF
 ### Statement types
 class StatementType(AutoEnum):
     TeX = alias('tex')
+    JinjaTeX = alias('jinja-tex')
     PDF = alias('pdf')
 
     def get_file_suffix(self) -> str:
         match self:
             case StatementType.TeX:
                 return '.tex'
+            case StatementType.JinjaTeX:
+                return '.jinja.tex'
             case StatementType.PDF:
                 return '.pdf'
         raise ValueError(f'Unknown statement type: {self}')

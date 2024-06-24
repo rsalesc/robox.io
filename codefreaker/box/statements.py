@@ -5,7 +5,7 @@ import typer
 
 from codefreaker import annotations, console
 from codefreaker.box import package
-from codefreaker.box.schema import Statement
+from codefreaker.box.schema import Package, Statement
 from codefreaker.box.statement_builders import (
     BUILDER_LIST,
     StatementBuilder,
@@ -92,13 +92,17 @@ def get_builders(
     return builders
 
 
-def build_statement(statement: Statement, output_type: Optional[StatementType] = None):
+def build_statement(
+    statement: Statement, pkg: Package, output_type: Optional[StatementType] = None
+):
     builders = get_builders(statement, output_type)
     last_output = statement.type
     last_content = statement.path.read_bytes()
     for builder in builders:
         output = builder.build(
-            StatementBuilderInput(id=statement.path.name, content=last_content),
+            StatementBuilderInput(
+                id=statement.path.name, package=pkg, content=last_content
+            ),
             verbose=False,
         )
         last_output = builder.output_type()
@@ -137,7 +141,7 @@ def build(
             )
             raise typer.Exit(1)
 
-        build_statement(candidates_for_lang[0], output_type=output)
+        build_statement(candidates_for_lang[0], pkg, output_type=output)
 
 
 @app.callback()

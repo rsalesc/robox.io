@@ -1,17 +1,22 @@
 import dataclasses
+import pathlib
+import tempfile
 from abc import ABC, abstractmethod
 
 import typer
+from latexbuild import render_latex_template
 from pdflatex import PDFLaTeX
 
 from codefreaker import console
 from codefreaker.box import statement_schema
+from codefreaker.box.schema import Package
 
 
 @dataclasses.dataclass
 class StatementBuilderInput:
     id: str
     content: bytes
+    package: Package
 
 
 @dataclasses.dataclass
@@ -37,6 +42,31 @@ class StatementBuilder(ABC):
         self, input: StatementBuilderInput, verbose: bool = False
     ) -> StatementBuilderOutput:
         pass
+
+
+class JinjaTeXBuilder(StatementBuilder):
+    def name(self) -> str:
+        return 'jinja-tex'
+
+    def input_type(self) -> statement_schema.StatementType:
+        return statement_schema.StatementType.JinjaTeX
+
+    def output_type(self) -> statement_schema.StatementType:
+        return statement_schema.StatementType.TeX
+
+    def build(
+        self, input: StatementBuilderInput, verbose: bool = False
+    ) -> StatementBuilderOutput:
+        with tempfile.TemporaryDirectory() as td:
+            temp_dir = pathlib.Path(td)
+            temp_file = 'input.tex'
+            temp_path = temp_dir / temp_file
+            temp_path.write_bytes(input.content)
+
+            result: str = render_latex_template(
+                str(temp_dir), temp_file, {'package': input.package}
+            )
+            return StatementBuilderOutput(content=result.encode())
 
 
 class TeX2PDFBuilder(StatementBuilder):
@@ -66,4 +96,4 @@ class TeX2PDFBuilder(StatementBuilder):
         return StatementBuilderOutput(content=pdf)
 
 
-BUILDER_LIST = [TeX2PDFBuilder()]
+BUILDER_LIST = [TeX2PDFBuilder(), JinjaTeXBuilder()]
