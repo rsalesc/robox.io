@@ -1,4 +1,5 @@
-from typing import List
+import typing
+from typing import Annotated, Dict, List, Optional
 
 import typer
 
@@ -10,6 +11,7 @@ from codefreaker.box.statement_builders import (
     StatementBuilder,
     StatementBuilderInput,
 )
+from codefreaker.box.statement_schema import StatementType
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
@@ -24,7 +26,42 @@ def get_builder(name: str) -> StatementBuilder:
     return candidates[0]
 
 
-def get_builders(statement: Statement) -> List[StatementBuilder]:
+def get_implicit_builders(
+    input_type: StatementType, output_type: StatementType
+) -> Optional[List[StatementBuilder]]:
+    par: Dict[StatementType, Optional[StatementBuilder]] = {input_type: None}
+
+    def _iterate() -> bool:
+        nonlocal par
+        for builder in BUILDER_LIST:
+            u = builder.input_type()
+            if u not in par:
+                continue
+            v = builder.output_type()
+            if v in par:
+                continue
+            par[v] = builder
+            return True
+        return False
+
+    while _iterate() and output_type not in par:
+        pass
+
+    if output_type not in par:
+        return None
+
+    res = []
+    cur = output_type
+    while par[cur] is not None:
+        res.append(par[cur])
+        cur = typing.cast(StatementBuilder, par[cur]).input_type()
+
+    return list(reversed(res))
+
+
+def get_builders(
+    statement: Statement, output_type: Optional[StatementType]
+) -> List[StatementBuilder]:
     last_output = statement.type
     builders: List[StatementBuilder] = []
     for step in statement.pipeline:
@@ -37,11 +74,26 @@ def get_builders(statement: Statement) -> List[StatementBuilder]:
         builders.append(builder)
         last_output = builder.output_type()
 
+    if output_type is not None and last_output != output_type:
+        console.console.print(
+            'Implicitly adding statement builders to convert statement'
+            f'from [item]{last_output}[/item] to [item]{output_type}[/item]...'
+        )
+        implicit_builders = get_implicit_builders(last_output, output_type)
+        if implicit_builders is None:
+            console.console.print(
+                f'[error]Cannot convert statement [item]{statement.path}[/item] '
+                f'from [item]{last_output}[/item] '
+                f'to specified output type [item]{output_type}[/item].[/error]'
+            )
+            raise typer.Exit(1)
+        builders.extend(implicit_builders)
+
     return builders
 
 
-def build_statement(statement: Statement):
-    builders = get_builders(statement)
+def build_statement(statement: Statement, output_type: Optional[StatementType] = None):
+    builders = get_builders(statement, output_type)
     last_output = statement.type
     last_content = statement.path.read_bytes()
     for builder in builders:
@@ -66,16 +118,26 @@ def build_statement(statement: Statement):
 
 
 @app.command('build')
-def build(language: str):
+def build(
+    languages: Annotated[Optional[List[str]], typer.Option(default_factory=list)],
+    output: Annotated[
+        Optional[StatementType], typer.Option(case_sensitive=False)
+    ] = None,
+):
     pkg = package.find_problem_package_or_die()
-    candidates_for_lang = [st for st in pkg.statements if st.language == language]
-    if not candidates_for_lang:
-        console.console.print(
-            f'[error]No statement found for language [item]{language}[/item].[/error]',
-        )
-        raise typer.Exit(1)
+    candidate_languages = languages
+    if not candidate_languages:
+        candidate_languages = sorted(set([st.language for st in pkg.statements]))
 
-    build_statement(candidates_for_lang[0])
+    for language in candidate_languages:
+        candidates_for_lang = [st for st in pkg.statements if st.language == language]
+        if not candidates_for_lang:
+            console.console.print(
+                f'[error]No statement found for language [item]{language}[/item].[/error]',
+            )
+            raise typer.Exit(1)
+
+        build_statement(candidates_for_lang[0], output_type=output)
 
 
 @app.callback()
