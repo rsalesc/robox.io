@@ -1,7 +1,7 @@
 import pathlib
 import shutil
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Literal, Set, Union
 
 import typer
 from pdflatex import PDFLaTeX
@@ -10,10 +10,16 @@ from codefreaker import console
 from codefreaker.box import package
 from codefreaker.box.schema import Statement
 
+OutputType = Literal['pdf']
+
 
 class StatementBuilder(ABC):
     @abstractmethod
     def should_handle(self, statement: Statement) -> bool:
+        pass
+
+    @abstractmethod
+    def supported_outputs(self) -> Set[str]:
         pass
 
     @abstractmethod
@@ -26,6 +32,9 @@ class StatementBuilder(ABC):
 class PDFBuilder(StatementBuilder):
     def should_handle(self, statement: Statement) -> bool:
         return statement.params.type == 'pdf'
+
+    def supported_outputs(self) -> Set[OutputType]:
+        return {'pdf'}
 
     def build(
         self, statement: Statement, verbose: bool = False
@@ -50,6 +59,9 @@ class PDFBuilder(StatementBuilder):
 class TexBuilder(StatementBuilder):
     def should_handle(self, statement: Statement) -> bool:
         return statement.params.type == 'tex'
+
+    def supported_outputs(self) -> Set[OutputType]:
+        return {'pdf'}
 
     def build(
         self, statement: Statement, verbose: bool = False
