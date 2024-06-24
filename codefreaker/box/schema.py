@@ -1,9 +1,10 @@
 import pathlib
-from typing import List, Literal, Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from codefreaker.autoenum import AutoEnum, alias
+from codefreaker.box.statement_schema import Statement
 from codefreaker.grading.steps import Outcome
 
 
@@ -145,34 +146,6 @@ class Stress(BaseModel):
 
     # What verdict to look for while stress-testing.
     outcome: ExpectedOutcome = ExpectedOutcome.INCORRECT
-
-
-class Statement(BaseModel):
-    class PDF(BaseModel):
-        model_config = ConfigDict(extra='forbid')
-        type: Literal['pdf']
-
-        # Path to the PDF, relative to the package directory.
-        # Will be copied to `statement.<language>.pdf` in the built
-        # package.
-        path: pathlib.Path
-
-    class Tex(BaseModel):
-        model_config = ConfigDict(extra='forbid')
-        type: Literal['tex']
-
-        # Path to the TeX file, relative to the package directory.
-        # Resulting file will be `statement.<language>.pdf`.
-        path: pathlib.Path
-
-    # Name of the problem for this statement.
-    name: str
-
-    # Params for this statement.
-    params: PDF | Tex = Field(discriminator='type')
-
-    # Language this is statement is written in.
-    language: str = 'en'
 
 
 class Package(BaseModel):

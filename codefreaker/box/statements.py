@@ -1,36 +1,68 @@
-import pathlib
+from typing import List
 
 import typer
 
 from codefreaker import annotations, console
 from codefreaker.box import package
 from codefreaker.box.schema import Statement
-from codefreaker.box.statement_builders import BUILDER_LIST, StatementBuilder
+from codefreaker.box.statement_builders import (
+    BUILDER_LIST,
+    StatementBuilder,
+    StatementBuilderInput,
+)
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
 
-def get_builder(statement: Statement) -> StatementBuilder:
-    candidates = [
-        builder for builder in BUILDER_LIST if builder.should_handle(statement)
-    ]
+def get_builder(name: str) -> StatementBuilder:
+    candidates = [builder for builder in BUILDER_LIST if builder.name() == name]
     if not candidates:
         console.console.print(
-            f'No statement builder found for {statement.params.type}', style='error'
+            f'[error]No statement builder found with name [name]{name}[/name][/error]'
         )
         raise typer.Exit(1)
     return candidates[0]
 
 
+def get_builders(statement: Statement) -> List[StatementBuilder]:
+    last_output = statement.type
+    builders: List[StatementBuilder] = []
+    for step in statement.pipeline:
+        builder = get_builder(step.type)
+        if builder.input_type() != last_output:
+            console.console.print(
+                f'[error]Invalid pipeline step: [item]{builder.name()}[/item][/error]'
+            )
+            raise typer.Exit(1)
+        builders.append(builder)
+        last_output = builder.output_type()
+
+    return builders
+
+
 def build_statement(statement: Statement):
-    builder = get_builder(statement)
-    while builder is not None:
-        res = builder.build(statement)
-        if isinstance(res, StatementBuilder):
-            builder = res
-        if isinstance(res, pathlib.Path):
-            console.console.print(f'Statement built at [item]{res}[/item]')
-            break
+    builders = get_builders(statement)
+    last_output = statement.type
+    last_content = statement.path.read_bytes()
+    for builder in builders:
+        output = builder.build(
+            StatementBuilderInput(id=statement.path.name, content=last_content),
+            verbose=False,
+        )
+        last_output = builder.output_type()
+        last_content = output.content
+
+    statement_path = (
+        package.get_build_path()
+        / f'{statement.path.stem}{last_output.get_file_suffix()}'
+    )
+    statement_path.parent.mkdir(parents=True, exist_ok=True)
+    statement_path.write_bytes(last_content)
+    console.console.print(
+        f'Statement built successfully for language '
+        f'[item]{statement.language}[/item] at '
+        f'[item]{statement_path}[/item].'
+    )
 
 
 @app.command('build')
