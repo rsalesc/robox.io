@@ -1,5 +1,7 @@
+import pathlib
 import shutil
 from abc import ABC, abstractmethod
+from typing import Union
 
 import typer
 from pdflatex import PDFLaTeX
@@ -15,7 +17,9 @@ class StatementBuilder(ABC):
         pass
 
     @abstractmethod
-    def build(self, statement: Statement, verbose: bool = False):
+    def build(
+        self, statement: Statement, verbose: bool = False
+    ) -> Union['StatementBuilder', pathlib.Path]:
         pass
 
 
@@ -23,7 +27,9 @@ class PDFBuilder(StatementBuilder):
     def should_handle(self, statement: Statement) -> bool:
         return statement.params.type == 'pdf'
 
-    def build(self, statement: Statement, verbose: bool = False):
+    def build(
+        self, statement: Statement, verbose: bool = False
+    ) -> StatementBuilder | pathlib.Path:
         build_dir = package.get_build_path()
         build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -33,17 +39,21 @@ class PDFBuilder(StatementBuilder):
             )
             raise typer.Exit(1)
 
+        output_path = build_dir / f'statement.{statement.language}.pdf'
         shutil.copyfile(
             str(statement.params.path),
-            str(build_dir / f'statement.{statement.language}.pdf'),
+            str(output_path),
         )
+        return output_path
 
 
 class TexBuilder(StatementBuilder):
     def should_handle(self, statement: Statement) -> bool:
         return statement.params.type == 'tex'
 
-    def build(self, statement: Statement, verbose: bool = False):
+    def build(
+        self, statement: Statement, verbose: bool = False
+    ) -> StatementBuilder | pathlib.Path:
         build_dir = package.get_build_path()
         build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -60,10 +70,12 @@ class TexBuilder(StatementBuilder):
             )
             console.console.print(fp.stdout.decode())
             raise typer.Exit(1)
-        (build_dir / f'statement.{statement.language}.pdf').write_bytes(pdf)
+        output_path = build_dir / f'statement.{statement.language}.pdf'
+        output_path.write_bytes(pdf)
 
         if verbose:
             console.console.print(log.decode())
+        return output_path
 
 
 BUILDER_LIST = [PDFBuilder(), TexBuilder()]

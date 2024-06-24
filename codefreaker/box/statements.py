@@ -1,3 +1,5 @@
+import pathlib
+
 import typer
 
 from codefreaker import annotations, console
@@ -22,7 +24,13 @@ def get_builder(statement: Statement) -> StatementBuilder:
 
 def build_statement(statement: Statement):
     builder = get_builder(statement)
-    builder.build(statement)
+    while builder is not None:
+        res = builder.build(statement)
+        if isinstance(res, StatementBuilder):
+            builder = res
+        if isinstance(res, pathlib.Path):
+            console.console.print(f'Statement built at [item]{res}[/item]')
+            break
 
 
 @app.command('build')
