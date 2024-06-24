@@ -11,7 +11,11 @@ class TexToPDF(BaseModel):
     type: Literal['tex2pdf']
 
 
-PipelineStep = TexToPDF
+class JinjaTeX(BaseModel):
+    type: Literal['jinja-tex']
+
+
+PipelineStep = TexToPDF | JinjaTeX
 
 
 ### Statement types
