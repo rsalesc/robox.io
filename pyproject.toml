@@ -17,6 +17,7 @@ pydantic = "^2.7.3"
 rich = "^13.7.1"
 pyyaml = "^6.0.1"
 requests = "^2.32.3"
+pdflatex = "^0.1.3"
 
 [tool.poetry.scripts]
 cfk = "codefreaker.main:app"
