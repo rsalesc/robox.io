@@ -90,6 +90,9 @@ class TeX2PDFBuilder(StatementBuilder):
             console.console.print('[error]PdfLaTeX compilation failed.[/error]')
             raise typer.Exit(1)
 
+        if verbose:
+            console.console.print(f'{latex_result.result.stdout.decode()}')
+
         return StatementBuilderOutput(content=pdf)
 
 
