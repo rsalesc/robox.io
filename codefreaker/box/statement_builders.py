@@ -5,10 +5,10 @@ from abc import ABC, abstractmethod
 
 import typer
 from latexbuild import render_latex_template
-from pdflatex import PDFLaTeX
 
 from codefreaker import console
 from codefreaker.box import statement_schema
+from codefreaker.box.latex import Latex
 from codefreaker.box.schema import Package
 
 
@@ -82,17 +82,14 @@ class TeX2PDFBuilder(StatementBuilder):
     def build(
         self, input: StatementBuilderInput, verbose: bool = False
     ) -> StatementBuilderOutput:
-        pdfl = PDFLaTeX.from_binarystring(input.content, self.name())  # type: ignore
-        pdf, log, fp = pdfl.create_pdf()
-        if fp.returncode != 0:
-            console.console.print(
-                f'[error]Failed to compile TeX statement: [item]{input.id}[/item][/error]',
-            )
-            console.console.print(fp.stdout.decode())
+        latex = Latex(input.content.decode())
+        latex_result = latex.build_pdf()
+        pdf = latex_result.pdf
+        if pdf is None:
+            console.console.print(f'{latex_result.result.stdout.decode()}')
+            console.console.print('[error]PdfLaTeX compilation failed.[/error]')
             raise typer.Exit(1)
 
-        if verbose:
-            console.console.print(log.decode())
         return StatementBuilderOutput(content=pdf)
 
 

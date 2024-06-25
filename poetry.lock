@@ -34,22 +34,6 @@ test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypo
 trio = ["trio (>=0.23)"]
 
 [[package]]
-name = "attrs"
-version = "18.2.0"
-description = "Classes Without Boilerplate"
-optional = false
-python-versions = "*"
-files = [
-    {file = "attrs-18.2.0-py2.py3-none-any.whl", hash = "sha256:ca4be454458f9dec299268d472aaa5a11f67a4ff70093396e1ceae9c76cf4bbb"},
-    {file = "attrs-18.2.0.tar.gz", hash = "sha256:10cbf6e27dbce8c30807caf056c8eb50917e0eaafe86347671b57254006c3e69"},
-]
-
-[package.extras]
-dev = ["coverage", "hypothesis", "pre-commit", "pympler", "pytest", "six", "sphinx", "zope.interface", "zope.interface"]
-docs = ["sphinx", "zope.interface"]
-tests = ["coverage", "hypothesis", "pympler", "pytest", "six", "zope.interface"]
-
-[[package]]
 name = "certifi"
 version = "2024.6.2"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -907,20 +891,6 @@ files = [
     {file = "packaging-24.1-py3-none-any.whl", hash = "sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124"},
     {file = "packaging-24.1.tar.gz", hash = "sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002"},
 ]
-
-[[package]]
-name = "pdflatex"
-version = "0.1.3"
-description = "Simple wrapper to calling pdflatex"
-optional = false
-python-versions = ">=3.6,<4.0"
-files = [
-    {file = "pdflatex-0.1.3-py3-none-any.whl", hash = "sha256:0e22bf240dd2dc2dd348686e5d259ff00af9ccc8bb1db481c38d03f29184e56e"},
-    {file = "pdflatex-0.1.3.tar.gz", hash = "sha256:b8109ff5a5b813e15d6a9e05b4c4c1ae3893b407ad1f8567ef5b89ec37a7aed5"},
-]
-
-[package.dependencies]
-attrs = ">=18.2,<19.0"
 
 [[package]]
 name = "platformdirs"
@@ -1832,4 +1802,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e04de5c36de5d48778bef6f4d1d218ebe32ee53a25d3f8ad2ae6126aac6a1d9a"
+content-hash = "6281ec8a8260f3b6a79c3df40f8a5323302bb46fa5018719b292344ff218af2b"
