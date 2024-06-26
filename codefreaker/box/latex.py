@@ -1,7 +1,6 @@
 import dataclasses
 import pathlib
 import subprocess
-import tempfile
 from typing import Optional
 
 
@@ -15,18 +14,14 @@ class Latex:
     def __init__(self, latex: str):
         self.latex = latex
 
-    def build_pdf(self) -> LatexResult:
-        with tempfile.TemporaryDirectory() as td:
-            temp_dir = pathlib.Path(td)
-            temp_path = temp_dir / 'statement.tex'
-            output_path = temp_path.with_suffix('.pdf')
-            args = ['pdflatex', '-interaction', 'nonstopmode', str(temp_path)]
-            temp_path.write_text(self.latex)
+    def build_pdf(self, temp_dir: pathlib.Path) -> LatexResult:
+        temp_path = temp_dir / 'statement.tex'
+        output_path = temp_path.with_suffix('.pdf')
+        args = ['pdflatex', '-interaction', 'nonstopmode', str(temp_path)]
+        temp_path.write_text(self.latex)
 
-            completed = subprocess.run(
-                args, timeout=15, capture_output=True, cwd=temp_dir
-            )
-            if completed.returncode != 0 or not output_path.exists():
-                return LatexResult(result=completed, pdf=None)
+        completed = subprocess.run(args, timeout=15, capture_output=True, cwd=temp_dir)
+        if completed.returncode != 0 or not output_path.exists():
+            return LatexResult(result=completed, pdf=None)
 
-            return LatexResult(result=completed, pdf=output_path.read_bytes())
+        return LatexResult(result=completed, pdf=output_path.read_bytes())

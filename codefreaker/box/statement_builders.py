@@ -1,13 +1,14 @@
 import dataclasses
 import pathlib
+import shutil
 import tempfile
 from abc import ABC, abstractmethod
+from typing import Dict
 
 import typer
-from latexbuild import render_latex_template
 
 from codefreaker import console
-from codefreaker.box import statement_schema
+from codefreaker.box import latex_jinja, statement_schema
 from codefreaker.box.latex import Latex
 from codefreaker.box.schema import Package
 
@@ -17,11 +18,80 @@ class StatementBuilderInput:
     id: str
     content: bytes
     package: Package
+    statement: statement_schema.Statement
 
 
 @dataclasses.dataclass
 class StatementBuilderOutput:
     content: bytes
+
+
+@dataclasses.dataclass
+class ProblemWithStatement:
+    package: Package
+    statement: statement_schema.Statement
+    blocks: Dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def has_block(self, block: str) -> bool:
+        return block in self.blocks
+
+    def get_block(self, block: str) -> str:
+        return self.blocks[block]
+
+
+def prepare_assets(statement: statement_schema.Statement, dest_dir: pathlib.Path):
+    statement_path = statement.path.resolve()
+    statement_dir = statement_path.parent
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    for asset in statement.assets:
+        if not asset.is_file() or not asset.resolve().is_relative_to(statement_dir):
+            console.console.print(
+                f'[error]Asset {asset} is not relative to statement {statement_path}.[/error]'
+            )
+            raise typer.Exit(1)
+
+        dest_path = dest_dir / asset.resolve().relative_to(statement_dir)
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(str(asset), str(dest_path))
+
+
+def render_jinja(
+    statement: statement_schema.Statement, content: bytes, **kwargs
+) -> bytes:
+    with tempfile.TemporaryDirectory() as td:
+        temp_dir = pathlib.Path(td)
+        prepare_assets(statement, temp_dir)
+
+        temp_file = '__input__.tex'
+        temp_path = temp_dir / temp_file
+        temp_path.write_bytes(content)
+
+        result: str = latex_jinja.render_latex_template(
+            str(temp_dir),
+            temp_file,
+            kwargs,
+        )
+        return result.encode()
+
+
+def render_jinja_blocks(
+    statement: statement_schema.Statement, content: bytes, **kwargs
+) -> Dict[str, str]:
+    with tempfile.TemporaryDirectory() as td:
+        temp_dir = pathlib.Path(td)
+        prepare_assets(statement, temp_dir)
+
+        temp_file = '__input__.tex'
+        temp_path = temp_dir / temp_file
+        temp_path.write_bytes(content)
+
+        result: Dict[str, str] = latex_jinja.render_latex_template_blocks(
+            str(temp_dir),
+            temp_file,
+            kwargs,
+        )
+        return result
 
 
 class StatementBuilder(ABC):
@@ -57,16 +127,34 @@ class JinjaTeXBuilder(StatementBuilder):
     def build(
         self, input: StatementBuilderInput, verbose: bool = False
     ) -> StatementBuilderOutput:
-        with tempfile.TemporaryDirectory() as td:
-            temp_dir = pathlib.Path(td)
-            temp_file = 'input.tex'
-            temp_path = temp_dir / temp_file
-            temp_path.write_bytes(input.content)
+        return StatementBuilderOutput(
+            content=render_jinja(input.statement, input.content)
+        )
 
-            result: str = render_latex_template(
-                str(temp_dir), temp_file, {'package': input.package}
+
+class CodefreakerTeXBuilder(StatementBuilder):
+    def name(self) -> str:
+        return 'cfk-tex'
+
+    def input_type(self) -> statement_schema.StatementType:
+        return statement_schema.StatementType.CodefreakerTeX
+
+    def output_type(self) -> statement_schema.StatementType:
+        return statement_schema.StatementType.TeX
+
+    def build(
+        self, input: StatementBuilderInput, verbose: bool = False
+    ) -> StatementBuilderOutput:
+        blocks = render_jinja_blocks(input.statement, input.content)
+
+        input_str = '%- extends "codefreaker.br.tex"'
+        new_input = dataclasses.replace(input, content=input_str.encode())
+        problems = [ProblemWithStatement(input.package, input.statement, blocks)]
+        return StatementBuilderOutput(
+            content=render_jinja(
+                new_input.statement, new_input.content, problems=problems
             )
-            return StatementBuilderOutput(content=result.encode())
+        )
 
 
 class TeX2PDFBuilder(StatementBuilder):
@@ -83,7 +171,10 @@ class TeX2PDFBuilder(StatementBuilder):
         self, input: StatementBuilderInput, verbose: bool = False
     ) -> StatementBuilderOutput:
         latex = Latex(input.content.decode())
-        latex_result = latex.build_pdf()
+        with tempfile.TemporaryDirectory() as td:
+            temp_dir = pathlib.Path(td)
+            prepare_assets(input.statement, temp_dir)
+            latex_result = latex.build_pdf(temp_dir)
         pdf = latex_result.pdf
         if pdf is None:
             console.console.print(f'{latex_result.result.stdout.decode()}')
@@ -96,4 +187,4 @@ class TeX2PDFBuilder(StatementBuilder):
         return StatementBuilderOutput(content=pdf)
 
 
-BUILDER_LIST = [TeX2PDFBuilder(), JinjaTeXBuilder()]
+BUILDER_LIST = [TeX2PDFBuilder(), JinjaTeXBuilder(), CodefreakerTeXBuilder()]

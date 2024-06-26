@@ -95,13 +95,21 @@ def get_builders(
 def build_statement(
     statement: Statement, pkg: Package, output_type: Optional[StatementType] = None
 ):
+    if not statement.path.is_file():
+        console.console.print(
+            f'[error]Statement file [item]{statement.path}[/item] does not exist.[/error]'
+        )
+        raise typer.Exit(1)
     builders = get_builders(statement, output_type)
     last_output = statement.type
     last_content = statement.path.read_bytes()
     for builder in builders:
         output = builder.build(
             StatementBuilderInput(
-                id=statement.path.name, package=pkg, content=last_content
+                id=statement.path.name,
+                package=pkg,
+                statement=statement,
+                content=last_content,
             ),
             verbose=False,
         )
