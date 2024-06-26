@@ -52,7 +52,8 @@ def model_json(model: BaseModel) -> str:
 
 def model_to_yaml(model: BaseModel) -> str:
     return yaml.dump(
-        model.model_dump(mode='json', exclude_unset=True, exclude_none=True)
+        model.model_dump(mode='json', exclude_unset=True, exclude_none=True),
+        sort_keys=False,
     )
 
 
