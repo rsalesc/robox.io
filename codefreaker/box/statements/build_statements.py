@@ -5,13 +5,13 @@ import typer
 
 from codefreaker import annotations, console
 from codefreaker.box import package
-from codefreaker.box.schema import Package, Statement
-from codefreaker.box.statement_builders import (
+from codefreaker.box.schema import Package
+from codefreaker.box.statements.builders import (
     BUILDER_LIST,
     StatementBuilder,
     StatementBuilderInput,
 )
-from codefreaker.box.statement_schema import StatementType
+from codefreaker.box.statements.schema import Statement, StatementType
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 

@@ -4,7 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 from codefreaker.autoenum import AutoEnum, alias
-from codefreaker.box.statement_schema import Statement
+from codefreaker.box.statements.schema import Statement
 from codefreaker.grading.steps import Outcome
 
 

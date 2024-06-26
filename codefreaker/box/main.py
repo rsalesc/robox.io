@@ -7,17 +7,18 @@ import rich.prompt
 import typer
 
 from codefreaker import annotations, config, console, utils
-from codefreaker.box import package, statements, stresses
+from codefreaker.box import package, stresses
 from codefreaker.box.environment import get_environment_path
 from codefreaker.box.generators import (
     generate_outputs_for_testcases,
     generate_testcases,
 )
 from codefreaker.box.solutions import print_run_report, run_solutions
+from codefreaker.box.statements import build_statements
 from codefreaker.box.validators import validate_testcases
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
-app.add_typer(statements.app, name='statements', cls=annotations.AliasGroup)
+app.add_typer(build_statements.app, name='statements', cls=annotations.AliasGroup)
 
 
 @app.command('edit')

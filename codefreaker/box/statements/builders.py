@@ -8,9 +8,13 @@ from typing import Dict
 import typer
 
 from codefreaker import console
-from codefreaker.box import latex_jinja, statement_schema
-from codefreaker.box.latex import Latex
 from codefreaker.box.schema import Package
+from codefreaker.box.statements.latex import Latex
+from codefreaker.box.statements.latex_jinja import (
+    render_latex_template,
+    render_latex_template_blocks,
+)
+from codefreaker.box.statements.schema import Statement, StatementType
 
 
 @dataclasses.dataclass
@@ -18,7 +22,7 @@ class StatementBuilderInput:
     id: str
     content: bytes
     package: Package
-    statement: statement_schema.Statement
+    statement: Statement
 
 
 @dataclasses.dataclass
@@ -29,7 +33,7 @@ class StatementBuilderOutput:
 @dataclasses.dataclass
 class ProblemWithStatement:
     package: Package
-    statement: statement_schema.Statement
+    statement: Statement
     blocks: Dict[str, str] = dataclasses.field(default_factory=dict)
 
     def has_block(self, block: str) -> bool:
@@ -39,7 +43,7 @@ class ProblemWithStatement:
         return self.blocks[block]
 
 
-def prepare_assets(statement: statement_schema.Statement, dest_dir: pathlib.Path):
+def prepare_assets(statement: Statement, dest_dir: pathlib.Path):
     statement_path = statement.path.resolve()
     statement_dir = statement_path.parent
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -56,9 +60,7 @@ def prepare_assets(statement: statement_schema.Statement, dest_dir: pathlib.Path
         shutil.copyfile(str(asset), str(dest_path))
 
 
-def render_jinja(
-    statement: statement_schema.Statement, content: bytes, **kwargs
-) -> bytes:
+def render_jinja(statement: Statement, content: bytes, **kwargs) -> bytes:
     with tempfile.TemporaryDirectory() as td:
         temp_dir = pathlib.Path(td)
         prepare_assets(statement, temp_dir)
@@ -67,7 +69,7 @@ def render_jinja(
         temp_path = temp_dir / temp_file
         temp_path.write_bytes(content)
 
-        result: str = latex_jinja.render_latex_template(
+        result: str = render_latex_template(
             str(temp_dir),
             temp_file,
             kwargs,
@@ -76,7 +78,7 @@ def render_jinja(
 
 
 def render_jinja_blocks(
-    statement: statement_schema.Statement, content: bytes, **kwargs
+    statement: Statement, content: bytes, **kwargs
 ) -> Dict[str, str]:
     with tempfile.TemporaryDirectory() as td:
         temp_dir = pathlib.Path(td)
@@ -86,7 +88,7 @@ def render_jinja_blocks(
         temp_path = temp_dir / temp_file
         temp_path.write_bytes(content)
 
-        result: Dict[str, str] = latex_jinja.render_latex_template_blocks(
+        result: Dict[str, str] = render_latex_template_blocks(
             str(temp_dir),
             temp_file,
             kwargs,
@@ -100,11 +102,11 @@ class StatementBuilder(ABC):
         pass
 
     @abstractmethod
-    def input_type(self) -> statement_schema.StatementType:
+    def input_type(self) -> StatementType:
         pass
 
     @abstractmethod
-    def output_type(self) -> statement_schema.StatementType:
+    def output_type(self) -> StatementType:
         pass
 
     @abstractmethod
@@ -118,11 +120,11 @@ class JinjaTeXBuilder(StatementBuilder):
     def name(self) -> str:
         return 'jinja-tex'
 
-    def input_type(self) -> statement_schema.StatementType:
-        return statement_schema.StatementType.JinjaTeX
+    def input_type(self) -> StatementType:
+        return StatementType.JinjaTeX
 
-    def output_type(self) -> statement_schema.StatementType:
-        return statement_schema.StatementType.TeX
+    def output_type(self) -> StatementType:
+        return StatementType.TeX
 
     def build(
         self, input: StatementBuilderInput, verbose: bool = False
@@ -136,11 +138,11 @@ class CodefreakerTeXBuilder(StatementBuilder):
     def name(self) -> str:
         return 'cfk-tex'
 
-    def input_type(self) -> statement_schema.StatementType:
-        return statement_schema.StatementType.CodefreakerTeX
+    def input_type(self) -> StatementType:
+        return StatementType.CodefreakerTeX
 
-    def output_type(self) -> statement_schema.StatementType:
-        return statement_schema.StatementType.TeX
+    def output_type(self) -> StatementType:
+        return StatementType.TeX
 
     def build(
         self, input: StatementBuilderInput, verbose: bool = False
@@ -161,11 +163,11 @@ class TeX2PDFBuilder(StatementBuilder):
     def name(self) -> str:
         return 'tex2pdf'
 
-    def input_type(self) -> statement_schema.StatementType:
-        return statement_schema.StatementType.TeX
+    def input_type(self) -> StatementType:
+        return StatementType.TeX
 
-    def output_type(self) -> statement_schema.StatementType:
-        return statement_schema.StatementType.PDF
+    def output_type(self) -> StatementType:
+        return StatementType.PDF
 
     def build(
         self, input: StatementBuilderInput, verbose: bool = False
