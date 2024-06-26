@@ -1,5 +1,6 @@
+import pathlib
 import typing
-from typing import Annotated, Dict, List, Optional
+from typing import Annotated, Dict, List, Optional, Tuple
 
 import typer
 
@@ -12,7 +13,7 @@ from codefreaker.box.statements.builders import (
     StatementBuilderInput,
     StatementCodeLanguage,
 )
-from codefreaker.box.statements.schema import Statement, StatementType
+from codefreaker.box.statements.schema import PipelineStep, Statement, StatementType
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
@@ -83,9 +84,9 @@ def get_implicit_builders(
 
 def get_builders(
     statement: Statement, output_type: Optional[StatementType]
-) -> List[StatementBuilder]:
+) -> List[Tuple[StatementBuilder, PipelineStep]]:
     last_output = statement.type
-    builders: List[StatementBuilder] = []
+    builders: List[Tuple[StatementBuilder, PipelineStep]] = []
     for step in statement.pipeline:
         builder = get_builder(step.type)
         if builder.input_type() != last_output:
@@ -93,7 +94,7 @@ def get_builders(
                 f'[error]Invalid pipeline step: [item]{builder.name()}[/item][/error]'
             )
             raise typer.Exit(1)
-        builders.append(builder)
+        builders.append((builder, step))
         last_output = builder.output_type()
 
     if output_type is not None and last_output != output_type:
@@ -109,9 +110,32 @@ def get_builders(
                 f'to specified output type [item]{output_type}[/item].[/error]'
             )
             raise typer.Exit(1)
-        builders.extend(implicit_builders)
+        builders.extend(
+            (builder, builder.default_params()) for builder in implicit_builders
+        )
 
     return builders
+
+
+def _get_relative_assets(
+    statement_path: pathlib.Path,
+    assets: List[pathlib.Path],
+) -> List[Tuple[pathlib.Path, pathlib.Path]]:
+    res = []
+    for asset in assets:
+        if not asset.is_file() or not asset.resolve().is_relative_to(
+            statement_path.resolve().parent
+        ):
+            console.console.print(
+                f'[error]Asset [item]{asset}[/item] is not relative to your statement.[/error]'
+            )
+            raise typer.Exit(1)
+
+        res.append(
+            (asset, asset.resolve().relative_to(statement_path.resolve().parent))
+        )
+
+    return res
 
 
 def build_statement(
@@ -125,7 +149,10 @@ def build_statement(
     builders = get_builders(statement, output_type)
     last_output = statement.type
     last_content = statement.path.read_bytes()
-    for builder in builders:
+    for builder, params in builders:
+        assets = _get_relative_assets(
+            statement.path, statement.assets
+        ) + builder.inject_assets(params)
         output = builder.build(
             StatementBuilderInput(
                 id=statement.path.name,
@@ -133,6 +160,8 @@ def build_statement(
                 package=pkg,
                 statement=statement,
                 content=last_content,
+                params=params,
+                assets=assets,
             ),
             verbose=False,
         )

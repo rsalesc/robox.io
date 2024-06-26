@@ -2,8 +2,9 @@ import dataclasses
 import pathlib
 import shutil
 import tempfile
+import typing
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import typer
 
@@ -14,7 +15,14 @@ from codefreaker.box.statements.latex_jinja import (
     render_latex_template,
     render_latex_template_blocks,
 )
-from codefreaker.box.statements.schema import Statement, StatementType
+from codefreaker.box.statements.schema import (
+    CodefreakerToTeX,
+    JinjaTeX,
+    PipelineStep,
+    Statement,
+    StatementType,
+    TexToPDF,
+)
 
 
 @dataclasses.dataclass
@@ -30,6 +38,10 @@ class StatementBuilderInput:
     languages: List[StatementCodeLanguage]
     package: Package
     statement: Statement
+    params: PipelineStep
+    assets: List[Tuple[pathlib.Path, pathlib.Path]] = dataclasses.field(
+        default_factory=list
+    )
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
         return {
@@ -57,27 +69,31 @@ class ProblemWithStatement:
         return self.blocks[block]
 
 
-def prepare_assets(statement: Statement, dest_dir: pathlib.Path):
-    statement_path = statement.path.resolve()
-    statement_dir = statement_path.parent
+def prepare_assets(
+    assets: List[Tuple[pathlib.Path, pathlib.Path]],
+    dest_dir: pathlib.Path,
+):
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    for asset in statement.assets:
-        if not asset.is_file() or not asset.resolve().is_relative_to(statement_dir):
+    for asset_in, asset_out in assets:
+        if not asset_in.is_file():
             console.console.print(
-                f'[error]Asset {asset} is not relative to statement {statement_path}.[/error]'
+                f'[error]Asset [item]{asset_in}[/item] does not exist in your package.[/error]'
             )
             raise typer.Exit(1)
 
-        dest_path = dest_dir / asset.resolve().relative_to(statement_dir)
+        # dest_path = dest_dir / asset.resolve().relative_to(statement_dir)
+        dest_path = dest_dir / asset_out
         dest_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(str(asset), str(dest_path))
+        shutil.copyfile(str(asset_in), str(dest_path))
 
 
-def render_jinja(st: Statement, content: bytes, **kwargs) -> bytes:
+def render_jinja(
+    assets: List[Tuple[pathlib.Path, pathlib.Path]], content: bytes, **kwargs
+) -> bytes:
     with tempfile.TemporaryDirectory() as td:
         temp_dir = pathlib.Path(td)
-        prepare_assets(st, temp_dir)
+        prepare_assets(assets, temp_dir)
 
         temp_file = '__input__.tex'
         temp_path = temp_dir / temp_file
@@ -91,10 +107,12 @@ def render_jinja(st: Statement, content: bytes, **kwargs) -> bytes:
         return result.encode()
 
 
-def render_jinja_blocks(st: Statement, content: bytes, **kwargs) -> Dict[str, str]:
+def render_jinja_blocks(
+    assets: List[Tuple[pathlib.Path, pathlib.Path]], content: bytes, **kwargs
+) -> Dict[str, str]:
     with tempfile.TemporaryDirectory() as td:
         temp_dir = pathlib.Path(td)
-        prepare_assets(st, temp_dir)
+        prepare_assets(assets, temp_dir)
 
         temp_file = '__input__.tex'
         temp_path = temp_dir / temp_file
@@ -114,12 +132,21 @@ class StatementBuilder(ABC):
         pass
 
     @abstractmethod
+    def default_params(self) -> PipelineStep:
+        pass
+
+    @abstractmethod
     def input_type(self) -> StatementType:
         pass
 
     @abstractmethod
     def output_type(self) -> StatementType:
         pass
+
+    def inject_assets(
+        self, params: PipelineStep
+    ) -> List[Tuple[pathlib.Path, pathlib.Path]]:
+        return []
 
     @abstractmethod
     def build(
@@ -132,6 +159,9 @@ class JinjaTeXBuilder(StatementBuilder):
     def name(self) -> str:
         return 'jinja-tex'
 
+    def default_params(self) -> PipelineStep:
+        return JinjaTeX(type='jinja-tex')
+
     def input_type(self) -> StatementType:
         return StatementType.JinjaTeX
 
@@ -143,7 +173,9 @@ class JinjaTeXBuilder(StatementBuilder):
     ) -> StatementBuilderOutput:
         return StatementBuilderOutput(
             content=render_jinja(
-                input.statement, input.content, **input.build_jinja_kwargs()
+                input.assets,
+                input.content,
+                **input.build_jinja_kwargs(),
             )
         )
 
@@ -152,24 +184,37 @@ class CodefreakerTeXBuilder(StatementBuilder):
     def name(self) -> str:
         return 'cfk-tex'
 
+    def default_params(self) -> PipelineStep:
+        return CodefreakerToTeX(type='cfk-tex')
+
     def input_type(self) -> StatementType:
         return StatementType.CodefreakerTeX
 
     def output_type(self) -> StatementType:
         return StatementType.TeX
 
+    def inject_assets(
+        self, params: PipelineStep
+    ) -> List[Tuple[pathlib.Path, pathlib.Path]]:
+        params = typing.cast(CodefreakerToTeX, params)
+        if not params.template:
+            return []
+        return [(params.template, params.template)]
+
     def build(
         self, input: StatementBuilderInput, verbose: bool = False
     ) -> StatementBuilderOutput:
+        params = typing.cast(CodefreakerToTeX, input.params)
+        assert params.template is not None
         blocks = render_jinja_blocks(
-            input.statement, input.content, **input.build_jinja_kwargs()
+            input.assets, input.content, **input.build_jinja_kwargs()
         )
 
-        input_str = '%- extends "codefreaker.br.tex"'
+        input_str = f'%- extends "{params.template}"'
         problems = [ProblemWithStatement(input.package, input.statement, blocks)]
         return StatementBuilderOutput(
             content=render_jinja(
-                input.statement,
+                input.assets,
                 input_str.encode(),
                 **input.build_jinja_kwargs(),
                 problems=problems,
@@ -180,6 +225,9 @@ class CodefreakerTeXBuilder(StatementBuilder):
 class TeX2PDFBuilder(StatementBuilder):
     def name(self) -> str:
         return 'tex2pdf'
+
+    def default_params(self) -> PipelineStep:
+        return TexToPDF(type='tex2pdf')
 
     def input_type(self) -> StatementType:
         return StatementType.TeX
@@ -193,7 +241,7 @@ class TeX2PDFBuilder(StatementBuilder):
         latex = Latex(input.content.decode())
         with tempfile.TemporaryDirectory() as td:
             temp_dir = pathlib.Path(td)
-            prepare_assets(input.statement, temp_dir)
+            prepare_assets(input.assets, temp_dir)
             latex_result = latex.build_pdf(temp_dir)
         pdf = latex_result.pdf
         if pdf is None:

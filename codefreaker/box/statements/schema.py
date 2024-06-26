@@ -10,6 +10,9 @@ from codefreaker.autoenum import AutoEnum, alias
 class CodefreakerToTeX(BaseModel):
     type: Literal['cfk-tex']
 
+    # Template that should be used to render the cfk-tex blocks.
+    template: pathlib.Path = pathlib.Path('.')
+
 
 class TexToPDF(BaseModel):
     type: Literal['tex2pdf']
@@ -19,7 +22,7 @@ class JinjaTeX(BaseModel):
     type: Literal['jinja-tex']
 
 
-PipelineStep = TexToPDF | JinjaTeX
+PipelineStep = TexToPDF | JinjaTeX | CodefreakerToTeX
 
 
 ### Statement types
@@ -45,10 +48,19 @@ class StatementType(AutoEnum):
 class Statement(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
+    # Path relative to the package directory where the input statement is located.
     path: pathlib.Path
+
+    # Type of the input statement.
     type: StatementType
 
+    # Forces a certain sequence of conversion steps to happen during the statement
+    # generation process.
     pipeline: List[PipelineStep] = Field(default_factory=list, discriminator='type')
+
+    # Assets relative to the package directory that should be included while building
+    # the statement. Files will be included in the same folder as the statement file, preserving
+    # their relativeness.
     assets: List[pathlib.Path] = []
 
     # Language this is statement is written in.
