@@ -82,6 +82,24 @@ def get_implicit_builders(
     return list(reversed(res))
 
 
+def _try_implicit_builders(
+    statement: Statement, input_type: StatementType, output_type: StatementType
+) -> List[StatementBuilder]:
+    implicit_builders = get_implicit_builders(input_type, output_type)
+    if implicit_builders is None:
+        console.console.print(
+            f'[error]Cannot implicitly convert statement [item]{statement.path}[/item] '
+            f'from [item]{input_type}[/item] '
+            f'to specified output type [item]{output_type}[/item].[/error]'
+        )
+        raise typer.Exit(1)
+    console.console.print(
+        'Implicitly adding statement builders to convert statement'
+        f'from [item]{input_type}[/item] to [item]{output_type}[/item]...'
+    )
+    return implicit_builders
+
+
 def get_builders(
     statement: Statement, output_type: Optional[StatementType]
 ) -> List[Tuple[StatementBuilder, PipelineStep]]:
@@ -90,30 +108,20 @@ def get_builders(
     for step in statement.pipeline:
         builder = get_builder(step.type)
         if builder.input_type() != last_output:
-            console.console.print(
-                f'[error]Invalid pipeline step: [item]{builder.name()}[/item][/error]'
+            implicit_builders = _try_implicit_builders(
+                statement, last_output, builder.input_type()
             )
-            raise typer.Exit(1)
+            builders.extend(
+                (builder, builder.default_params()) for builder in implicit_builders
+            )
         builders.append((builder, step))
         last_output = builder.output_type()
 
     if output_type is not None and last_output != output_type:
-        console.console.print(
-            'Implicitly adding statement builders to convert statement'
-            f'from [item]{last_output}[/item] to [item]{output_type}[/item]...'
-        )
-        implicit_builders = get_implicit_builders(last_output, output_type)
-        if implicit_builders is None:
-            console.console.print(
-                f'[error]Cannot convert statement [item]{statement.path}[/item] '
-                f'from [item]{last_output}[/item] '
-                f'to specified output type [item]{output_type}[/item].[/error]'
-            )
-            raise typer.Exit(1)
+        implicit_builders = _try_implicit_builders(statement, last_output, output_type)
         builders.extend(
             (builder, builder.default_params()) for builder in implicit_builders
         )
-
     return builders
 
 
