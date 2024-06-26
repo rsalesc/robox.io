@@ -86,6 +86,9 @@ class EnvironmentLanguage(BaseModel):
     # Identifier of this language within this environment.
     name: str
 
+    # Readable name for this language.
+    readable_name: Optional[str] = None
+
     # File extension supported by this language. If there's only one language
     # that supports a certain file extension in the environment, the tool
     # will automatically identify the language based on such extension.

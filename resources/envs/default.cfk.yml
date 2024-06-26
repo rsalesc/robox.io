@@ -18,6 +18,7 @@ defaultExecution:
     memoryLimit: 1024 # 1gb
 languages:
   - name: "cpp"
+    readable_name: "C++17"
     extension: "cpp"
     compilation:
       commands:
@@ -27,6 +28,7 @@ languages:
     fileMapping:
       compilable: "compilable.cpp"
   - name: "py"
+    readable_name: "Python3"
     extension: "py"
     execution:
       command: "python3 {executable}"
