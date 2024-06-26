@@ -3,7 +3,7 @@ import pathlib
 import shutil
 import tempfile
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import typer
 
@@ -30,6 +30,13 @@ class StatementBuilderInput:
     languages: List[StatementCodeLanguage]
     package: Package
     statement: Statement
+
+    def build_jinja_kwargs(self) -> Dict[str, Any]:
+        return {
+            'languages': self.languages,
+            'package': self.package,
+            'statement': self.statement,
+        }
 
 
 @dataclasses.dataclass
@@ -67,10 +74,10 @@ def prepare_assets(statement: Statement, dest_dir: pathlib.Path):
         shutil.copyfile(str(asset), str(dest_path))
 
 
-def render_jinja(statement: Statement, content: bytes, **kwargs) -> bytes:
+def render_jinja(st: Statement, content: bytes, **kwargs) -> bytes:
     with tempfile.TemporaryDirectory() as td:
         temp_dir = pathlib.Path(td)
-        prepare_assets(statement, temp_dir)
+        prepare_assets(st, temp_dir)
 
         temp_file = '__input__.tex'
         temp_path = temp_dir / temp_file
@@ -84,12 +91,10 @@ def render_jinja(statement: Statement, content: bytes, **kwargs) -> bytes:
         return result.encode()
 
 
-def render_jinja_blocks(
-    statement: Statement, content: bytes, **kwargs
-) -> Dict[str, str]:
+def render_jinja_blocks(st: Statement, content: bytes, **kwargs) -> Dict[str, str]:
     with tempfile.TemporaryDirectory() as td:
         temp_dir = pathlib.Path(td)
-        prepare_assets(statement, temp_dir)
+        prepare_assets(st, temp_dir)
 
         temp_file = '__input__.tex'
         temp_path = temp_dir / temp_file
@@ -137,7 +142,9 @@ class JinjaTeXBuilder(StatementBuilder):
         self, input: StatementBuilderInput, verbose: bool = False
     ) -> StatementBuilderOutput:
         return StatementBuilderOutput(
-            content=render_jinja(input.statement, input.content)
+            content=render_jinja(
+                input.statement, input.content, **input.build_jinja_kwargs()
+            )
         )
 
 
@@ -154,16 +161,17 @@ class CodefreakerTeXBuilder(StatementBuilder):
     def build(
         self, input: StatementBuilderInput, verbose: bool = False
     ) -> StatementBuilderOutput:
-        blocks = render_jinja_blocks(input.statement, input.content)
+        blocks = render_jinja_blocks(
+            input.statement, input.content, **input.build_jinja_kwargs()
+        )
 
         input_str = '%- extends "codefreaker.br.tex"'
-        new_input = dataclasses.replace(input, content=input_str.encode())
         problems = [ProblemWithStatement(input.package, input.statement, blocks)]
         return StatementBuilderOutput(
             content=render_jinja(
-                new_input.statement,
-                new_input.content,
-                languages=input.languages,
+                input.statement,
+                input_str.encode(),
+                **input.build_jinja_kwargs(),
                 problems=problems,
             )
         )
