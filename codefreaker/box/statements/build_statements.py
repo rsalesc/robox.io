@@ -4,16 +4,38 @@ from typing import Annotated, Dict, List, Optional
 import typer
 
 from codefreaker import annotations, console
-from codefreaker.box import package
+from codefreaker.box import environment, package
 from codefreaker.box.schema import Package
 from codefreaker.box.statements.builders import (
     BUILDER_LIST,
     StatementBuilder,
     StatementBuilderInput,
+    StatementCodeLanguage,
 )
 from codefreaker.box.statements.schema import Statement, StatementType
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
+
+
+def _get_environment_languages_for_statement() -> List[StatementCodeLanguage]:
+    env = environment.get_environment()
+
+    res = []
+    for language in env.languages:
+        cmd = ''
+        compilation_cfg = environment.get_compilation_config(language.name)
+        cmd = ' & '.join(compilation_cfg.commands or [])
+        if not cmd:
+            execution_cfg = environment.get_execution_config(language.name)
+            cmd = execution_cfg.command
+
+        res.append(
+            StatementCodeLanguage(
+                name=language.readable_name or language.name, command=cmd or ''
+            )
+        )
+
+    return res
 
 
 def get_builder(name: str) -> StatementBuilder:
@@ -107,6 +129,7 @@ def build_statement(
         output = builder.build(
             StatementBuilderInput(
                 id=statement.path.name,
+                languages=_get_environment_languages_for_statement(),
                 package=pkg,
                 statement=statement,
                 content=last_content,

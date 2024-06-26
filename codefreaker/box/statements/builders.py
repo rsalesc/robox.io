@@ -3,7 +3,7 @@ import pathlib
 import shutil
 import tempfile
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, List
 
 import typer
 
@@ -18,9 +18,16 @@ from codefreaker.box.statements.schema import Statement, StatementType
 
 
 @dataclasses.dataclass
+class StatementCodeLanguage:
+    name: str
+    command: str
+
+
+@dataclasses.dataclass
 class StatementBuilderInput:
     id: str
     content: bytes
+    languages: List[StatementCodeLanguage]
     package: Package
     statement: Statement
 
@@ -154,7 +161,10 @@ class CodefreakerTeXBuilder(StatementBuilder):
         problems = [ProblemWithStatement(input.package, input.statement, blocks)]
         return StatementBuilderOutput(
             content=render_jinja(
-                new_input.statement, new_input.content, problems=problems
+                new_input.statement,
+                new_input.content,
+                languages=input.languages,
+                problems=problems,
             )
         )
 
