@@ -109,8 +109,8 @@ Make sure you're familiarized with [Competitive Companion](https://github.com/jm
 #### 1. Clone a contest or a single problem
 
 ```console
-$ # Or simply `rbx c`
-$ rbx clone
+$ # Or simply `rbc c`
+$ rbc clone
 ```
 
 After running the command above, hit the ➕ (plus) icon in Competitive Companion,
@@ -121,8 +121,8 @@ and you should start seeing parsing logs in the command line.
 #### 2. Implement a solution and run testcases
 
 ```console
-$ # Or simply `rbx test A`
-$ rbx test A
+$ # Or simply `rbc test A`
+$ rbc test A
 ```
 ![test_wa](https://github.com/rsalesc/robox.io/assets/4999965/309090e3-179b-4bd7-8961-a54fd109ac16)
 ![test](https://github.com/rsalesc/robox.io/assets/4999965/49681373-1663-46a1-a63a-06ed1176e82d)
@@ -130,8 +130,8 @@ $ rbx test A
 #### 3. Submit your solution
 
 ```console
-$ # Or simply `rbx s A`
-$ rbx submit A
+$ # Or simply `rbc s A`
+$ rbc submit A
 ```
 ![submit](https://github.com/rsalesc/robox.io/assets/4999965/153eb278-384b-401b-94a1-0b1df23ce4ad)
 
