@@ -1,7 +1,10 @@
 [tool.poetry]
-name = "robox"
+name = "robox.io"
 version = "0.2.0"
 description = ""
+packages = [
+  {include = "robox"}
+]
 authors = ["Roberto Sales"]
 readme = "README.md"
 
