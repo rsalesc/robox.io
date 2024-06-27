@@ -32,13 +32,13 @@
 
 ##  Overview
 
-[![Usage video]](https://github.com/rsalesc/codefreaker/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)
+[![Usage video]](https://github.com/rsalesc/robox/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)
 
-[![GitHub license](https://img.shields.io/github/license/rsalesc/codefreaker.svg)](https://github.com/rsalesc/codefreaker/blob/master/LICENSE)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/codefreaker.svg)](https://pypi.python.org/pypi/codefreaker/)
-[![PyPI version shields.io](https://img.shields.io/pypi/v/codefreaker.svg)](https://pypi.python.org/pypi/codefreaker/)
+[![GitHub license](https://img.shields.io/github/license/rsalesc/robox.svg)](https://github.com/rsalesc/robox/blob/master/LICENSE)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/robox.svg)](https://pypi.python.org/pypi/robox/)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/robox.svg)](https://pypi.python.org/pypi/robox/)
 
-Codefreaker is a CLI tool and library that aims to help contestants and setters from the competitive programming community to have an easier time.
+robox is a CLI tool and library that aims to help contestants and setters from the competitive programming community to have an easier time.
 
 Although trying to solve the issues of these two audiences seems to be too much for a single tool to handle, we exploit the fact that the journeys of contestants and setters have a lot in common.
 
@@ -72,7 +72,7 @@ If you want to use the parsing feature, you also have to install [Competitive Co
 
 > Use `pipx` for better isolation between apps!
 > ```console
-> $ pipx install codefreaker
+> $ pipx install robox
 > $ pipx install exinc
 > ```
 
@@ -80,7 +80,7 @@ If you want to use the parsing feature, you also have to install [Competitive Co
 
 > [![PyPi](https://badgen.net/badge/icon/pypi?icon=pypi&label)](https://https://pypi.org/)
 > ```console
-> $ pip install codefreaker exinc
+> $ pip install robox exinc
 > ```
 
 
@@ -109,31 +109,31 @@ Make sure you're familiarized with [Competitive Companion](https://github.com/jm
 #### 1. Clone a contest or a single problem
 
 ```console
-$ # Or simply `cfk c`
-$ cfk clone
+$ # Or simply `rbx c`
+$ rbx clone
 ```
 
 After running the command above, hit the ➕ (plus) icon in Competitive Companion,
 and you should start seeing parsing logs in the command line.
 
-![clone](https://github.com/rsalesc/codefreaker/assets/4999965/edb4611e-e459-49ba-940f-c362f27dc76e)
+![clone](https://github.com/rsalesc/robox/assets/4999965/edb4611e-e459-49ba-940f-c362f27dc76e)
 
 #### 2. Implement a solution and run testcases
 
 ```console
-$ # Or simply `cfk test A`
-$ cfk test A
+$ # Or simply `rbx test A`
+$ rbx test A
 ```
-![test_wa](https://github.com/rsalesc/codefreaker/assets/4999965/309090e3-179b-4bd7-8961-a54fd109ac16)
-![test](https://github.com/rsalesc/codefreaker/assets/4999965/49681373-1663-46a1-a63a-06ed1176e82d)
+![test_wa](https://github.com/rsalesc/robox/assets/4999965/309090e3-179b-4bd7-8961-a54fd109ac16)
+![test](https://github.com/rsalesc/robox/assets/4999965/49681373-1663-46a1-a63a-06ed1176e82d)
 
 #### 3. Submit your solution
 
 ```console
-$ # Or simply `cfk s A`
-$ cfk submit A
+$ # Or simply `rbx s A`
+$ rbx submit A
 ```
-![submit](https://github.com/rsalesc/codefreaker/assets/4999965/153eb278-384b-401b-94a1-0b1df23ce4ad)
+![submit](https://github.com/rsalesc/robox/assets/4999965/153eb278-384b-401b-94a1-0b1df23ce4ad)
 
 #### Advanced usages
 

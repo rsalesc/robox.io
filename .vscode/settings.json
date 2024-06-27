@@ -5,7 +5,7 @@
     "tuple": "c"
   },
   "python.analysis.extraPaths": [
-    "./codefreaker"
+    "./robox"
   ],
   "editor.defaultFormatter": "charliermarsh.ruff",
   "python.analysis.autoImportCompletions": true,
