@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from rich.text import Text
 
 from robox import utils
-from robox.config import get_testlib
+from robox.config import get_jngen, get_testlib
 from robox.console import console
 from robox.grading.judge.sandbox import SandboxBase, SandboxParams
 from robox.grading.judge.storage import copyfileobj
@@ -208,6 +208,10 @@ def _process_output_artifacts(
 
 def testlib_grading_input() -> GradingFileInput:
     return GradingFileInput(src=get_testlib(), dest=pathlib.Path('testlib.h'))
+
+
+def jngen_grading_input() -> GradingFileInput:
+    return GradingFileInput(src=get_jngen(), dest=pathlib.Path('jngen.h'))
 
 
 def compile(

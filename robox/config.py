@@ -121,7 +121,7 @@ def _download_checker(name: str, save_at: pathlib.Path):
             f.write(r.content)
 
 
-def _download_testlib(name: str, save_at: pathlib.Path):
+def _download_testlib(save_at: pathlib.Path):
     console.print('Downloading testlib.h...')
     r = requests.get(
         'https://raw.githubusercontent.com/MikeMirzayanov/testlib/master/testlib.h'
@@ -131,6 +131,22 @@ def _download_testlib(name: str, save_at: pathlib.Path):
         save_at.parent.mkdir(parents=True, exist_ok=True)
         with save_at.open('wb') as f:
             f.write(r.content)
+    else:
+        console.print('[error]Failed to download testlib.h.[/error]')
+        raise typer.Exit(1)
+
+
+def _download_jngen(save_at: pathlib.Path):
+    console.print('Downloading jngen.h...')
+    r = requests.get('https://raw.githubusercontent.com/ifsmirnov/jngen/master/jngen.h')
+
+    if r.ok:
+        save_at.parent.mkdir(parents=True, exist_ok=True)
+        with save_at.open('wb') as f:
+            f.write(r.content)
+    else:
+        console.print('[error]Failed to download jngen.h.[/error]')
+        raise typer.Exit(1)
 
 
 def get_builtin_checker(name: str) -> pathlib.Path:
@@ -143,7 +159,14 @@ def get_builtin_checker(name: str) -> pathlib.Path:
 def get_testlib() -> pathlib.Path:
     app_file = get_app_file(pathlib.Path('testlib.h'))
     if not app_file.exists():
-        _download_testlib('testlib.h', app_file)
+        _download_testlib(app_file)
+    return app_file
+
+
+def get_jngen() -> pathlib.Path:
+    app_file = get_app_file(pathlib.Path('jngen.h'))
+    if not app_file.exists():
+        _download_jngen(app_file)
     return app_file
 
 

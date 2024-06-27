@@ -54,7 +54,11 @@ class CodeItem(BaseModel):
     language: Optional[str] = None
 
     # Extra files that should be placed alongside the code file during its
-    # compilation, such as testlib.h
+    # compilation, such as testlib.h, jngen.h, etc.
+    # The paths are relative to the package directory, but will be included relative
+    # to the `path` directory.
+    #
+    # Testlib and jngen are already included by default.
     compilationFiles: Optional[List[str]] = []
 
 

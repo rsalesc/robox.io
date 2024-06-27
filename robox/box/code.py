@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import typer
 
-from robox.box import package
+from robox.box import download, package
 from robox.box.environment import (
     ExecutionConfig,
     get_compilation_config,
@@ -62,7 +62,8 @@ def compile_item(code: CodeItem) -> str:
     compiled_digest = DigestHolder()
 
     artifacts = GradingArtifacts()
-    artifacts.inputs.append(steps.testlib_grading_input())
+    download.maybe_add_testlib(code, artifacts)
+    download.maybe_add_jngen(code, artifacts)
     artifacts.inputs.append(
         GradingFileInput(src=generator_path, dest=PosixPath(file_mapping.compilable))
     )

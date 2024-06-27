@@ -1,6 +1,6 @@
 import functools
 import pathlib
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import typer
 
@@ -207,3 +207,33 @@ def get_testgroup(name: str, root: pathlib.Path = pathlib.Path()) -> TestcaseGro
             return testgroup
     console.console.print(f'Test group [item]{name}[/item] not found', style='error')
     raise typer.Exit(1)
+
+
+# Return each compilation file and to where it should be moved inside
+# the sandbox.
+def get_compilation_files(code: CodeItem) -> List[Tuple[pathlib.Path, pathlib.Path]]:
+    code_dir = code.path.parent.resolve()
+
+    res = []
+    for compilation_file in code.compilationFiles or []:
+        compilation_file_path = pathlib.Path(compilation_file).resolve()
+        if not compilation_file_path.is_file():
+            console.console.print(
+                f'[error]Compilation file [item]{compilation_file}[/item] for '
+                f'code [item]{code.path}[/item] does not exist.[/error]',
+            )
+            raise typer.Exit(1)
+        if not compilation_file_path.is_relative_to(code_dir):
+            console.console.print(
+                f'[error]Compilation file [item]{compilation_file}[/item] for '
+                f"code [item]{code.path}[/item] is not under the code's folder.[/error]",
+            )
+            raise typer.Exit(1)
+
+        res.append(
+            (
+                pathlib.Path(compilation_file),
+                compilation_file_path.relative_to(code_dir),
+            )
+        )
+    return res
