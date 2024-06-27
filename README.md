@@ -32,11 +32,11 @@
 
 ##  Overview
 
-[![Usage video]](https://github.com/rsalesc/robox/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)
+[![Usage video]](https://github.com/rsalesc/robox.io/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)
 
-[![GitHub license](https://img.shields.io/github/license/rsalesc/robox.svg)](https://github.com/rsalesc/robox/blob/master/LICENSE)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/robox.svg)](https://pypi.python.org/pypi/robox/)
-[![PyPI version shields.io](https://img.shields.io/pypi/v/robox.svg)](https://pypi.python.org/pypi/robox/)
+[![GitHub license](https://img.shields.io/github/license/rsalesc/robox.io.svg)](https://github.com/rsalesc/robox.io/blob/master/LICENSE)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/robox.svg)](https://pypi.python.org/pypi/robox.io/)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/robox.svg)](https://pypi.python.org/pypi/robox.io/)
 
 robox is a CLI tool and library that aims to help contestants and setters from the competitive programming community to have an easier time.
 
@@ -72,7 +72,7 @@ If you want to use the parsing feature, you also have to install [Competitive Co
 
 > Use `pipx` for better isolation between apps!
 > ```console
-> $ pipx install robox
+> $ pipx install robox.io
 > $ pipx install exinc
 > ```
 
@@ -80,7 +80,7 @@ If you want to use the parsing feature, you also have to install [Competitive Co
 
 > [![PyPi](https://badgen.net/badge/icon/pypi?icon=pypi&label)](https://https://pypi.org/)
 > ```console
-> $ pip install robox exinc
+> $ pip install robox.io exinc
 > ```
 
 
@@ -116,7 +116,7 @@ $ rbx clone
 After running the command above, hit the ➕ (plus) icon in Competitive Companion,
 and you should start seeing parsing logs in the command line.
 
-![clone](https://github.com/rsalesc/robox/assets/4999965/edb4611e-e459-49ba-940f-c362f27dc76e)
+![clone](https://github.com/rsalesc/robox.io/assets/4999965/edb4611e-e459-49ba-940f-c362f27dc76e)
 
 #### 2. Implement a solution and run testcases
 
@@ -124,8 +124,8 @@ and you should start seeing parsing logs in the command line.
 $ # Or simply `rbx test A`
 $ rbx test A
 ```
-![test_wa](https://github.com/rsalesc/robox/assets/4999965/309090e3-179b-4bd7-8961-a54fd109ac16)
-![test](https://github.com/rsalesc/robox/assets/4999965/49681373-1663-46a1-a63a-06ed1176e82d)
+![test_wa](https://github.com/rsalesc/robox.io/assets/4999965/309090e3-179b-4bd7-8961-a54fd109ac16)
+![test](https://github.com/rsalesc/robox.io/assets/4999965/49681373-1663-46a1-a63a-06ed1176e82d)
 
 #### 3. Submit your solution
 
@@ -133,11 +133,7 @@ $ rbx test A
 $ # Or simply `rbx s A`
 $ rbx submit A
 ```
-![submit](https://github.com/rsalesc/robox/assets/4999965/153eb278-384b-401b-94a1-0b1df23ce4ad)
-
-#### Advanced usages
-
-View auto-generated CLI reference [here](USAGE.md).
+![submit](https://github.com/rsalesc/robox.io/assets/4999965/153eb278-384b-401b-94a1-0b1df23ce4ad)
 
 ###  Tests
 
