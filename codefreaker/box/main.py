@@ -52,7 +52,8 @@ def build(verify: bool = True):
             'Validated [item]{processed}[/item] testcases...',
             keep=True,
         ) as s:
-            validate_testcases(s)
+            infos = validate_testcases(s)
+            console.console.print(infos)
 
     console.console.print('[success]Problem built successfully![/success]')
 

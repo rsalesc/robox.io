@@ -1,11 +1,12 @@
 import pathlib
+import shlex
 from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
 from codefreaker.box import package
 from codefreaker.box.code import compile_item, run_item
-from codefreaker.box.schema import CodeItem
+from codefreaker.box.schema import CodeItem, Primitive
 from codefreaker.box.testcases import find_built_testcase_inputs
 from codefreaker.grading.steps import (
     DigestHolder,
@@ -27,14 +28,26 @@ def _compile_validator(validator: CodeItem) -> str:
 
 
 def _validate_testcase(
-    testcase: pathlib.Path, validator: CodeItem, validator_digest: str
+    testcase: pathlib.Path,
+    validator: CodeItem,
+    validator_digest: str,
+    vars: Optional[Dict[str, Primitive]] = None,
 ) -> Tuple[bool, Optional[str]]:
+    vars = vars or {}
+    for var in vars:
+        assert (
+            var.isidentifier()
+        ), f'Variable {var} should be a valid Python identifier.'
+    # TODO: check if needs to do some escaping
+    var_args = [f'--{k}={v}' for k, v in vars.items()]
+
     message_digest = DigestHolder()
     run_log = run_item(
         validator,
         DigestOrSource.create(validator_digest),
         stdin=DigestOrSource.create(testcase),
         stderr=DigestOrDest.create(message_digest),
+        extra_args=shlex.join(var_args) if var_args else None,
     )
     message = package.get_digest_as_string(message_digest.value or '')
     return (run_log is not None and run_log.exitcode == 0, message)
@@ -84,7 +97,9 @@ def validate_testcases(
         testcases = find_built_testcase_inputs(group)
 
         for testcase in testcases:
-            ok, message = _validate_testcase(testcase, validator, compiled_digest)
+            ok, message = _validate_testcase(
+                testcase, validator, compiled_digest, vars=pkg.vars
+            )
             validation_info.append(
                 TestcaseValidationInfo(
                     group=group.name,

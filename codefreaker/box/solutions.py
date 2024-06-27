@@ -109,7 +109,7 @@ def run_solution(
 
 
 def run_solutions(
-    progress: StatusProgress,
+    progress: Optional[StatusProgress] = None,
     tracked_solutions: Optional[Set[str]] = None,
 ) -> List[Dict[str, List[Evaluation]]]:
     pkg = package.find_problem_package_or_die()

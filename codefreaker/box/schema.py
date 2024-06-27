@@ -7,6 +7,8 @@ from codefreaker.autoenum import AutoEnum, alias
 from codefreaker.box.statements.schema import Statement
 from codefreaker.grading.steps import Outcome
 
+Primitive = str | int | float | bool
+
 
 class ExpectedOutcome(AutoEnum):
     ACCEPTED = alias('accepted', 'ac', 'correct')  # type: ignore
@@ -184,4 +186,7 @@ class Package(BaseModel):
     # Statements for the problem.
     statements: List[Statement] = []
 
-    vars: Dict[str, str] = {}
+    # Vars to be re-used across the package.
+    #   - It will be passed as --key=value arguments to the validator.
+    #   - It will be available as \VAR{key} variables in the Codefreaker statement.
+    vars: Dict[str, Primitive] = {}
