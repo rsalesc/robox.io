@@ -77,11 +77,17 @@ def run(solution: Annotated[Optional[str], typer.Argument()] = None):
 
 
 @app.command('stress')
-def stress(name: str):
+def stress(
+    name: str,
+    timeout: Annotated[int, typer.Option()] = 10,
+    findings: Annotated[int, typer.Option()] = 1,
+):
     with utils.StatusProgress('Running stress...') as s:
-        findings = stresses.run_stress(name, 10, progress=s)
+        finding_list = stresses.run_stress(
+            name, timeout, findingsLimit=findings, progress=s
+        )
 
-    console.console.print(findings)
+    stresses.print_stress_report(finding_list)
 
     # Add found tests.
     res = rich.prompt.Confirm.ask(
@@ -100,10 +106,10 @@ def stress(name: str):
             break
         try:
             testgroup = package.get_testgroup(testgroup)
-            testgroup.generators.extend(f.generator for f in findings)
+            testgroup.generators.extend(f.generator for f in finding_list)
             package.save_package()
             console.console.print(
-                f'Added [item]{len(findings)}[/item] tests to test group [item]{testgroup.name}[/item].'
+                f'Added [item]{len(finding_list)}[/item] tests to test group [item]{testgroup.name}[/item].'
             )
         except typer.Exit:
             continue

@@ -139,14 +139,30 @@ def run_solutions(
     return res
 
 
+def get_outcome_style_verdict(outcome: Outcome) -> str:
+    if outcome == Outcome.ACCEPTED:
+        return 'green'
+    if outcome == Outcome.WRONG_ANSWER:
+        return 'red'
+    if outcome == Outcome.TIME_LIMIT_EXCEEDED:
+        return 'yellow'
+    if outcome == Outcome.RUNTIME_ERROR:
+        return 'lnumber'
+    if outcome == Outcome.MEMORY_LIMIT_EXCEEDED:
+        return 'cyan'
+    return 'magenta'
+
+
 def _get_testcase_markup_verdict(eval: Evaluation) -> str:
-    res = '[green]✓[/green]'
+    res = '✓'
     if eval.result.outcome != Outcome.ACCEPTED:
-        res = '[red]✗[/red]'
+        res = '✗'
     if eval.result.outcome == Outcome.TIME_LIMIT_EXCEEDED:
-        res = '[yellow]⧖[/yellow]'
+        res = '⧖'
     if eval.result.outcome == Outcome.RUNTIME_ERROR:
-        res = '[lnumber]✗[/lnumber]'
+        res = '✗'
+    style = get_outcome_style_verdict(eval.result.outcome)
+    res = f'[{style}]{res}[/{style}]'
     if eval.log.stdout_absolute_path:
         output_path = eval.log.stdout_absolute_path.resolve()
         output_link = f'file://{output_path}'

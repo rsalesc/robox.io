@@ -11,7 +11,7 @@ from codefreaker import console
 from codefreaker.box import checkers, package
 from codefreaker.box.code import compile_item, run_item
 from codefreaker.box.schema import GeneratorCall, Testcase
-from codefreaker.box.solutions import compile_solutions
+from codefreaker.box.solutions import compile_solutions, get_outcome_style_verdict
 from codefreaker.grading.steps import (
     CheckerResult,
     DigestOrDest,
@@ -192,3 +192,23 @@ def run_stress(
         time.sleep(0.001)
 
     return findings
+
+
+def print_stress_report(findings: List[StressFinding]):
+    console.console.rule('Stress test report', style='status')
+    if not findings:
+        console.console.print('[info]No stress test findings.[/info]')
+        return
+
+    for i, finding in enumerate(findings):
+        console.console.print(f'[error]Finding {i + 1}[/error]')
+        console.console.print(
+            f'Generator: [status]{finding.generator.name} {finding.generator.args}[/status]'
+        )
+        console.console.print(f'Solution: [item]{finding.solution}[/item]')
+        style = get_outcome_style_verdict(finding.result.outcome)
+        console.console.print(
+            f'Outcome: [{style}]{finding.result.outcome.name}[/{style}]'
+        )
+        console.console.print(f'Message: [status]{finding.result.message}[/status]')
+        console.console.print()
