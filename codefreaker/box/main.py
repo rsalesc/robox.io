@@ -138,7 +138,7 @@ def environment(env: Annotated[Optional[str], typer.Argument()] = None):
     clear()
 
 
-@app.command('clear')
+@app.command('clear, clean')
 def clear():
     console.console.print('Cleaning cache and build directories...')
     shutil.rmtree('.box', ignore_errors=True)
