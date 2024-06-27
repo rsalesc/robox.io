@@ -12,14 +12,18 @@ from codefreaker.grading.steps import (
     DigestHolder,
     DigestOrDest,
     DigestOrSource,
+    GradingFileOutput,
 )
 from codefreaker.utils import StatusProgress
+
+HitBounds = Dict[str, Tuple[bool, bool]]
 
 
 class TestcaseValidationInfo(BaseModel):
     group: str
     path: pathlib.Path
     ok: bool
+    hit_bounds: HitBounds
     message: Optional[str] = None
 
 
@@ -27,12 +31,31 @@ def _compile_validator(validator: CodeItem) -> str:
     return compile_item(validator)
 
 
+def _bounds_or(lhs: Tuple[bool, bool], rhs: Tuple[bool, bool]) -> Tuple[bool, bool]:
+    return (lhs[0] or rhs[0], lhs[1] or rhs[1])
+
+
+def _process_bounds(log: str) -> HitBounds:
+    bounds: HitBounds = {}
+    for line in log.splitlines():
+        k, v = line.split(':')
+        k = k[1:-1]
+        v = v.strip()
+
+        hit = ('min-value-hit' in v, 'max-value-hit' in v)
+        if k not in bounds:
+            bounds[k] = hit
+            continue
+        bounds[k] = _bounds_or(bounds[k], hit)
+    return bounds
+
+
 def _validate_testcase(
     testcase: pathlib.Path,
     validator: CodeItem,
     validator_digest: str,
     vars: Optional[Dict[str, Primitive]] = None,
-) -> Tuple[bool, Optional[str]]:
+) -> Tuple[bool, Optional[str], HitBounds]:
     vars = vars or {}
     for var in vars:
         assert (
@@ -40,17 +63,33 @@ def _validate_testcase(
         ), f'Variable {var} should be a valid Python identifier.'
     # TODO: check if needs to do some escaping
     var_args = [f'--{k}={v}' for k, v in vars.items()]
+    var_args.extend(['--testOverviewLogFileName', 'validator.log'])
 
     message_digest = DigestHolder()
+    log_digest = DigestHolder()
     run_log = run_item(
         validator,
         DigestOrSource.create(validator_digest),
         stdin=DigestOrSource.create(testcase),
         stderr=DigestOrDest.create(message_digest),
+        outputs=[
+            GradingFileOutput(
+                src=pathlib.Path('validator.log'),
+                digest=log_digest,
+                optional=True,
+            )
+        ],
         extra_args=shlex.join(var_args) if var_args else None,
     )
+    log_overview = ''
+    if log_digest.value is not None:
+        log_overview = package.get_digest_as_string(log_digest.value or '')
     message = package.get_digest_as_string(message_digest.value or '')
-    return (run_log is not None and run_log.exitcode == 0, message)
+    return (
+        run_log is not None and run_log.exitcode == 0,
+        message,
+        _process_bounds(log_overview or ''),
+    )
 
 
 def compile_validators(
@@ -97,7 +136,7 @@ def validate_testcases(
         testcases = find_built_testcase_inputs(group)
 
         for testcase in testcases:
-            ok, message = _validate_testcase(
+            ok, message, hit_bounds = _validate_testcase(
                 testcase, validator, compiled_digest, vars=pkg.vars
             )
             validation_info.append(
@@ -105,6 +144,7 @@ def validate_testcases(
                     group=group.name,
                     path=testcase,
                     ok=ok,
+                    hit_bounds=hit_bounds,
                     message=message,
                 )
             )
