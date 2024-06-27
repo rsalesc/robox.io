@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -181,4 +181,7 @@ class Package(BaseModel):
     # List of pre-defined stress tests.
     stresses: List[Stress] = []
 
+    # Statements for the problem.
     statements: List[Statement] = []
+
+    vars: Dict[str, str] = {}

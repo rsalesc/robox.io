@@ -48,6 +48,7 @@ class StatementBuilderInput:
             'languages': self.languages,
             'package': self.package,
             'statement': self.statement,
+            'vars': self.package.vars,
         }
 
 

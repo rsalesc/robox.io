@@ -27,7 +27,7 @@ PipelineStep = TexToPDF | JinjaTeX | CodefreakerToTeX
 
 ### Statement types
 class StatementType(AutoEnum):
-    CodefreakerTeX = alias('codefreaker-tex', 'cfk-tex')  # type: ignore
+    CodefreakerTeX = alias('codefreaker-tex', 'cfk-tex', 'cfk')  # type: ignore
     TeX = alias('tex')
     JinjaTeX = alias('jinja-tex')
     PDF = alias('pdf')
