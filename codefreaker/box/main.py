@@ -15,7 +15,7 @@ from codefreaker.box.generators import (
 )
 from codefreaker.box.solutions import print_run_report, run_solutions
 from codefreaker.box.statements import build_statements
-from codefreaker.box.validators import validate_testcases
+from codefreaker.box.validators import print_validation_report, validate_testcases
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(build_statements.app, name='statements', cls=annotations.AliasGroup)
@@ -53,7 +53,7 @@ def build(verify: bool = True):
             keep=True,
         ) as s:
             infos = validate_testcases(s)
-            console.console.print(infos)
+            print_validation_report(infos)
 
     console.console.print('[success]Problem built successfully![/success]')
 

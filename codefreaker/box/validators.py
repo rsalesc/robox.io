@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
+from codefreaker import console
 from codefreaker.box import package
 from codefreaker.box.code import compile_item, run_item
 from codefreaker.box.schema import CodeItem, Primitive
@@ -151,3 +152,43 @@ def validate_testcases(
             step()
 
     return validation_info
+
+
+def print_validation_report(infos: List[TestcaseValidationInfo]):
+    console.console.rule('Validation report', style='status')
+    hit_bounds_per_group: Dict[str, HitBounds] = {}
+    for info in infos:
+        if not info.ok:
+            console.console.print(
+                f'[error]Testcase [item]{info.path}[/item] failed verification:[/error]\n{info.message}'
+            )
+            continue
+
+        if info.group not in hit_bounds_per_group:
+            hit_bounds_per_group[info.group] = {}
+        hit_bounds = hit_bounds_per_group[info.group]
+
+        for k, v in info.hit_bounds.items():
+            if k not in hit_bounds:
+                hit_bounds[k] = (False, False)
+            hit_bounds[k] = _bounds_or(hit_bounds[k], v)
+
+    for group, hit_bounds in hit_bounds_per_group.items():
+        console.console.print(f'Group [item]{group}[/item] hit bounds:')
+        for k, v in hit_bounds.items():
+            if k == 'samples':
+                # Skip samples.
+                continue
+
+            if all(v):
+                continue
+
+            if not v[0]:
+                console.console.print(
+                    f'  - {k}: [warning]min-value not hit[/warning]',
+                )
+            if not v[1]:
+                console.console.print(
+                    f'  - {k}: [warning]max-value not hit[/warning]',
+                )
+        console.console.print()
