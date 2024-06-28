@@ -105,8 +105,6 @@ def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
             output_path = testcase.outputPath
 
             assert output_path is not None
-            if output_path.is_file():
-                continue
             if main_solution is None or solution_digest is None:
                 console.console.print(
                     'No main solution found to generate outputs for testcases',
