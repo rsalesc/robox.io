@@ -1,0 +1,6 @@
+.box/
+build/
+
+*.o
+*.aux
+*.log
