@@ -55,6 +55,7 @@ class StatementBuilderProblem:
             'statement': self.statement,
             'samples': self.samples,
             'vars': self.package.vars,
+            'title': self.statement.title or self.package.name,
         }
 
 

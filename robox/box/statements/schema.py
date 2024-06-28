@@ -48,6 +48,9 @@ class StatementType(AutoEnum):
 class Statement(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
+    # Name of the problem, as it appears in the statement.
+    title: str
+
     # Path relative to the package directory where the input statement is located.
     path: pathlib.Path
 
