@@ -17,7 +17,6 @@ from robox.grading.judge.storage import copyfileobj
 
 app = typer.Typer(no_args_is_help=True)
 
-APP_NAME = 'robox'
 _RESOURCES_PKG = 'resources'
 _CONFIG_FILE_NAME = 'default_config.json'
 
@@ -82,8 +81,7 @@ class Config(BaseModel):
 
 
 def get_app_path() -> pathlib.Path:
-    app_dir = typer.get_app_dir(APP_NAME)
-    return pathlib.Path(app_dir)
+    return utils.get_app_path()
 
 
 def get_empty_app_persist_path() -> pathlib.Path:

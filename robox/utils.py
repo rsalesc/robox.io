@@ -7,6 +7,7 @@ from typing import Any, Optional, Type, TypeVar
 import rich
 import rich.prompt
 import rich.status
+import typer
 import yaml
 from pydantic import BaseModel
 from rich import text
@@ -15,6 +16,7 @@ from rich.highlighter import JSONHighlighter
 from robox.console import console
 
 T = TypeVar('T', bound=BaseModel)
+APP_NAME = 'robox'
 
 
 def create_and_write(path: pathlib.Path, *args, **kwargs):
@@ -46,18 +48,34 @@ def normalize_with_underscores(s: str) -> str:
     return ''.join(final)
 
 
+def get_app_path() -> pathlib.Path:
+    app_dir = typer.get_app_dir(APP_NAME)
+    return pathlib.Path(app_dir)
+
+
+def ensure_schema(model: Type[BaseModel]) -> pathlib.Path:
+    path = get_app_path() / 'schemas' / f'{model.__name__}.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    schema = json.dumps(model.model_json_schema(), indent=4)
+    path.write_text(schema)
+    return path.resolve()
+
+
 def model_json(model: BaseModel) -> str:
+    ensure_schema(model.__class__)
     return model.model_dump_json(indent=4, exclude_unset=True, exclude_none=True)
 
 
 def model_to_yaml(model: BaseModel) -> str:
-    return yaml.dump(
+    path = ensure_schema(model.__class__)
+    return f'# yaml-language-server: $schema={path}\n\n' + yaml.dump(
         model.model_dump(mode='json', exclude_unset=True, exclude_none=True),
         sort_keys=False,
     )
 
 
 def model_from_yaml(model: Type[T], s: str) -> T:
+    ensure_schema(model)
     return model(**yaml.safe_load(s))
 
 
