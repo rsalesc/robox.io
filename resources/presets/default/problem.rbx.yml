@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=/home/rsalesc/.config/robox/schemas/Package.json
+
+name: 'new-problem'
+timeLimit: 1000
+memoryLimit: 256
+checker:
+  path: '{checker}.cpp'
+validator:
+  path: 'validator.cpp'
+generators:
+  - path: 'gen.cpp'
+    name: 'gen'
+testcases:
+  - name: 'samples'
+    testcaseGlob: 'tests/samples/*.in'
+  - name: 'random'
+    generatorScript:
+      path: 'random.txt'
+solutions:
+  - path: 'sols/main.cpp'
+    outcome: ACCEPTED
+  - path: 'sols/wa.cpp'
+    outcome: WRONG_ANSWER
+  - path: 'sols/slow.cpp'
+    outcome: TLE_OR_RTE  # Can be TLE too
+statements:
+  - title: 'New Problem'
+    path: 'statement.rbx.tex'
+    type: roboxTeX
+    language: '{language}'
+    assets: ['olymp.sty']
+stresses:
+  - name: 'stress'
+    generator:
+      name: 'gen-random'
+      args: '[1..<MAX_N>] @' # `@` generates a random string
+vars:
+  "MAX_N": 1000000000  # Can be used in the validator, in the generator call and in the statement.
+
