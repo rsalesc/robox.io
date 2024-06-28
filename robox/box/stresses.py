@@ -57,10 +57,21 @@ def _parse_random_choice(pattern: str) -> List[StressArg]:
     return [_parse_single_pattern(choice) for choice in pattern.split('|')]
 
 
+def _parse_var(name: str) -> str:
+    pkg = package.find_problem_package_or_die()
+
+    if name not in pkg.vars:
+        console.console.print(f'[error]Variable [item]{name}[/item] not found.[/error]')
+        raise typer.Exit(1)
+    return f'{pkg.vars[name]}'
+
+
 def _parse_single_pattern(pattern: str) -> StressArg:
     if pattern.startswith('\\'):
         # Escape
         return pattern[1:]
+    if pattern.startswith('<') and pattern.endswith('>'):
+        return _parse_var(pattern[1:-1])
     if pattern.startswith('[') and pattern.endswith(']'):
         # Random range
         return _parse_random_int(pattern[1:-1])

@@ -35,5 +35,5 @@ stresses:
       name: 'gen-random'
       args: '[1..<MAX_N>] @' # `@` generates a random string
 vars:
-  "MAX_N": 1000000000  # Can be used in the validator, in the generator call and in the statement.
+  "MAX_N": 1000000000  # Can be used in the validator, in stress tests and in the statement.
 
