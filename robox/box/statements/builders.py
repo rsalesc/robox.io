@@ -32,44 +32,30 @@ class StatementCodeLanguage:
 
 
 @dataclasses.dataclass
-class StatementBuilderInput:
-    id: str
-    content: bytes
+class StatementBuilderContext:
     languages: List[StatementCodeLanguage]
-    package: Package
-    statement: Statement
-    samples: List[Testcase]
     params: PipelineStep
     assets: List[Tuple[pathlib.Path, pathlib.Path]] = dataclasses.field(
         default_factory=list
     )
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
-        return {
-            'languages': self.languages,
-            'package': self.package,
-            'statement': self.statement,
-            'vars': self.package.vars,
-        }
+        return {'languages': self.languages}
 
 
 @dataclasses.dataclass
-class StatementBuilderOutput:
-    content: bytes
-
-
-@dataclasses.dataclass
-class ProblemWithStatement:
+class StatementBuilderProblem:
     package: Package
     statement: Statement
-    blocks: Dict[str, str] = dataclasses.field(default_factory=dict)
     samples: List[Testcase] = dataclasses.field(default_factory=list)
 
-    def has_block(self, block: str) -> bool:
-        return block in self.blocks
-
-    def get_block(self, block: str) -> str:
-        return self.blocks[block]
+    def build_jinja_kwargs(self) -> Dict[str, Any]:
+        return {
+            'package': self.package,
+            'statement': self.statement,
+            'samples': self.samples,
+            'vars': self.package.vars,
+        }
 
 
 def prepare_assets(
@@ -153,8 +139,12 @@ class StatementBuilder(ABC):
 
     @abstractmethod
     def build(
-        self, input: StatementBuilderInput, verbose: bool = False
-    ) -> StatementBuilderOutput:
+        self,
+        input: bytes,
+        context: StatementBuilderContext,
+        problem: StatementBuilderProblem,
+        verbose: bool = False,
+    ) -> bytes:
         pass
 
 
@@ -172,14 +162,17 @@ class JinjaTeXBuilder(StatementBuilder):
         return StatementType.TeX
 
     def build(
-        self, input: StatementBuilderInput, verbose: bool = False
-    ) -> StatementBuilderOutput:
-        return StatementBuilderOutput(
-            content=render_jinja(
-                input.assets,
-                input.content,
-                **input.build_jinja_kwargs(),
-            )
+        self,
+        input: bytes,
+        context: StatementBuilderContext,
+        problem: StatementBuilderProblem,
+        verbose: bool = False,
+    ) -> bytes:
+        return render_jinja(
+            context.assets,
+            input,
+            **context.build_jinja_kwargs(),
+            problem=problem.build_jinja_kwargs(),
         )
 
 
@@ -205,27 +198,30 @@ class roboxTeXBuilder(StatementBuilder):
         return [(params.template, params.template)]
 
     def build(
-        self, input: StatementBuilderInput, verbose: bool = False
-    ) -> StatementBuilderOutput:
-        params = typing.cast(roboxToTeX, input.params)
+        self,
+        input: bytes,
+        context: StatementBuilderContext,
+        problem: StatementBuilderProblem,
+        verbose: bool = False,
+    ) -> bytes:
+        params = typing.cast(roboxToTeX, context.params)
         assert params.template is not None
         blocks = render_jinja_blocks(
-            input.assets, input.content, **input.build_jinja_kwargs()
+            context.assets, input, **problem.build_jinja_kwargs()
         )
 
         input_str = f'%- extends "{params.template}"'
         problems = [
-            ProblemWithStatement(
-                input.package, input.statement, blocks, samples=input.samples
-            )
+            {
+                'blocks': blocks,
+                **problem.build_jinja_kwargs(),
+            }
         ]
-        return StatementBuilderOutput(
-            content=render_jinja(
-                input.assets,
-                input_str.encode(),
-                **input.build_jinja_kwargs(),
-                problems=problems,
-            )
+        return render_jinja(
+            context.assets,
+            input_str.encode(),
+            **context.build_jinja_kwargs(),
+            problems=problems,
         )
 
 
@@ -243,12 +239,16 @@ class TeX2PDFBuilder(StatementBuilder):
         return StatementType.PDF
 
     def build(
-        self, input: StatementBuilderInput, verbose: bool = False
-    ) -> StatementBuilderOutput:
-        latex = Latex(input.content.decode())
+        self,
+        input: bytes,
+        context: StatementBuilderContext,
+        problem: StatementBuilderProblem,
+        verbose: bool = False,
+    ) -> bytes:
+        latex = Latex(input.decode())
         with tempfile.TemporaryDirectory() as td:
             temp_dir = pathlib.Path(td)
-            prepare_assets(input.assets, temp_dir)
+            prepare_assets(context.assets, temp_dir)
             latex_result = latex.build_pdf(temp_dir)
         pdf = latex_result.pdf
         if pdf is None:
@@ -259,7 +259,7 @@ class TeX2PDFBuilder(StatementBuilder):
         if verbose:
             console.console.print(f'{latex_result.result.stdout.decode()}')
 
-        return StatementBuilderOutput(content=pdf)
+        return pdf
 
 
 BUILDER_LIST = [TeX2PDFBuilder(), JinjaTeXBuilder(), roboxTeXBuilder()]

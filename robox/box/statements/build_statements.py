@@ -10,7 +10,8 @@ from robox.box.schema import Package
 from robox.box.statements.builders import (
     BUILDER_LIST,
     StatementBuilder,
-    StatementBuilderInput,
+    StatementBuilderContext,
+    StatementBuilderProblem,
     StatementCodeLanguage,
 )
 from robox.box.statements.schema import PipelineStep, Statement, StatementType
@@ -163,20 +164,21 @@ def build_statement(
             statement.path, statement.assets
         ) + builder.inject_assets(params)
         output = builder.build(
-            StatementBuilderInput(
-                id=statement.path.name,
+            input=last_content,
+            context=StatementBuilderContext(
                 languages=_get_environment_languages_for_statement(),
+                params=params,
+                assets=assets,
+            ),
+            problem=StatementBuilderProblem(
                 package=pkg,
                 statement=statement,
                 samples=get_samples(),
-                content=last_content,
-                params=params,
-                assets=assets,
             ),
             verbose=False,
         )
         last_output = builder.output_type()
-        last_content = output.content
+        last_content = output
 
     statement_path = (
         package.get_build_path()
