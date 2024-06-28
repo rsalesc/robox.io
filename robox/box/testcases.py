@@ -2,10 +2,17 @@ import pathlib
 from typing import List
 
 import typer
+from pydantic import BaseModel
 
 from robox import console
+from robox.box import package
 from robox.box.package import get_build_testgroup_path
 from robox.box.schema import Testcase, TestcaseGroup
+
+
+class TestcaseData(BaseModel):
+    input: str
+    output: str
 
 
 def find_built_testcases(group: TestcaseGroup) -> List[Testcase]:
@@ -27,3 +34,16 @@ def find_built_testcase_inputs(group: TestcaseGroup) -> List[pathlib.Path]:
         raise typer.Exit(1)
 
     return sorted(testgroup_path.glob('*.in'))
+
+
+def get_samples() -> List[Testcase]:
+    tcs = find_built_testcases(package.get_testgroup('samples'))
+    return [
+        Testcase(
+            inputPath=tc.inputPath.resolve(),
+            outputPath=tc.outputPath.resolve()
+            if tc.outputPath is not None and tc.outputPath.is_file()
+            else None,
+        )
+        for tc in tcs
+    ]

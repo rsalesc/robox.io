@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Tuple
 import typer
 
 from robox import console
-from robox.box.schema import Package
+from robox.box.schema import Package, Testcase
 from robox.box.statements.latex import Latex
 from robox.box.statements.latex_jinja import (
     render_latex_template,
@@ -38,6 +38,7 @@ class StatementBuilderInput:
     languages: List[StatementCodeLanguage]
     package: Package
     statement: Statement
+    samples: List[Testcase]
     params: PipelineStep
     assets: List[Tuple[pathlib.Path, pathlib.Path]] = dataclasses.field(
         default_factory=list
@@ -62,6 +63,7 @@ class ProblemWithStatement:
     package: Package
     statement: Statement
     blocks: Dict[str, str] = dataclasses.field(default_factory=dict)
+    samples: List[Testcase] = dataclasses.field(default_factory=list)
 
     def has_block(self, block: str) -> bool:
         return block in self.blocks
@@ -212,7 +214,11 @@ class roboxTeXBuilder(StatementBuilder):
         )
 
         input_str = f'%- extends "{params.template}"'
-        problems = [ProblemWithStatement(input.package, input.statement, blocks)]
+        problems = [
+            ProblemWithStatement(
+                input.package, input.statement, blocks, samples=input.samples
+            )
+        ]
         return StatementBuilderOutput(
             content=render_jinja(
                 input.assets,

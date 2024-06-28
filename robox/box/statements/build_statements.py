@@ -14,6 +14,7 @@ from robox.box.statements.builders import (
     StatementCodeLanguage,
 )
 from robox.box.statements.schema import PipelineStep, Statement, StatementType
+from robox.box.testcases import get_samples
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
@@ -167,6 +168,7 @@ def build_statement(
                 languages=_get_environment_languages_for_statement(),
                 package=pkg,
                 statement=statement,
+                samples=get_samples(),
                 content=last_content,
                 params=params,
                 assets=assets,
