@@ -210,20 +210,25 @@ def generate_testcases(progress: Optional[StatusProgress] = None):
 
         # Run generator script.
         if testcase.generatorScript is not None:
-            compiled_digest = compile_item(testcase.generatorScript)
             script_digest = DigestHolder()
-
-            run_log = run_item(
-                testcase.generatorScript,
-                DigestOrSource.create(compiled_digest),
-                stdout=DigestOrDest.create(script_digest),
-            )
-
-            if run_log is None or run_log.exitcode != 0:
-                console.console.print(
-                    f'Could not run generator script for group {testcase.name}'
+            if testcase.generatorScript.path.suffix == '.txt':
+                script_digest.value = cacher.put_file_from_path(
+                    testcase.generatorScript.path
                 )
-                raise typer.Exit(1)
+            else:
+                compiled_digest = compile_item(testcase.generatorScript)
+
+                run_log = run_item(
+                    testcase.generatorScript,
+                    DigestOrSource.create(compiled_digest),
+                    stdout=DigestOrDest.create(script_digest),
+                )
+
+                if run_log is None or run_log.exitcode != 0:
+                    console.console.print(
+                        f'Could not run generator script for group {testcase.name}'
+                    )
+                    raise typer.Exit(1)
 
             assert script_digest.value
             script = cacher.get_file_content(script_digest.value).decode()
