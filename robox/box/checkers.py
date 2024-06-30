@@ -1,6 +1,7 @@
 import pathlib
 from typing import Optional
 
+from robox import console
 from robox.box import package
 from robox.box.code import compile_item, run_item
 from robox.box.schema import Testcase
@@ -19,7 +20,12 @@ from robox.grading.steps import (
 def compile_checker() -> str:
     checker = package.get_checker()
 
-    return compile_item(checker)
+    try:
+        digest = compile_item(checker)
+    except:
+        console.console.print('[error]Failed compiling checker.[/error]')
+        raise
+    return digest
 
 
 def check(

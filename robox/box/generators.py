@@ -89,7 +89,11 @@ def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
     if main_solution is not None:
         if progress:
             progress.update('Compiling main solution...')
-        solution_digest = compile_item(main_solution)
+        try:
+            solution_digest = compile_item(main_solution)
+        except:
+            console.console.print('[error]Failed compiling main solution.[/error]')
+            raise
 
     sandbox = EnvironmentSandbox()
     sandbox.timeLimit = pkg.timeLimit * 2
@@ -112,13 +116,19 @@ def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
                 )
                 raise typer.Exit(1)
 
-            run_log = run_item(
-                main_solution,
-                DigestOrSource.create(solution_digest),
-                stdin=DigestOrSource.create(input_path),
-                stdout=DigestOrDest.create(output_path),
-                extra_config=extra_config,
-            )
+            try:
+                run_log = run_item(
+                    main_solution,
+                    DigestOrSource.create(solution_digest),
+                    stdin=DigestOrSource.create(input_path),
+                    stdout=DigestOrDest.create(output_path),
+                    extra_config=extra_config,
+                )
+            except:
+                console.console.print(
+                    '[error]Failed running main solution to generate testcase.[/error]'
+                )
+                raise
 
             if run_log is None or run_log.exitcode != 0:
                 console.console.print(
@@ -151,7 +161,13 @@ def compile_generators(
         if tracked_generators is not None and generator.name not in tracked_generators:
             continue
         update_status(f'Compiling generator [item]{generator.name}[/item]')
-        generator_to_compiled_digest[generator.name] = _compile_generator(generator)
+        try:
+            generator_to_compiled_digest[generator.name] = _compile_generator(generator)
+        except:
+            console.console.print(
+                f'[error]Failed compiling generator [item]{generator.name}[/item].[/error]'
+            )
+            raise
 
     return generator_to_compiled_digest
 
@@ -214,7 +230,13 @@ def generate_testcases(progress: Optional[StatusProgress] = None):
                     testcase.generatorScript.path
                 )
             else:
-                compiled_digest = compile_item(testcase.generatorScript)
+                try:
+                    compiled_digest = compile_item(testcase.generatorScript)
+                except:
+                    console.console.print(
+                        f'[error]Failed compiling generator script for group [item]{testcase.name}[/item].[/error]'
+                    )
+                    raise
 
                 run_log = run_item(
                     testcase.generatorScript,

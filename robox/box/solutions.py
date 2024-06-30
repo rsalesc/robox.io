@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Set
 
 import rich
 
+from robox import console
 from robox.box import checkers, package
 from robox.box.code import compile_item, run_item
 from robox.box.environment import EnvironmentSandbox, ExecutionConfig
@@ -36,7 +37,13 @@ def compile_solutions(
             continue
         if progress:
             progress.update(f'Compiling solution [item]{solution.path}[/item]...')
-        compiled_solutions[solution.path] = compile_item(solution)
+        try:
+            compiled_solutions[solution.path] = compile_item(solution)
+        except:
+            console.console.print(
+                f'[error]Failed compiling solution [item]{solution.path}[/item].[/error]'
+            )
+            raise
 
     return compiled_solutions
 

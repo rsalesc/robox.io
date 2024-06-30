@@ -114,7 +114,13 @@ def run_stress(
     solutions = [package.get_solution(solutions) for solutions in stress.solutions]
     solutions = [main_solution] + solutions
 
-    generator_digest = compile_item(generator)
+    try:
+        generator_digest = compile_item(generator)
+    except:
+        console.console.print(
+            f'[error]Failed compiling generator [item]{generator.name}[/item].[/error]'
+        )
+        raise
     checker_digest = checkers.compile_checker()
     solutions_digest = compile_solutions(
         tracked_solutions=set(

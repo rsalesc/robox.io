@@ -29,7 +29,14 @@ class TestcaseValidationInfo(BaseModel):
 
 
 def _compile_validator(validator: CodeItem) -> str:
-    return compile_item(validator)
+    try:
+        digest = compile_item(validator)
+    except:
+        console.console.print(
+            f'[error]Failed compiling validator [item]{validator.path}[/item].[/error]'
+        )
+        raise
+    return digest
 
 
 def _bounds_or(lhs: Tuple[bool, bool], rhs: Tuple[bool, bool]) -> Tuple[bool, bool]:
