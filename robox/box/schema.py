@@ -1,7 +1,8 @@
 import pathlib
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic_core import PydanticCustomError
 
 from robox.autoenum import AutoEnum, alias
 from robox.box.statements.schema import Statement
@@ -194,3 +195,24 @@ class Package(BaseModel):
     #   - It will be passed as --key=value arguments to the validator.
     #   - It will be available as \VAR{key} variables in the robox statement.
     vars: Dict[str, Primitive] = {}
+
+    @model_validator(mode='after')
+    def check_first_solution_is_main(self):
+        if self.solutions:
+            if self.solutions[0].outcome != ExpectedOutcome.ACCEPTED:
+                raise PydanticCustomError(
+                    'MISSING_MAIN_SOLUTION',
+                    'The first solution in the package must have the "ACCEPTED" outcome.',
+                )
+        return self
+
+    @model_validator(mode='after')
+    def samples_come_first(self):
+        for i, group in enumerate(self.testcases):
+            if group.name == 'samples' and i > 0:
+                raise PydanticCustomError(
+                    'SAMPLES_NOT_FIRST',
+                    'The "samples" group must be the first group in the package, but is actually the {i}-th',
+                    {'i': i + 1},
+                )
+        return self
