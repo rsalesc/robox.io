@@ -124,7 +124,10 @@ class Environment(BaseModel):
     languages: List[EnvironmentLanguage] = []
 
     # Identifier of the sandbox used by this environment (e.g. "stupid", "isolate")
-    sandbox: str
+    sandbox: str = 'stupid'
+
+    # Identifier of the preset that should be used when creating new problems.
+    preset: str = 'default'
 
 
 def get_environment_path(env: str) -> pathlib.Path:

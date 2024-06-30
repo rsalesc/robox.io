@@ -4,7 +4,7 @@ name: 'new-problem'
 timeLimit: 1000
 memoryLimit: 256
 checker:
-  path: '{checker}.cpp'
+  path: 'wcmp.cpp'
 validator:
   path: 'validator.cpp'
 generators:
@@ -27,7 +27,7 @@ statements:
   - title: 'New Problem'
     path: 'statement.rbx.tex'
     type: roboxTeX
-    language: '{language}'
+    language: 'en'
     assets: ['olymp.sty']
 stresses:
   - name: 'stress'

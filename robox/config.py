@@ -175,6 +175,10 @@ def get_default_config_path() -> pathlib.Path:
         return file
 
 
+def get_default_app_path() -> pathlib.Path:
+    return get_default_config_path().parent
+
+
 def get_default_config() -> Config:
     return Config.model_validate_json(get_default_config_path().read_text())
 
