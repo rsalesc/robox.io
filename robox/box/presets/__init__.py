@@ -87,6 +87,8 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
             raise typer.Exit(1)
     shutil.rmtree(str(installation_path), ignore_errors=True)
     shutil.copytree(str(root), str(installation_path))
+    shutil.rmtree(str(installation_path / 'build'), ignore_errors=True)
+    shutil.rmtree(str(installation_path / '.box'), ignore_errors=True)
 
 
 @app.command('install')
