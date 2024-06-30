@@ -47,11 +47,6 @@ class RandomHex:
         return ''.join(random.choice('0123456789abcdef') for _ in range(self.len))
 
 
-def _parse_random_int(pattern: str) -> RandomInt:
-    min, max = map(int, pattern.split('..'))
-    return RandomInt(min, max)
-
-
 def _parse_random_choice(pattern: str) -> List[StressArg]:
     # TODO: Add escaping for |
     return [_parse_single_pattern(choice) for choice in pattern.split('|')]
@@ -64,6 +59,17 @@ def _parse_var(name: str) -> str:
         console.console.print(f'[error]Variable [item]{name}[/item] not found.[/error]')
         raise typer.Exit(1)
     return f'{pkg.vars[name]}'
+
+
+def _parse_int(pattern: str) -> int:
+    if pattern.startswith('<') and pattern.endswith('>'):
+        return int(_parse_var(pattern[1:-1]))
+    return int(pattern)
+
+
+def _parse_random_int(pattern: str) -> RandomInt:
+    min, max = pattern.split('..')
+    return RandomInt(_parse_int(min), _parse_int(max))
 
 
 def _parse_single_pattern(pattern: str) -> StressArg:

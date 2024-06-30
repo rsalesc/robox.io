@@ -94,6 +94,9 @@ def stress(
 
     stresses.print_stress_report(finding_list)
 
+    if not finding_list:
+        return
+
     # Add found tests.
     res = rich.prompt.Confirm.ask(
         'Do you want to add the tests that were found to a test group?',
