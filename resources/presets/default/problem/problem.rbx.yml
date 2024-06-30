@@ -12,13 +12,13 @@ generators:
     name: 'gen'
 testcases:
   - name: 'samples'
-    testcaseGlob: 'tests/samples/*.in'
+    testcaseGlob: 'tests/samples/*.in'  # Pattern for the sample inputs.
   - name: 'random'
     generatorScript:
-      path: 'random.txt'
+      path: 'random.txt'  # Static generator script.
   - name: 'program-random'
     generatorScript:
-      path: 'random.py'
+      path: 'random.py'  # Generator script written programatically.
 solutions:
   - path: 'sols/main.cpp'
     outcome: ACCEPTED
@@ -28,7 +28,7 @@ solutions:
     outcome: TLE_OR_RTE  # Can be TLE too
 statements:
   - title: 'New Problem'
-    path: 'statement/statement.rbx.tex'
+    path: 'statement/statement.rbx.tex'  # Open this file to edit your statement.
     type: roboxTeX
     language: 'en'
     assets: ['statement/olymp.sty']
