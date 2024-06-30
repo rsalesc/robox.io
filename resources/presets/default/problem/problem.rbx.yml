@@ -4,7 +4,7 @@ name: 'new-problem'
 timeLimit: 1000
 memoryLimit: 256
 checker:
-  path: 'wcmp.cpp'
+  path: 'wcmp.cpp'  # Download others from testlib with `rbx download checker`
 validator:
   path: 'validator.cpp'
 generators:
@@ -16,6 +16,9 @@ testcases:
   - name: 'random'
     generatorScript:
       path: 'random.txt'
+  - name: 'program-random'
+    generatorScript:
+      path: 'random.py'
 solutions:
   - path: 'sols/main.cpp'
     outcome: ACCEPTED
