@@ -21,6 +21,8 @@ rich = "^13.7.1"
 pyyaml = "^6.0.1"
 requests = "^2.32.3"
 latexbuild = "^0.2.2"
+pydantic-xml = {extras = ["lxml"], version = "^2.11.0"}
+python-iso639 = "^2024.4.27"
 
 [tool.poetry.scripts]
 rbc = "robox.main:app"

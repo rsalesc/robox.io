@@ -7,7 +7,7 @@ import rich.prompt
 import typer
 
 from robox import annotations, config, console, utils
-from robox.box import download, package, presets, stresses
+from robox.box import download, package, packaging, presets, stresses
 from robox.box.environment import get_environment_path
 from robox.box.generators import (
     generate_outputs_for_testcases,
@@ -21,6 +21,7 @@ app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(build_statements.app, name='statements', cls=annotations.AliasGroup)
 app.add_typer(download.app, name='download', cls=annotations.AliasGroup)
 app.add_typer(presets.app, name='presets', cls=annotations.AliasGroup)
+app.add_typer(packaging.app, name='package', cls=annotations.AliasGroup)
 
 
 @app.command('edit')
