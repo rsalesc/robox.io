@@ -11,7 +11,7 @@ class roboxToTeX(BaseModel):
     type: Literal['rbx-tex']
 
     # Template that should be used to render the rbx-tex blocks.
-    template: pathlib.Path = pathlib.Path('.')
+    template: pathlib.Path = pathlib.Path('template.rbx.tex')
 
 
 class TexToPDF(BaseModel):

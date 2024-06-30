@@ -1,0 +1,118 @@
+
+\documentclass[titlepage, oneside, a4paper]{article}
+
+\usepackage {import}
+\usepackage[margin=25mm, left=17mm, right=17mm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{comment}
+\usepackage{olymp}
+\usepackage{epigraph}
+\usepackage{expdlist}
+\usepackage{graphicx}
+\usepackage{ulem}
+\usepackage{lastpage}
+
+\def\showSourceFileName{1}
+\newif\ifintentionallyblankpages % comment this out to add blank pages
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\footrulewidth}{0.4pt}
+
+%- if contest is defined
+\title{\VAR{contest.name or ""}}
+\author{\VAR{contest.location or ""}}
+\date{\VAR{contest.date or ""}}
+%- else
+\title{}
+\author{}
+\date{}
+%- endif
+
+\makeatletter
+\let\newtitle\@title
+\let\newauthor\@author
+\let\newdate\@date
+\makeatother
+
+\rhead{\newtitle}
+\lhead{\newauthor}
+\lfoot{\newdate}
+\rfoot{\thepage}
+
+\begin{document}
+
+%- if contest is defined
+\begin{frontpage}{\newtitle}{\newauthor}{\newdate}
+\begin{itemize}
+\item Sobre a prova:
+\begin{enumerate}
+\item A prova tem duração de 5 horas;
+\end{enumerate}
+\item Sobre a entrada:
+\begin{enumerate}
+\item A entrada do seu programa deve ser lida da entrada padrão (standard input);
+\item Quando uma linha da entrada contém vários valores, estes são separados por um único espaço em branco, a menos que explicitado o contrário no enunciado do problema;
+\item Toda linha da entrada terminará com um caractere final-de-linha.
+\end{enumerate}
+
+\item Sobre a saída:
+\begin{enumerate}
+\item A saída de seu programa deve ser escrita na saída padrão;
+\item Quando uma linha da saída contém vários valores, estes devem ser separados por um único espaço em branco, a menos que explicitado o contrário no enunciado do problema;
+\item Toda linha da saída deve terminar com um caractere final-de-linha.
+\end{enumerate}
+
+\item Sobre as submissões:
+\begin{enumerate}
+\item Você deve submeter o código fonte das suas soluções;
+\item Os comandos utilizados para compilação serão:
+\begin{enumerate}
+%- for language in languages:
+\item \VAR{language.name | escape}: \VAR{language.command | escape}
+%- endfor
+\end{enumerate}
+\item Para linguagem Java, o nome da classe principal do arquivo deve ser \textbf{Main}. A classe deve ser pública.
+\end{enumerate}
+\centering\vspace*{\fill}\textbf{Este caderno contém ? problemas e \pageref{LastPage} páginas} \\
+\vspace*{\fill}
+\end{itemize}
+\end{frontpage}
+%- endif
+
+%- for problem in problems
+\begin{problem}{\VAR{problem.title | escape}}{stdin}{stdout}{\VAR{problem.package.timeLimit / 1000 | round(1, 'floor')} s}{\VAR{problem.package.memoryLimit} MB}
+
+\VAR{problem.blocks.legend}
+
+%- if problem.blocks.input is defined
+\InputFile
+\VAR{problem.blocks.input}
+%- endif
+
+%- if problem.blocks.output is defined
+\OutputFile
+\VAR{problem.blocks.output}
+%- endif
+
+\Examples
+
+%- for sample in problem.samples
+\begin{example}
+  \exmpfile{\VAR{sample.inputPath}}{\VAR{sample.outputPath if sample.outputPath is not none else ''}}%
+\end{example}
+%- endfor
+
+%- if problem.blocks.notes is defined
+\Notes
+\VAR{problem.blocks.notes}
+%- endif
+
+\end{problem}
+%- endfor
+
+\end{document}

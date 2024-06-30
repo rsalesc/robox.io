@@ -25,10 +25,13 @@ solutions:
     outcome: TLE_OR_RTE  # Can be TLE too
 statements:
   - title: 'New Problem'
-    path: 'statement.rbx.tex'
+    path: 'statement/statement.rbx.tex'
     type: roboxTeX
     language: 'en'
-    assets: ['olymp.sty']
+    assets: ['statement/olymp.sty']
+    pipeline:
+      - type: 'rbx-tex'  # Convert roboxTeX to TeX
+        template: 'statement/template.rbx.tex'
 stresses:
   - name: 'stress'
     generator:

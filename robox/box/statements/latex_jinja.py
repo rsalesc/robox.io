@@ -4,7 +4,7 @@ with Latex.
 """
 
 import re
-from typing import Dict
+from typing import Dict, Tuple
 
 import jinja2
 
@@ -82,9 +82,43 @@ def escape_latex_str_if_str(value):
     return value
 
 
+def _count_zeroes(value: int) -> Tuple[int, int]:
+    cnt = 0
+    while value > 0 and value % 10 == 0:
+        value //= 10
+        cnt += 1
+    return cnt, value
+
+
+def scientific_notation(value: int, zeroes: int = 5) -> str:
+    assert isinstance(value, int)
+    if value == 1000000007:
+        return '10^9 + 7'
+    if value == 0:
+        return '0'
+    if value < 0:
+        return f'-{scientific_notation(-value, zeroes=zeroes)}'
+
+    cnt, rest = _count_zeroes(value)
+    if cnt < zeroes:
+        return str(value)
+    if rest >= 10:
+        return str(value)
+    if rest == 1:
+        return f'10^{cnt}'
+    return f'{rest} \\times 10^{cnt}'
+
+
 ######################################################################
 # Declare module functions
 ######################################################################
+
+
+def add_builtin_filters(j2_env: jinja2.Environment):
+    j2_env.filters['escape'] = escape_latex_str_if_str
+    j2_env.filters['sci'] = scientific_notation
+
+
 def render_latex_template(path_templates, template_filename, template_vars=None) -> str:
     """Render a latex template, filling in its template variables
 
@@ -98,7 +132,7 @@ def render_latex_template(path_templates, template_filename, template_vars=None)
     j2_env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(path_templates), **J2_ARGS
     )
-    j2_env.filters['escape'] = escape_latex_str_if_str
+    add_builtin_filters(j2_env)
     template = j2_env.get_template(template_filename)
     return template.render(**var_dict)  # type: ignore
 
@@ -118,7 +152,7 @@ def render_latex_template_blocks(
     j2_env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(path_templates), **J2_ARGS
     )
-    j2_env.filters['escape'] = escape_latex_str_if_str
+    add_builtin_filters(j2_env)
     template = j2_env.get_template(template_filename)
     ctx = template.new_context(var_dict)  # type: ignore
     return {key: ''.join(value(ctx)) for key, value in template.blocks.items()}
