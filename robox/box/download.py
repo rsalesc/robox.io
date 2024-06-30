@@ -7,7 +7,7 @@ import typer
 from robox import annotations, console
 from robox.box import package
 from robox.box.schema import CodeItem
-from robox.config import get_jngen, get_testlib
+from robox.config import get_builtin_checker, get_jngen, get_testlib
 from robox.grading import steps
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
@@ -48,3 +48,14 @@ def testlib():
 def jngen():
     shutil.copyfile(get_jngen(), pathlib.Path('jngen.h'))
     console.console.print('Downloaded [item]jngen.h[/item] into current package.')
+
+
+@app.command('checker')
+def checker(name: str):
+    if not name.endswith('.cpp'):
+        name = f'{name}.cpp'
+    path = get_builtin_checker(name)
+    shutil.copyfile(path, pathlib.Path(name))
+    console.console.print(
+        f'[success]Downloaded [item]{name}[/item] into current package.[/success]'
+    )

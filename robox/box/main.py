@@ -57,7 +57,10 @@ def build(verify: bool = True):
             infos = validate_testcases(s)
             print_validation_report(infos)
 
-    console.console.print('[success]Problem built successfully![/success]')
+    console.console.print(
+        '[success]Problem built.[/success] '
+        '[warning]Check the output for verification errors![/warning]'
+    )
 
 
 @app.command('run')
