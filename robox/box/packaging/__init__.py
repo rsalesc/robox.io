@@ -7,6 +7,7 @@ import typer
 from robox import annotations, console
 from robox.box import package
 from robox.box.package import get_build_path
+from robox.box.packaging.boca.packager import BocaPackager
 from robox.box.packaging.packager import BasePackager, BuiltStatement
 from robox.box.packaging.polygon.packager import PolygonPackager
 from robox.box.statements.build_statements import build_statement
@@ -44,3 +45,8 @@ def run_packager(packager_cls: Type[BasePackager]):
 @app.command('polygon')
 def polygon():
     run_packager(PolygonPackager)
+
+
+@app.command('boca')
+def boca():
+    run_packager(BocaPackager)

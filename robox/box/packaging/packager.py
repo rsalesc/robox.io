@@ -31,6 +31,14 @@ class BasePackager(ABC):
             res.add(statement.language)
         return sorted(res)
 
+    def statement_types(self) -> List[StatementType]:
+        return [StatementType.PDF]
+
+    @abstractmethod
+    def package(self, build_path: pathlib.Path, into_path: pathlib.Path):
+        pass
+
+    # Helper methods.
     def get_built_testcases_per_group(self):
         return get_all_built_testcases()
 
@@ -54,10 +62,3 @@ class BasePackager(ABC):
             if statement.language == lang:
                 return statement
         raise
-
-    def statement_types(self) -> List[StatementType]:
-        return [StatementType.PDF]
-
-    @abstractmethod
-    def package(self, build_path: pathlib.Path, into_path: pathlib.Path):
-        pass
