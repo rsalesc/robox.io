@@ -1,7 +1,7 @@
 import pathlib
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticCustomError
 
 from robox.autoenum import AutoEnum, alias
@@ -9,6 +9,10 @@ from robox.box.statements.schema import Statement
 from robox.grading.steps import Outcome
 
 Primitive = str | int | float | bool
+
+
+def NameField(**kwargs):
+    return Field(pattern=r'^[a-zA-Z0-9\-]+$', min_length=3, **kwargs)
 
 
 class ExpectedOutcome(AutoEnum):
@@ -77,7 +81,7 @@ class GeneratorCall(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     # The identifier of the generator to call.
-    name: str
+    name: str = NameField()
 
     # The args to pass to this generator.
     # In case of a generator being called from a Stress test,
@@ -89,7 +93,7 @@ class TestcaseGroup(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     # The name of this test group.
-    name: str
+    name: str = NameField()
 
     # Testcases below will be added to this group in the order
     # they're defined, from `testcases` first to `generatorScript` last.
@@ -126,7 +130,7 @@ class Generator(CodeItem):
     # The name of this generator.
     # This can be further referenced in testcase groups and
     # stress tests.
-    name: str
+    name: str = NameField()
 
 
 class Solution(CodeItem):
@@ -140,7 +144,7 @@ class Stress(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     # The name of this stress test.
-    name: str
+    name: str = NameField()
 
     # Generator pattern to call during stress-test.
     # E.g. "gen1 10 [5..10] abacaba"
@@ -159,7 +163,7 @@ class Package(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     # Name of the problem.
-    name: str
+    name: str = NameField()
 
     # Time limit of the problem, in milliseconds.
     timeLimit: int
