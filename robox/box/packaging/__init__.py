@@ -5,7 +5,7 @@ from typing import Type
 import typer
 
 from robox import annotations, console
-from robox.box import builder, package
+from robox.box import builder, environment, package
 from robox.box.package import get_build_path
 from robox.box.packaging.boca.packager import BocaPackager
 from robox.box.packaging.packager import BasePackager, BuiltStatement
@@ -17,9 +17,13 @@ app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
 def run_packager(
     packager_cls: Type[BasePackager],
-    verification: annotations.VerificationLevel,
+    verification: environment.VerificationParam,
 ):
-    builder.build(verification=verification)
+    if not builder.verify(verification=verification):
+        console.console.print(
+            '[error]Build or verification failed, check the report.[/error]'
+        )
+        raise typer.Exit(1)
 
     pkg = package.find_problem_package_or_die()
     packager = packager_cls()
@@ -49,13 +53,13 @@ def run_packager(
 
 @app.command('polygon')
 def polygon(
-    verification: annotations.VerificationLevel,
+    verification: environment.VerificationParam,
 ):
     run_packager(PolygonPackager, verification=verification)
 
 
 @app.command('boca')
 def boca(
-    verification: annotations.VerificationLevel,
+    verification: environment.VerificationParam,
 ):
     run_packager(BocaPackager, verification=verification)

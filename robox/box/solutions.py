@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Set
 import rich
 
 from robox import console
-from robox.box import checkers, package
+from robox.box import checkers, environment, package
 from robox.box.code import compile_item, run_item
 from robox.box.environment import EnvironmentSandbox, ExecutionConfig
 from robox.box.schema import Solution
@@ -191,7 +191,7 @@ def _print_solution_outcome(
     evals: List[Evaluation],
     timeLimit: int,
     console: rich.console.Console,
-):
+) -> bool:
     bad_verdicts = set()
     for eval in evals:
         if eval.result.outcome != Outcome.ACCEPTED:
@@ -224,16 +224,19 @@ def _print_solution_outcome(
             '[yellow]WARNING[/yellow] The solution still passed in double TL.'
         )
     console.print(f'Time: {_get_evals_formatted_time(evals)}')
+    return len(unmatched_bad_verdicts) == 0
 
 
 def print_run_report(
     evals_per_solution: List[Dict[str, List[Evaluation]]],
     console: rich.console.Console,
-):
+    verification: environment.VerificationParam,
+) -> bool:
     pkg = package.find_problem_package_or_die()
 
     assert len(pkg.solutions) == len(evals_per_solution)
 
+    ok = True
     for s, (solution, evals_per_group) in enumerate(
         zip(pkg.solutions, evals_per_solution)
     ):
@@ -253,5 +256,7 @@ def print_run_report(
             console.print()
             all_evals.extend(evals)
 
-        _print_solution_outcome(solution, all_evals, pkg.timeLimit, console)
+        ok = ok and _print_solution_outcome(solution, all_evals, pkg.timeLimit, console)
         console.print()
+
+    return ok

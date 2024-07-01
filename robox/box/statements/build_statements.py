@@ -196,12 +196,13 @@ def build_statement(
 
 @app.command('build')
 def build(
-    verification: annotations.VerificationLevel,
+    verification: environment.VerificationParam,
     languages: Annotated[Optional[List[str]], typer.Option(default_factory=list)],
     output: Annotated[
         Optional[StatementType], typer.Option(case_sensitive=False)
     ] = None,
 ):
+    # At most run the validators.
     builder.build(verification=verification)
 
     pkg = package.find_problem_package_or_die()

@@ -7,8 +7,16 @@ import rich.prompt
 import typer
 
 from robox import annotations, config, console, utils
-from robox.box import builder, download, package, packaging, presets, stresses
-from robox.box.environment import get_environment_path
+from robox.box import (
+    builder,
+    download,
+    environment,
+    package,
+    packaging,
+    presets,
+    stresses,
+)
+from robox.box.environment import VerificationLevel, get_environment_path
 from robox.box.solutions import print_run_report, run_solutions
 from robox.box.statements import build_statements
 
@@ -29,13 +37,19 @@ def edit():
 
 
 @app.command('build, b')
-def build(verification: annotations.VerificationLevel):
+def build(verification: environment.VerificationParam):
     builder.build(verification=verification)
+
+
+@app.command('verify')
+def verify(verification: environment.VerificationParam):
+    if not builder.verify(verification=verification):
+        console.console.print('[error]Verification failed, check the report.[/error]')
 
 
 @app.command('run')
 def run(
-    verification: annotations.VerificationLevel,
+    verification: environment.VerificationParam,
     solution: Annotated[Optional[str], typer.Argument()] = None,
 ):
     builder.build(verification=verification)
@@ -51,7 +65,7 @@ def run(
 
     console.console.print()
     console.console.rule('[status]Run report[/status]', style='status')
-    print_run_report(evals_per_solution, console.console)
+    print_run_report(evals_per_solution, console.console, verification)
 
 
 @app.command('create')
@@ -89,11 +103,11 @@ def create(name: str, preset: Annotated[Optional[str], typer.Option()] = None):
 @app.command('stress')
 def stress(
     name: str,
-    verification: annotations.VerificationLevel,
     timeout: Annotated[int, typer.Option()] = 10,
     findings: Annotated[int, typer.Option()] = 1,
 ):
-    builder.build(verification=verification)
+    # Do not verify built package.
+    builder.build(verification=VerificationLevel.NONE)
 
     with utils.StatusProgress('Running stress...') as s:
         finding_list = stresses.run_stress(
@@ -133,7 +147,7 @@ def stress(
 
 
 @app.command('environment, env')
-def environment(env: Annotated[Optional[str], typer.Argument()] = None):
+def environment_command(env: Annotated[Optional[str], typer.Argument()] = None):
     if env is None:
         cfg = config.get_config()
         console.console.print(f'Current environment: [item]{cfg.boxEnvironment}[/item]')

@@ -1,6 +1,7 @@
 import functools
 import pathlib
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from enum import Enum
+from typing import Annotated, Any, Dict, List, Optional, Type, TypeVar
 
 import typer
 from pydantic import BaseModel, ConfigDict
@@ -11,6 +12,27 @@ from robox.grading.judge.sandboxes.isolate import IsolateSandbox
 from robox.grading.judge.sandboxes.stupid_sandbox import StupidSandbox
 
 T = TypeVar('T', bound=BaseModel)
+
+
+class VerificationLevel(Enum):
+    NONE = 0
+    VALIDATE = 1
+    FAST_SOLUTIONS = 2
+    ASAN = 3
+    SLOW_SOLUTIONS = 4
+    FULL = 5
+
+
+VerificationParam = Annotated[
+    VerificationLevel,
+    typer.Option(
+        '--verification-level',
+        '--verification',
+        '-v',
+        help='Verification level to use when building package.',
+        default_factory=lambda: VerificationLevel.SLOW_SOLUTIONS.value,
+    ),
+]
 
 
 class FileMapping(BaseModel):

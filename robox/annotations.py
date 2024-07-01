@@ -112,17 +112,6 @@ Checker = Annotated[
     ),
 ]
 
-VerificationLevel = Annotated[
-    int,
-    typer.Option(
-        '--verification-level',
-        '--verification',
-        '-v',
-        help='Verification level to use when building package.',
-        default_factory=lambda: 4,
-    ),
-]
-
 
 class AliasGroup(typer.core.TyperGroup):
     _CMD_SPLIT_P = re.compile(r', ?')
