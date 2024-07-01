@@ -107,7 +107,7 @@ def stress(
     findings: Annotated[int, typer.Option()] = 1,
 ):
     # Do not verify built package.
-    builder.build(verification=VerificationLevel.NONE)
+    builder.build(verification=VerificationLevel.NONE.value)
 
     with utils.StatusProgress('Running stress...') as s:
         finding_list = stresses.run_stress(

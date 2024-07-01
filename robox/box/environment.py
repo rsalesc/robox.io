@@ -19,18 +19,18 @@ class VerificationLevel(Enum):
     VALIDATE = 1
     FAST_SOLUTIONS = 2
     ASAN = 3
-    SLOW_SOLUTIONS = 4
+    ALL_SOLUTIONS = 4
     FULL = 5
 
 
 VerificationParam = Annotated[
-    VerificationLevel,
+    int,
     typer.Option(
         '--verification-level',
         '--verification',
         '-v',
         help='Verification level to use when building package.',
-        default_factory=lambda: VerificationLevel.SLOW_SOLUTIONS.value,
+        default_factory=lambda: VerificationLevel.ALL_SOLUTIONS.value,
     ),
 ]
 

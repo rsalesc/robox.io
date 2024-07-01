@@ -1,8 +1,8 @@
 from robox import console, utils
-from robox.box import environment
+from robox.box import environment, package
 from robox.box.environment import VerificationLevel
 from robox.box.generators import generate_outputs_for_testcases, generate_testcases
-from robox.box.solutions import print_run_report, run_solutions
+from robox.box.solutions import is_fast, print_run_report, run_solutions
 from robox.box.validators import print_validation_report, validate_testcases
 
 
@@ -21,7 +21,7 @@ def build(verification: environment.VerificationParam) -> None:
     ) as s:
         generate_outputs_for_testcases(s)
 
-    if verification.value > 0:
+    if verification > 0:
         with utils.StatusProgress(
             'Validating testcases...',
             'Validated [item]{processed}[/item] testcases...',
@@ -39,12 +39,22 @@ def build(verification: environment.VerificationParam) -> None:
 def verify(verification: environment.VerificationParam) -> bool:
     build(verification=verification)
 
-    if verification.value < VerificationLevel.FAST_SOLUTIONS.value:
+    if verification < VerificationLevel.FAST_SOLUTIONS.value:
         return True
+
+    tracked_solutions = None
+    if verification < VerificationLevel.ALL_SOLUTIONS.value:
+        pkg = package.find_problem_package_or_die()
+
+        tracked_solutions = {
+            str(solution.path) for solution in pkg.solutions if is_fast(solution)
+        }
 
     with utils.StatusProgress('Running solutions...') as s:
         evals_per_solution = run_solutions(
             s,
+            tracked_solutions=tracked_solutions,
+            verification=VerificationLevel(verification),
         )
 
     console.console.print()

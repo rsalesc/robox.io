@@ -7,7 +7,7 @@ import rich
 from robox import console
 from robox.box import checkers, environment, package
 from robox.box.code import compile_item, run_item
-from robox.box.environment import EnvironmentSandbox, ExecutionConfig
+from robox.box.environment import EnvironmentSandbox, ExecutionConfig, VerificationLevel
 from robox.box.schema import Solution
 from robox.box.testcases import find_built_testcases
 from robox.grading.steps import (
@@ -19,6 +19,11 @@ from robox.grading.steps import (
     TestcaseLog,
 )
 from robox.utils import StatusProgress, model_to_yaml
+
+
+def is_fast(solution: Solution) -> bool:
+    # If solution has TLE tag, it is considered slow.
+    return not solution.outcome.match(Outcome.TIME_LIMIT_EXCEEDED)
 
 
 def compile_solutions(
@@ -54,11 +59,15 @@ def run_solution(
     checker_digest: str,
     index: int,
     progress: Optional[StatusProgress] = None,
+    verification: VerificationLevel = VerificationLevel.NONE,
 ) -> Dict[str, List[Evaluation]]:
     pkg = package.find_problem_package_or_die()
 
     sandbox = EnvironmentSandbox()
-    sandbox.timeLimit = pkg.timeLimit * 2
+    sandbox.timeLimit = pkg.timeLimit
+    if verification.value >= VerificationLevel.FULL.value:
+        # Use double TL.
+        sandbox.timeLimit = sandbox.timeLimit * 2
     sandbox.wallTimeLimit = pkg.timeLimit * 2
     sandbox.memoryLimit = pkg.memoryLimit
     extra_config = ExecutionConfig(sandbox=sandbox)
@@ -118,6 +127,7 @@ def run_solution(
 def run_solutions(
     progress: Optional[StatusProgress] = None,
     tracked_solutions: Optional[Set[str]] = None,
+    verification: VerificationLevel = VerificationLevel.NONE,
 ) -> List[Dict[str, List[Evaluation]]]:
     pkg = package.find_problem_package_or_die()
 
@@ -140,6 +150,7 @@ def run_solutions(
             checker_digest,
             i,
             progress=progress,
+            verification=verification,
         )
         res.append(results_per_group)
 
@@ -191,6 +202,7 @@ def _print_solution_outcome(
     evals: List[Evaluation],
     timeLimit: int,
     console: rich.console.Console,
+    verification: VerificationLevel = VerificationLevel.NONE,
 ) -> bool:
     bad_verdicts = set()
     for eval in evals:
@@ -217,6 +229,7 @@ def _print_solution_outcome(
     evals_time = _get_evals_time_in_ms(evals)
     if (
         not (matched_bad_verdicts - {Outcome.TIME_LIMIT_EXCEEDED})
+        and verification.value >= VerificationLevel.FULL.value
         and evals_time > timeLimit
         and evals_time < timeLimit * 2
     ):
@@ -256,7 +269,13 @@ def print_run_report(
             console.print()
             all_evals.extend(evals)
 
-        ok = ok and _print_solution_outcome(solution, all_evals, pkg.timeLimit, console)
+        ok = ok and _print_solution_outcome(
+            solution,
+            all_evals,
+            pkg.timeLimit,
+            console,
+            verification=VerificationLevel(verification),
+        )
         console.print()
 
     return ok
