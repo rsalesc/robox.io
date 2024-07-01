@@ -7,6 +7,9 @@ import re
 from typing import Dict, Tuple
 
 import jinja2
+import typer
+
+from robox import console
 
 ######################################################################
 # J2_ARGS
@@ -130,11 +133,21 @@ def render_latex_template(path_templates, template_filename, template_vars=None)
     """
     var_dict = template_vars if template_vars else {}
     j2_env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(path_templates), **J2_ARGS
+        loader=jinja2.FileSystemLoader(path_templates),
+        **J2_ARGS,
+        undefined=jinja2.StrictUndefined,
     )
     add_builtin_filters(j2_env)
     template = j2_env.get_template(template_filename)
-    return template.render(**var_dict)  # type: ignore
+    try:
+        return template.render(**var_dict)  # type: ignore
+    except jinja2.UndefinedError as err:
+        console.console.print('[error]Error while rendering Jinja2 template:', end=' ')
+        console.console.print(err)
+        console.console.print(
+            '[warning]This usually happens when accessing an undefined variable.[/warning]'
+        )
+        raise typer.Abort() from err
 
 
 def render_latex_template_blocks(
@@ -150,9 +163,19 @@ def render_latex_template_blocks(
     """
     var_dict = template_vars if template_vars else {}
     j2_env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(path_templates), **J2_ARGS
+        loader=jinja2.FileSystemLoader(path_templates),
+        **J2_ARGS,
+        undefined=jinja2.StrictUndefined,
     )
     add_builtin_filters(j2_env)
     template = j2_env.get_template(template_filename)
     ctx = template.new_context(var_dict)  # type: ignore
-    return {key: ''.join(value(ctx)) for key, value in template.blocks.items()}
+    try:
+        return {key: ''.join(value(ctx)) for key, value in template.blocks.items()}
+    except jinja2.UndefinedError as err:
+        console.console.print('[error]Error while rendering Jinja2 template:', end=' ')
+        console.console.print(err)
+        console.console.print(
+            '[warning]This usually happens when accessing an undefined variable.[/warning]'
+        )
+        raise typer.Abort() from err
