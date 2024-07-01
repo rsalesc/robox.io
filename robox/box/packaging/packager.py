@@ -24,8 +24,12 @@ class BasePackager(ABC):
         pass
 
     def languages(self):
-        # TODO
-        return ['en']
+        pkg = package.find_problem_package_or_die()
+
+        res = set()
+        for statement in pkg.statements:
+            res.add(statement.language)
+        return sorted(res)
 
     def get_built_testcases_per_group(self):
         return get_all_built_testcases()
