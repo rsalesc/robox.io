@@ -96,7 +96,7 @@ def _try_implicit_builders(
         )
         raise typer.Exit(1)
     console.console.print(
-        'Implicitly adding statement builders to convert statement'
+        'Implicitly adding statement builders to convert statement '
         f'from [item]{input_type}[/item] to [item]{output_type}[/item]...'
     )
     return implicit_builders

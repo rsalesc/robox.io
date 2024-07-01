@@ -1,6 +1,6 @@
 import functools
 import pathlib
-from typing import List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import typer
 from pydantic import BaseModel, ConfigDict
@@ -128,6 +128,9 @@ class Environment(BaseModel):
 
     # Identifier of the preset that should be used when creating new problems.
     preset: str = 'default'
+
+    # Extensions to be added to the environment.
+    extensions: Dict[str, Any] = {}
 
 
 def get_environment_path(env: str) -> pathlib.Path:
@@ -265,3 +268,14 @@ def get_sandbox_params_from_config(
             path = pathlib.Path(dir)
             params.add_mapped_directory(path)
     return params
+
+
+def get_extension(name: str, cls: Type[T]) -> Optional[T]:
+    pkg = get_environment()
+    if name not in pkg.extensions:
+        return None
+    return cls.model_validate(pkg.extensions[name])
+
+
+def get_extension_or_default(name: str, cls: Type[T]) -> T:
+    return get_extension(name, cls) or cls()
