@@ -29,7 +29,7 @@ if [ -f "$checker_cache" ]; then
     cp "$checker_cache" $CHECKER_OUT -f
 else
     echo "Compiling polygon checker: $CHECKER_PATH"
-    $cc {{stdcpp}} -static -O2 -lm $CHECKER_PATH -o $CHECKER_OUT 2> /dev/null
+    $cc {{stdcpp}} -static -O2 -lm $CHECKER_PATH -o $CHECKER_OUT
     
     if [ $? -ne 0 ]; then
         echo "Checker could not be compiled"

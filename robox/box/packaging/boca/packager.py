@@ -135,8 +135,8 @@ class BocaPackager(BasePackager):
         checker_text = checker_path.read_text()
         testlib = get_testlib().read_text()
         checker = package.get_checker().path.read_text()
-        return checker_text.replace('testlib_content', testlib).replace(
-            'checker_content', checker
+        return checker_text.replace('{{testlib_content}}', testlib).replace(
+            '{{checker_content}}', checker
         )
 
     def _get_compile(self, language: BocaLanguage) -> str:
@@ -153,14 +153,15 @@ class BocaPackager(BasePackager):
 
         compile_text = compile_path.read_text()
 
-        if language == 'cc':
-            compile_text = compile_text.replace(
-                '{{stdcpp}}', f'-std={extension.stdcpp}'
-            )
         assert 'umask 0022' in compile_text
         compile_text = compile_text.replace(
             'umask 0022', 'umask 0022\n\n' + self._get_checker()
         )
+
+        if language == 'cc':
+            compile_text = compile_text.replace(
+                '{{stdcpp}}', f'-std={extension.stdcpp}'
+            )
         return compile_text
 
     def name(self) -> str:
