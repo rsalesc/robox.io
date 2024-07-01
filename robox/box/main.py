@@ -7,15 +7,10 @@ import rich.prompt
 import typer
 
 from robox import annotations, config, console, utils
-from robox.box import download, package, packaging, presets, stresses
+from robox.box import builder, download, package, packaging, presets, stresses
 from robox.box.environment import get_environment_path
-from robox.box.generators import (
-    generate_outputs_for_testcases,
-    generate_testcases,
-)
 from robox.box.solutions import print_run_report, run_solutions
 from robox.box.statements import build_statements
-from robox.box.validators import print_validation_report, validate_testcases
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(build_statements.app, name='statements', cls=annotations.AliasGroup)
@@ -35,38 +30,12 @@ def edit():
 
 @app.command('build, b')
 def build(verify: bool = True):
-    with utils.StatusProgress(
-        'Building testcases...',
-        'Built [item]{processed}[/item] testcases...',
-        keep=True,
-    ) as s:
-        generate_testcases(s)
-
-    with utils.StatusProgress(
-        'Building outputs for testcases...',
-        'Built [item]{processed}[/item] outputs...',
-        keep=True,
-    ) as s:
-        generate_outputs_for_testcases(s)
-
-    if verify:
-        with utils.StatusProgress(
-            'Validating testcases...',
-            'Validated [item]{processed}[/item] testcases...',
-            keep=True,
-        ) as s:
-            infos = validate_testcases(s)
-            print_validation_report(infos)
-
-    console.console.print(
-        '[success]Problem built.[/success] '
-        '[warning]Check the output for verification errors![/warning]'
-    )
+    builder.build(verify=verify)
 
 
 @app.command('run')
 def run(solution: Annotated[Optional[str], typer.Argument()] = None):
-    build()
+    builder.build()
 
     with utils.StatusProgress('Running solutions...') as s:
         tracked_solutions = None
