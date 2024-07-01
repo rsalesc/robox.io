@@ -7,7 +7,7 @@ import typer
 
 from robox import console
 from robox.box import package
-from robox.box.packaging.packager import BasePackager
+from robox.box.packaging.packager import BasePackager, BuiltStatement
 from robox.box.packaging.polygon import xml_schema as polygon_schema
 from robox.config import get_testlib
 
@@ -80,6 +80,40 @@ class PolygonPackager(BasePackager):
     def _get_files(self) -> List[polygon_schema.File]:
         return [polygon_schema.File(path='files/testlib.h', type='h.g++')]
 
+    def _statement_application_type(self, statement: BuiltStatement) -> str:
+        return 'application/pdf'
+
+    def _process_statement(
+        self,
+        built_statement: BuiltStatement,
+        into_path: pathlib.Path,
+    ) -> polygon_schema.Statement:
+        language = code_to_langs([built_statement.statement.language])[0]
+        final_path = (
+            into_path
+            / 'statements'
+            / language
+            / str(built_statement.output_type)
+            / built_statement.path.name
+        )
+
+        final_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(built_statement.path, final_path)
+
+        return polygon_schema.Statement(
+            path=str(built_statement.path),
+            language=language,
+            type=self._statement_application_type(built_statement),  # type: ignore
+        )
+
+    def _process_statements(
+        self, into_path: pathlib.Path
+    ) -> List[polygon_schema.Statement]:
+        return [
+            self._process_statement(built_statement, into_path)
+            for built_statement in self.built_statements
+        ]
+
     def name(self) -> str:
         return 'polygon'
 
@@ -89,6 +123,7 @@ class PolygonPackager(BasePackager):
             checker=self._get_checker(),
             judging=self._get_judging(),
             files=self._get_files(),
+            statements=self._process_statements(into_path),
         )
 
         descriptor: str = problem.to_xml(
@@ -105,6 +140,7 @@ class PolygonPackager(BasePackager):
         files_path.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(get_testlib(), files_path / 'testlib.h')
         shutil.copyfile(package.get_checker().path, files_path / 'check.cpp')
+        shutil.copyfile(package.get_checker().path, into_path / 'check.cpp')
 
         # Copy all testcases
         (into_path / 'tests').mkdir(parents=True, exist_ok=True)
@@ -112,18 +148,18 @@ class PolygonPackager(BasePackager):
         for i, testcase in enumerate(testcases):
             shutil.copyfile(
                 testcase.inputPath,
-                into_path / f'tests/{i:03d}',
+                into_path / f'tests/{i+1:03d}',
             )
             if testcase.outputPath is not None:
                 shutil.copyfile(
                     testcase.outputPath,
-                    into_path / f'tests/{i:03d}.a',
+                    into_path / f'tests/{i+1:03d}.a',
                 )
             else:
-                (into_path / f'tests/{i:03d}.a').touch()
+                (into_path / f'tests/{i+1:03d}.a').touch()
 
         # Write problem.xml
         (into_path / 'problem.xml').write_text(descriptor)
 
         # Zip all.
-        shutil.make_archive(str(build_path / 'polygon'), 'zip', into_path)
+        shutil.make_archive(str(build_path / 'problem'), 'zip', into_path)

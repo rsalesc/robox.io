@@ -1,3 +1,4 @@
+import dataclasses
 import pathlib
 from abc import ABC, abstractmethod
 from typing import List, Tuple
@@ -5,10 +6,19 @@ from typing import List, Tuple
 from robox.box import package
 from robox.box.generators import get_all_built_testcases
 from robox.box.schema import Testcase, TestcaseGroup
-from robox.box.statements.schema import Statement
+from robox.box.statements.schema import Statement, StatementType
+
+
+@dataclasses.dataclass
+class BuiltStatement:
+    statement: Statement
+    path: pathlib.Path
+    output_type: StatementType
 
 
 class BasePackager(ABC):
+    built_statements: List[BuiltStatement]
+
     @abstractmethod
     def name(self) -> str:
         pass
@@ -40,6 +50,9 @@ class BasePackager(ABC):
             if statement.language == lang:
                 return statement
         raise
+
+    def statement_types(self) -> List[StatementType]:
+        return [StatementType.PDF]
 
     @abstractmethod
     def package(self, build_path: pathlib.Path, into_path: pathlib.Path):

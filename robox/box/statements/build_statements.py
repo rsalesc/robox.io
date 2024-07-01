@@ -150,7 +150,7 @@ def _get_relative_assets(
 
 def build_statement(
     statement: Statement, pkg: Package, output_type: Optional[StatementType] = None
-):
+) -> pathlib.Path:
     if not statement.path.is_file():
         console.console.print(
             f'[error]Statement file [item]{statement.path}[/item] does not exist.[/error]'
@@ -191,6 +191,7 @@ def build_statement(
         f'[item]{statement.language}[/item] at '
         f'[item]{statement_path}[/item].'
     )
+    return statement_path
 
 
 @app.command('build')

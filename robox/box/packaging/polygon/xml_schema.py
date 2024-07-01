@@ -59,7 +59,7 @@ class Checker(BaseXmlModel):
     type: Literal['testlib'] = attr()
     source: File = element()
     binary: Optional[File] = element(default=None)
-    cpy: File = element(tag='copy')
+    cpy: Optional[File] = element(tag='copy', default=None)
 
     testset: Optional[Testset] = element(default=None)
 
