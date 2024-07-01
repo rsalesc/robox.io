@@ -1,5 +1,5 @@
 <p align="center">
-   <img src="logo.svg">
+   <img src="robox_transparent.png" width="240px">
 </p>
 <p align="center">
     <em>The go-to CLI tool for competitive programmers and setters.</em>
