@@ -22,7 +22,7 @@ languages:
     extension: "cpp"
     compilation:
       commands:
-        - "g++ -std=c++17 -o {executable} {compilable}"
+        - "g++ -std=c++17 -static -O2 -o {executable} {compilable}"
     execution:
       command: "./{executable}"
     fileMapping:
