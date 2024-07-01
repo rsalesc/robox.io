@@ -15,8 +15,11 @@ from robox.box.statements.build_statements import build_statement
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
 
-def run_packager(packager_cls: Type[BasePackager]):
-    builder.build()
+def run_packager(
+    packager_cls: Type[BasePackager],
+    verification: annotations.VerificationLevel,
+):
+    builder.build(verification=verification)
 
     pkg = package.find_problem_package_or_die()
     packager = packager_cls()
@@ -45,10 +48,14 @@ def run_packager(packager_cls: Type[BasePackager]):
 
 
 @app.command('polygon')
-def polygon():
-    run_packager(PolygonPackager)
+def polygon(
+    verification: annotations.VerificationLevel,
+):
+    run_packager(PolygonPackager, verification=verification)
 
 
 @app.command('boca')
-def boca():
-    run_packager(BocaPackager)
+def boca(
+    verification: annotations.VerificationLevel,
+):
+    run_packager(BocaPackager, verification=verification)

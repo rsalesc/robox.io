@@ -29,13 +29,16 @@ def edit():
 
 
 @app.command('build, b')
-def build(verify: bool = True):
-    builder.build(verify=verify)
+def build(verification: annotations.VerificationLevel):
+    builder.build(verification=verification)
 
 
 @app.command('run')
-def run(solution: Annotated[Optional[str], typer.Argument()] = None):
-    builder.build()
+def run(
+    verification: annotations.VerificationLevel,
+    solution: Annotated[Optional[str], typer.Argument()] = None,
+):
+    builder.build(verification=verification)
 
     with utils.StatusProgress('Running solutions...') as s:
         tracked_solutions = None
@@ -86,9 +89,12 @@ def create(name: str, preset: Annotated[Optional[str], typer.Option()] = None):
 @app.command('stress')
 def stress(
     name: str,
+    verification: annotations.VerificationLevel,
     timeout: Annotated[int, typer.Option()] = 10,
     findings: Annotated[int, typer.Option()] = 1,
 ):
+    builder.build(verification=verification)
+
     with utils.StatusProgress('Running stress...') as s:
         finding_list = stresses.run_stress(
             name, timeout, findingsLimit=findings, progress=s

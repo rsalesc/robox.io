@@ -1,9 +1,9 @@
-from robox import console, utils
+from robox import annotations, console, utils
 from robox.box.generators import generate_outputs_for_testcases, generate_testcases
 from robox.box.validators import print_validation_report, validate_testcases
 
 
-def build(verify: bool = True) -> None:
+def build(verification: annotations.VerificationLevel) -> None:
     with utils.StatusProgress(
         'Building testcases...',
         'Built [item]{processed}[/item] testcases...',
@@ -18,7 +18,7 @@ def build(verify: bool = True) -> None:
     ) as s:
         generate_outputs_for_testcases(s)
 
-    if verify:
+    if verification:
         with utils.StatusProgress(
             'Validating testcases...',
             'Validated [item]{processed}[/item] testcases...',
