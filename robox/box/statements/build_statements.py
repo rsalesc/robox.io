@@ -5,7 +5,7 @@ from typing import Annotated, Dict, List, Optional, Tuple
 import typer
 
 from robox import annotations, console
-from robox.box import environment, package
+from robox.box import builder, environment, package
 from robox.box.schema import Package
 from robox.box.statements.builders import (
     BUILDER_LIST,
@@ -58,14 +58,14 @@ def get_implicit_builders(
 
     def _iterate() -> bool:
         nonlocal par
-        for builder in BUILDER_LIST:
-            u = builder.input_type()
+        for bdr in BUILDER_LIST:
+            u = bdr.input_type()
             if u not in par:
                 continue
-            v = builder.output_type()
+            v = bdr.output_type()
             if v in par:
                 continue
-            par[v] = builder
+            par[v] = bdr
             return True
         return False
 
@@ -159,11 +159,11 @@ def build_statement(
     builders = get_builders(statement, output_type)
     last_output = statement.type
     last_content = statement.path.read_bytes()
-    for builder, params in builders:
+    for bdr, params in builders:
         assets = _get_relative_assets(
             statement.path, statement.assets
-        ) + builder.inject_assets(params)
-        output = builder.build(
+        ) + bdr.inject_assets(params)
+        output = bdr.build(
             input=last_content,
             context=StatementBuilderContext(
                 languages=_get_environment_languages_for_statement(),
@@ -177,7 +177,7 @@ def build_statement(
             ),
             verbose=False,
         )
-        last_output = builder.output_type()
+        last_output = bdr.output_type()
         last_content = output
 
     statement_path = (
@@ -196,11 +196,14 @@ def build_statement(
 
 @app.command('build')
 def build(
+    verification: annotations.VerificationLevel,
     languages: Annotated[Optional[List[str]], typer.Option(default_factory=list)],
     output: Annotated[
         Optional[StatementType], typer.Option(case_sensitive=False)
     ] = None,
 ):
+    builder.build(verification=verification)
+
     pkg = package.find_problem_package_or_die()
     candidate_languages = languages
     if not candidate_languages:
