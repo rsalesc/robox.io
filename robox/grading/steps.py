@@ -217,13 +217,17 @@ def jngen_grading_input() -> GradingFileInput:
     return GradingFileInput(src=get_jngen(), dest=pathlib.Path('jngen.h'))
 
 
+def _is_cpp_command(exe_command: str) -> bool:
+    return exe_command.endswith('g++') or exe_command.endswith('clang++')
+
+
 def _maybe_get_bits_stdcpp_for_clang(command: str) -> Optional[GradingFileInput]:
     cmds = shlex.split(command)
     if not cmds:
         return None
     exe = cmds[0]
 
-    if 'g++' not in exe and 'clang' not in exe:
+    if not _is_cpp_command(exe):
         return None
 
     output = subprocess.run([exe, '-v'], capture_output=True)
@@ -274,6 +278,10 @@ def compile(
         stdout_file = pathlib.PosixPath(f'compile-{i}.stdout')
         stderr_file = pathlib.PosixPath(f'compile-{i}.stderr')
         sandbox.params.set_stdall(stdout=stdout_file, stderr=stderr_file)
+
+        if bits_artifact is not None and _is_cpp_command(cmd[0]):
+            # Include from sandbox directory to import bits/stdc++.h.
+            cmd.append('-I.')
 
         if not sandbox.execute_without_std(cmd, wait=True):
             console.print(
