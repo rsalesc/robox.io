@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import List, Literal
+from typing import List, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -24,7 +24,7 @@ class JinjaTeX(BaseModel):
     type: Literal['jinja-tex']
 
 
-PipelineStep = TexToPDF | JinjaTeX | roboxToTeX
+PipelineStep = Union[TexToPDF, JinjaTeX, roboxToTeX]
 
 
 ### Statement types

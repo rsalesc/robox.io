@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticCustomError
@@ -10,7 +10,7 @@ from robox.autoenum import AutoEnum, alias
 from robox.box.statements.schema import Statement
 from robox.grading.steps import Outcome
 
-Primitive = str | int | float | bool
+Primitive = Union[str, int, float, bool]
 
 
 def NameField(**kwargs):
