@@ -38,7 +38,7 @@ def _list_files(path: pathlib.Path) -> List[str]:
 def _get_checker_options():
     options = set()
     with importlib.resources.as_file(
-        importlib.resources.files(_RESOURCES_PKG) / 'checkers'
+        importlib.resources.files('robox') / 'resources'/ 'checkers'
     ) as file:
         options.update(_list_files(file))
 

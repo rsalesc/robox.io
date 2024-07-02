@@ -97,7 +97,7 @@ def get_app_file(path: pathlib.Path) -> pathlib.Path:
         return file_path
 
     with importlib.resources.as_file(
-        importlib.resources.files(_RESOURCES_PKG) / path  # type: ignore
+        importlib.resources.files('robox') / 'resources' / path  # type: ignore
     ) as file:
         if file.is_file():
             file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -170,7 +170,7 @@ def get_jngen() -> pathlib.Path:
 
 def get_default_config_path() -> pathlib.Path:
     with importlib.resources.as_file(
-        importlib.resources.files(_RESOURCES_PKG) / _CONFIG_FILE_NAME
+        importlib.resources.files('robox') / 'resources' / _CONFIG_FILE_NAME
     ) as file:
         return file
 
