@@ -33,15 +33,14 @@ class StatementType(AutoEnum):
     PDF = alias('pdf')
 
     def get_file_suffix(self) -> str:
-        match self:
-            case StatementType.TeX:
-                return '.tex'
-            case StatementType.roboxTeX:
-                return '.rbx.tex'
-            case StatementType.JinjaTeX:
-                return '.jinja.tex'
-            case StatementType.PDF:
-                return '.pdf'
+        if self == StatementType.TeX:
+            return '.tex'
+        if self == StatementType.roboxTeX:
+            return '.rbx.tex'
+        if self == StatementType.JinjaTeX:
+            return '.jinja.tex'
+        if self == StatementType.PDF:
+            return '.pdf'
         raise ValueError(f'Unknown statement type: {self}')
 
 
