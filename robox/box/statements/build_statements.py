@@ -129,20 +129,35 @@ def get_builders(
 
 def _get_relative_assets(
     statement_path: pathlib.Path,
-    assets: List[pathlib.Path],
+    assets: List[str],
 ) -> List[Tuple[pathlib.Path, pathlib.Path]]:
     res = []
     for asset in assets:
-        if not asset.is_file() or not asset.resolve().is_relative_to(
-            statement_path.resolve().parent
-        ):
+        relative_path = pathlib.Path(asset)
+        if not relative_path.is_file():
+            globbed = list(
+                path
+                for path in pathlib.Path().glob(str(relative_path))
+                if path.is_file()
+            )
+            if not globbed:
+                console.console.print(
+                    f'[error]Asset [item]{asset}[/item] does not exist.[/error]'
+                )
+                raise typer.Exit(1)
+            res.extend(_get_relative_assets(statement_path, list(map(str, globbed))))
+            continue
+        if not relative_path.resolve().is_relative_to(statement_path.resolve().parent):
             console.console.print(
                 f'[error]Asset [item]{asset}[/item] is not relative to your statement.[/error]'
             )
             raise typer.Exit(1)
 
         res.append(
-            (asset, asset.resolve().relative_to(statement_path.resolve().parent))
+            (
+                relative_path,
+                relative_path.resolve().relative_to(statement_path.resolve().parent),
+            )
         )
 
     return res

@@ -63,8 +63,8 @@ class Statement(BaseModel):
 
     # Assets relative to the package directory that should be included while building
     # the statement. Files will be included in the same folder as the statement file, preserving
-    # their relativeness.
-    assets: List[pathlib.Path] = []
+    # their relativeness. Can be glob pattern as well, such as `imgs/*.png`.
+    assets: List[str] = []
 
     # Language this is statement is written in.
     language: str = 'en'

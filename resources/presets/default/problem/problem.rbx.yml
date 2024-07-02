@@ -31,7 +31,7 @@ statements:
     path: 'statement/statement.rbx.tex'  # Open this file to edit your statement.
     type: roboxTeX
     language: 'en'
-    assets: ['statement/olymp.sty']
+    assets: ['statement/olymp.sty', 'statement/*.png']
     pipeline:
       - type: 'rbx-tex'  # Convert roboxTeX to TeX
         template: 'statement/template.rbx.tex'
