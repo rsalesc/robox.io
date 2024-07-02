@@ -9,7 +9,7 @@ from rich.filesize import decimal
 
 from robox import console
 
-_TESTDATA_PKG = 'testdata'
+_TESTDATA_PKG = 'robox.testdata'
 
 
 def get_testdata_path() -> pathlib.Path:

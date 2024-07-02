@@ -17,7 +17,7 @@ from robox.grading.judge.storage import copyfileobj
 
 app = typer.Typer(no_args_is_help=True)
 
-_RESOURCES_PKG = 'resources'
+_RESOURCES_PKG = 'robox.resources'
 _CONFIG_FILE_NAME = 'default_config.json'
 
 
