@@ -266,7 +266,7 @@ class StupidSandbox(SandboxBase):
                 rlimit_cpu = int((rlimit_cpu + 999) // 1000)
                 resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
 
-            if sys.platform == 'darwin':
+            if platform == 'darwin':
                 return
 
             if self.params.address_space:
