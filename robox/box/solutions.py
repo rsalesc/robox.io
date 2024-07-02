@@ -1,8 +1,9 @@
 import collections
 import pathlib
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 import rich
+import rich.table
 
 from robox import console
 from robox.box import checkers, environment, package
@@ -240,14 +241,56 @@ def _print_solution_outcome(
     return len(unmatched_bad_verdicts) == 0
 
 
+def print_detailed_run_report(
+    evals_per_solution: List[Dict[str, List[Evaluation]]],
+    console: rich.console.Console,
+    verification: environment.VerificationParam,
+):
+    pkg = package.find_problem_package_or_die()
+
+    for group in pkg.testcases:
+        console.print(f'[bold][status]{group.name}[/status][/bold]')
+
+        table = rich.table.Table()
+
+        for solution in pkg.solutions:
+            table.add_column(f'[item]{solution.path}[/item]', justify='full')
+
+        row_to_renderables: Dict[int, List[Any]] = collections.defaultdict(list)
+        time_summary_row: List[str] = []
+
+        for evals_per_group in evals_per_solution:
+            evals = evals_per_group[group.name]
+            for i, eval in enumerate(evals):
+                verdict = _get_testcase_markup_verdict(eval)
+                time = _get_evals_formatted_time([eval])
+                row_to_renderables[i].append(f'{verdict} {time}')
+
+            time_summary_row.append('  ' + _get_evals_formatted_time(evals))
+
+        for _, verdicts in sorted(row_to_renderables.items()):
+            table.add_row(*verdicts)
+        if len(row_to_renderables) > 1:
+            # Only print footer row if there's more than one testcase.
+            table.add_section()
+            table.add_row(*time_summary_row)
+
+        console.print(table)
+    console.print()
+
+
 def print_run_report(
     evals_per_solution: List[Dict[str, List[Evaluation]]],
     console: rich.console.Console,
     verification: environment.VerificationParam,
+    detailed: bool = False,
 ) -> bool:
     pkg = package.find_problem_package_or_die()
 
     assert len(pkg.solutions) == len(evals_per_solution)
+
+    if detailed:
+        print_detailed_run_report(evals_per_solution, console, verification)
 
     ok = True
     for s, (solution, evals_per_group) in enumerate(
@@ -261,21 +304,24 @@ def print_run_report(
 
         all_evals = []
         for group, evals in evals_per_group.items():
+            all_evals.extend(evals)
+            if detailed:
+                continue
             console.print(f'[bold][status]{group}[/status][/bold]', end=' ')
             console.print(f'({_get_evals_formatted_time(evals)})', end=' ')
             for i, eval in enumerate(evals):
                 console.print(f'{i}/', end='')
                 console.print(_get_testcase_markup_verdict(eval), end=' ')
             console.print()
-            all_evals.extend(evals)
 
-        ok = ok and _print_solution_outcome(
+        cur_ok = _print_solution_outcome(
             solution,
             all_evals,
             pkg.timeLimit,
             console,
             verification=VerificationLevel(verification),
         )
+        ok = ok and cur_ok
         console.print()
 
     return ok

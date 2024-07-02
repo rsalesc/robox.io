@@ -51,6 +51,7 @@ def verify(verification: environment.VerificationParam):
 def run(
     verification: environment.VerificationParam,
     solution: Annotated[Optional[str], typer.Argument()] = None,
+    detailed: bool = typer.Option(False, '--detailed', '-d'),
 ):
     builder.build(verification=verification)
 
@@ -65,7 +66,9 @@ def run(
 
     console.console.print()
     console.console.rule('[status]Run report[/status]', style='status')
-    print_run_report(evals_per_solution, console.console, verification)
+    print_run_report(
+        evals_per_solution, console.console, verification, detailed=detailed
+    )
 
 
 @app.command('create')
