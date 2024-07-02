@@ -1,5 +1,6 @@
 import pathlib
 import shlex
+import subprocess
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -7,7 +8,7 @@ from pydantic import BaseModel
 from rich.text import Text
 
 from robox import utils
-from robox.config import get_jngen, get_testlib
+from robox.config import get_bits_stdcpp, get_jngen, get_testlib
 from robox.console import console
 from robox.grading.judge.sandbox import SandboxBase, SandboxParams
 from robox.grading.judge.storage import copyfileobj
@@ -194,6 +195,8 @@ def _process_output_artifacts(
             continue
         assert output_artifact.dest
         dst: pathlib.Path = artifacts.root / output_artifact.dest
+        # Ensure dst directory exists.
+        dst.parent.mkdir(parents=True, exist_ok=True)
         with dst.open('wb') as f:
             with sandbox.get_file(output_artifact.src) as sb_f:
                 copyfileobj(
@@ -214,12 +217,49 @@ def jngen_grading_input() -> GradingFileInput:
     return GradingFileInput(src=get_jngen(), dest=pathlib.Path('jngen.h'))
 
 
+def _maybe_get_bits_stdcpp_for_clang(command: str) -> Optional[GradingFileInput]:
+    cmds = shlex.split(command)
+    if not cmds:
+        return None
+    exe = cmds[0]
+
+    if 'g++' not in exe and 'clang' not in exe:
+        return None
+
+    output = subprocess.run([exe, '-v'], capture_output=True)
+    if output.returncode != 0:
+        console.print('[error]Failed to get g++/clang compiler version.[/error]')
+        return None
+    lines = output.stderr.decode().splitlines()
+    if not lines:
+        return None
+    # Check the first line for `clang`.
+    if 'clang' not in lines[0]:
+        return None
+
+    bits = get_bits_stdcpp()
+    return GradingFileInput(src=bits, dest=pathlib.Path('bits/stdc++.h'))
+
+
+def _maybe_get_bits_stdcpp_for_commands(
+    commands: List[str],
+) -> Optional[GradingFileInput]:
+    for command in commands:
+        res = _maybe_get_bits_stdcpp_for_clang(command)
+        if res is not None:
+            return res
+    return None
+
+
 def compile(
     commands: List[str],
     params: SandboxParams,
     sandbox: SandboxBase,
     artifacts: GradingArtifacts,
 ) -> bool:
+    bits_artifact = _maybe_get_bits_stdcpp_for_commands(commands)
+    if bits_artifact is not None:
+        _process_input_artifacts(GradingArtifacts(inputs=[bits_artifact]), sandbox)
     _process_input_artifacts(artifacts, sandbox)
 
     if not commands:

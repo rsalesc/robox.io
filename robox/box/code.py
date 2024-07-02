@@ -1,10 +1,11 @@
 import pathlib
 import shlex
+import sys
 from pathlib import PosixPath
-from pydantic import BaseModel
 from typing import List, Optional
 
 import typer
+from pydantic import BaseModel
 
 from robox.box import download, package
 from robox.box.environment import (
@@ -32,6 +33,7 @@ from robox.grading.steps import (
     RunLog,
 )
 
+
 class MacExtension(BaseModel):
     gpp_alternative: Optional[str] = None
 
@@ -42,9 +44,9 @@ def normalize_for_macos(commands: List[str]) -> List[str]:
         if extension.gpp_alternative is None:
             return command
         return command.replace('g++', extension.gpp_alternative)
-    return [
-        normalize(command) for command in commands
-    ]
+
+    return [normalize(command) for command in commands]
+
 
 def get_extension(code: CodeItem) -> str:
     path: pathlib.Path = PosixPath(code.path)
@@ -73,7 +75,8 @@ def compile_item(code: CodeItem) -> str:
 
     # Compile the generator
     commands = get_mapped_commands(compilation_options.commands, file_mapping)
-    commands = normalize_for_macos(commands)
+    if sys.platform == 'darwin':
+        commands = normalize_for_macos(commands)
 
     compiled_digest = DigestHolder()
 

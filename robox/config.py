@@ -147,6 +147,21 @@ def _download_jngen(save_at: pathlib.Path):
         raise typer.Exit(1)
 
 
+def _download_bits_stdcpp(save_at: pathlib.Path):
+    console.print('Downloading bits/stdc++.h...')
+    r = requests.get(
+        'https://raw.githubusercontent.com/tekfyl/bits-stdc-.h-for-mac/master/stdc%2B%2B.h'
+    )
+
+    if r.ok:
+        save_at.parent.mkdir(parents=True, exist_ok=True)
+        with save_at.open('wb') as f:
+            f.write(r.content)
+    else:
+        console.print('[error]Failed to download bits/stdc++.h.[/error]')
+        raise typer.Exit(1)
+
+
 def get_builtin_checker(name: str) -> pathlib.Path:
     app_file = get_app_file(pathlib.Path('checkers') / name)
     if not app_file.exists():
@@ -165,6 +180,13 @@ def get_jngen() -> pathlib.Path:
     app_file = get_app_file(pathlib.Path('jngen.h'))
     if not app_file.exists():
         _download_jngen(app_file)
+    return app_file
+
+
+def get_bits_stdcpp() -> pathlib.Path:
+    app_file = get_app_file(pathlib.Path('stdc++.h'))
+    if not app_file.exists():
+        _download_bits_stdcpp(app_file)
     return app_file
 
 

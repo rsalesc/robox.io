@@ -353,6 +353,8 @@ class SandboxBase(abc.ABC):
         real_path = self.relative_path(path)
         if override:
             real_path.unlink(missing_ok=True)
+        # Ensure directory exists.
+        real_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             file_fd = os.open(str(real_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             file_ = open(file_fd, 'wb')
