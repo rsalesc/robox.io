@@ -9,6 +9,7 @@ import stat
 import subprocess
 import tempfile
 from functools import partial
+from sys import platform
 from time import monotonic
 from typing import IO, List, Optional, Union
 
@@ -264,6 +265,9 @@ class StupidSandbox(SandboxBase):
                     rlimit_cpu += self.params.extra_timeout
                 rlimit_cpu = int((rlimit_cpu + 999) // 1000)
                 resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
+
+            if sys.platform == 'darwin':
+                return
 
             if self.params.address_space:
                 rlimit_data = self.params.address_space * 1024 * 1024
