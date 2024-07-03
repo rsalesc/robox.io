@@ -31,6 +31,8 @@ plugins:
   - termynal
 extra:
   robox: "[robox](){:.robox}"
+  roboxTeX: "[roboxTeX](){:.robox}"
+  polygon: "[Polygon](https://polygon.codeforces.com)"
   testlib: "[testlib](https://github.com/MikeMirzayanov/testlib)"
   YAML: "[YAML](https://yaml.org)"
   # Commands

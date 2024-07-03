@@ -274,3 +274,63 @@ Let's delete the existing test groups in `problem.rbx.yml`, except for the `samp
     1.  Here, `main_tests` would contain the 10 tests defined in `random.py`.
 
 Now, if we run {{rbx.build}}, we'd get our brand new generated tests.
+
+### Update the statement
+
+Of course, last but not least, we have to update the statement of our problem. {{robox}}
+has its own statement format, called {{roboxTeX}}.
+
+In `statement/statement.rbx.tex` you will find something like the following:
+
+=== "statement/statement.rbx.tex"
+    ```tex
+    %- block legend
+    Dado dois números inteiros $A$ e $B$, determine o valor de $A + B$.
+
+    \includegraphics[width=6cm]{projecao.png}
+    %- endblock
+
+    %- block input
+    A entrada é composta por uma única linha contendo dois números
+    inteiros $A$ e $B$ ($1 \leq A, B \leq \VAR{vars.MAX_N | sci}$). % (1)!
+    %- endblock
+
+    %- block output
+    A saída deve conter somente um único inteiro, a soma de $A$ e $B$.
+    %- endblock
+
+    %- block notes
+    Sem muitas notas pra este problema.
+    %- endblock
+    ```
+
+    1.  Notice the use of `\VAR` here, which is a command {{roboxTeX}} exposes for
+        you to access variables defined in `problem.rbx.yml`, similar to how you
+        accessed these in the {{testlib}} validator.
+
+        The template engine used to expand `\VAR{...}` is Jinja2. This means we can also
+        use filters. Here in particular, we're using a pre-defined filter implemented
+        by {{roboxTeX}} called `sci`. This filter converts numbers with lots of zeroes (for instance, 100000), into their scientific notations (`10^5`).
+
+As you can see, similar to {{polygon}}, you write a few blocks of LaTeX that are expanded into a template. Here, the `%` delimits those pre-defined blocks. Your statement needs at least a _legend_, an _input_ and an _output_.
+
+Let's change each corresponding block to match our new problem description.
+
+=== "statement/statement.rbx.tex"
+    ```tex
+    %- block legend
+    Given $N$ integers, print their sum.
+    %- endblock
+
+    %- block input
+    The input has a single line containing $N$ ($1 \leq N \leq \VAR{vars.MAX_N | sci}$) numbers. These numbers range from 1 to $\VAR{vars.MAX_A | sci}$.
+    %- endblock
+
+    %- block output
+    Print the sum of the integers.
+    %- endblock
+
+    %- block notes
+    No notes.
+    %- endblock
+    ```
