@@ -1,7 +1,7 @@
 # Getting started
 
 <figure markdown="span">
-  ![Image title](/robox_transparent.png){ width="300" }
+  ![Image title](robox_transparent.png){ width="300" }
   <figcaption>The go-to CLI tool for competitive programmers and setters.</figcaption>
 </figure>
 
