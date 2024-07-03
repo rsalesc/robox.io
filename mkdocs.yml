@@ -1,0 +1,54 @@
+site_name: robox
+repo_url: https://github.com/rsalesc/robox.io
+nav:
+  - 'index.md'
+  - 'Introduction':
+    - 'intro/installation.md'
+    - 'intro/configuration.md'
+  - 'rbx: robox for setters':
+    - 'setters/first-steps.md'
+    - 'setters/configuration.md'
+  - 'rbc: robox for contestants':
+    - 'contest/configuration.md'
+theme:
+  name: material
+  palette:
+    primary: orange
+  font:
+    text: Ubuntu
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - content.code.copy
+    - content.code.annotate 
+plugins:
+  - search
+  - macros
+  - termynal
+extra:
+  robox: "[robox](){:.robox}"
+  testlib: "[testlib](https://github.com/MikeMirzayanov/testlib)"
+  YAML: "[YAML](https://yaml.org)"
+  # Commands
+  rbx:
+    build: '`rbx build`'
+    run: '`rbx run`'
+    clean: '`rbx clean`'
+  tags:
+    accepted: '<span style="color: green">accepted</span>'
+    wrong_answer: '<span style="color: red">wrong answer</span>'
+extra_css: 
+  - extra.css
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - md_in_html
+  - pymdownx.tabbed:
+      alternate_style: true

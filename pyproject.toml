@@ -33,6 +33,10 @@ rbx = "robox.box.main:app"
 pytest = "^8.2.2"
 ruff = "^0.4.10"
 pre-commit = "^3.7.1"
+mkdocs = "^1.6.0"
+mkdocs-material = "^9.5.28"
+mkdocs-macros-plugin = "^1.0.5"
+termynal = "^0.12.1"
 
 [build-system]
 requires = ["poetry-core"]
