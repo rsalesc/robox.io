@@ -8,8 +8,6 @@ nav:
   - 'rbx: robox for setters':
     - 'setters/first-steps.md'
     - 'setters/configuration.md'
-  - 'rbc: robox for contestants':
-    - 'contest/configuration.md'
 theme:
   name: material
   palette:
@@ -20,7 +18,13 @@ theme:
     repo: fontawesome/brands/github
   features:
     - content.code.copy
-    - content.code.annotate 
+    - content.code.annotate
+    - navigation.sections
+    - navigation.indexes
+    - navigation.path
+    - search.highlight
+    - search.suggest
+    - toc.follow
 plugins:
   - search
   - macros
