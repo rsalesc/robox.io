@@ -123,6 +123,11 @@ You can see this command prints a full run report: it shows for each testcase of
     That's because {{robox}} caches certain calls based on the hash tree of your package
     (similar to Makefile). You can explicitly clear this cache by calling {{rbx.clean}}.
 
+<figure markdown="span">
+  ![rbx run](rbx_run.png)
+  <figcaption>Result of the `rbx run` command.</figcaption>
+</figure>
+
 ## Modifying the package
 
 As you can see from the solutions and the statement, the pre-initialized template simply implements a problem where you have to add up two numbers `A` and `B`. Let's modify the problem to _compute the sum of N numbers_.
@@ -323,7 +328,9 @@ Let's change each corresponding block to match our new problem description.
     %- endblock
 
     %- block input
-    The input has a single line containing $N$ ($1 \leq N \leq \VAR{vars.MAX_N | sci}$) numbers. These numbers range from 1 to $\VAR{vars.MAX_A | sci}$.
+    The input has a single line containing $N$ 
+    ($1 \leq N \leq \VAR{vars.MAX_N | sci}$) numbers. 
+    These numbers range from 1 to $\VAR{vars.MAX_A | sci}$.
     %- endblock
 
     %- block output
@@ -334,3 +341,11 @@ Let's change each corresponding block to match our new problem description.
     No notes.
     %- endblock
     ```
+
+## Advanced configuration
+
+If you want to do more advanced changes to our package, you can continue reading.
+
+## Package the problem
+
+TODO
