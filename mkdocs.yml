@@ -8,7 +8,6 @@ nav:
   - 'rbx: robox for setters':
     - 'setters/first-steps.md'
     - 'setters/cheatsheet.md'
-    - 'setters/configuration.md'
 theme:
   name: material
   palette:
