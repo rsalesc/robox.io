@@ -344,8 +344,21 @@ Let's change each corresponding block to match our new problem description.
 
 ## Advanced configuration
 
-If you want to do more advanced changes to our package, you can continue reading.
+If you want to do more advanced changes to the package, you can continue reading our Reference section on the sidebar.
 
 ## Package the problem
 
-TODO
+To build you problem, you can use the `rbx package [platform]` command.
+
+Here, we'll build a {{polygon}} package with our statement, and as such we'll need LaTeX dependencies installed to compile it to a PDF. You can read more about a few recommendations we have to install pdfLaTeX and other common dependencies [here](pdflatex.md).
+
+!!! note
+    Packages usually require a statement to be built.
+    
+    You can try running `rbx package [platform] --no-statement`, but an error might be raised in case such platform does not support packages without statements.
+
+```bash
+$ rbx package polygon
+```
+
+A {{polygon}} package will be built. This package can be directly uploaded to the [Codeforces Gym](https://codeforces.com/gyms) through FTP.
