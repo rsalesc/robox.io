@@ -13,7 +13,7 @@ class roboxToTeX(BaseModel):
     type: Literal['rbx-tex']
 
     template: pathlib.Path = Field(
-        pathlib.Path('template.rbx.tex'),
+        default=pathlib.Path('template.rbx.tex'),
         description='Path to the template that should be used to render the rbx-tex blocks.',
     )
 
