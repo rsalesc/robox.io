@@ -252,8 +252,8 @@ def build(
         ),
     ] = None,
 ):
-    # At most run the validators.
-    builder.build(verification=verification)
+    # At most run the validators, only in samples.
+    builder.build(verification=verification, groups=set(['samples']))
 
     pkg = package.find_problem_package_or_die()
     candidate_languages = languages

@@ -1,6 +1,6 @@
 import pathlib
 import shlex
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from pydantic import BaseModel
 
@@ -122,6 +122,7 @@ def compile_validators(
 
 def validate_testcases(
     progress: Optional[StatusProgress] = None,
+    groups: Optional[Set[str]] = None,
 ) -> List[TestcaseValidationInfo]:
     def step():
         if progress is not None:
@@ -138,6 +139,8 @@ def validate_testcases(
         if validator is None:
             continue
         if group.name not in group_to_compiled_digest:
+            continue
+        if groups is not None and group.name not in groups:
             continue
         compiled_digest = group_to_compiled_digest[group.name]
 

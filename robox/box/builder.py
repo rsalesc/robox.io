@@ -1,3 +1,5 @@
+from typing import Optional, Set
+
 from robox import console, utils
 from robox.box import environment, package
 from robox.box.environment import VerificationLevel
@@ -6,20 +8,22 @@ from robox.box.solutions import is_fast, print_run_report, run_solutions
 from robox.box.validators import print_validation_report, validate_testcases
 
 
-def build(verification: environment.VerificationParam) -> None:
+def build(
+    verification: environment.VerificationParam, groups: Optional[Set[str]] = None
+) -> None:
     with utils.StatusProgress(
         'Building testcases...',
         'Built [item]{processed}[/item] testcases...',
         keep=True,
     ) as s:
-        generate_testcases(s)
+        generate_testcases(s, groups=groups)
 
     with utils.StatusProgress(
         'Building outputs for testcases...',
         'Built [item]{processed}[/item] outputs...',
         keep=True,
     ) as s:
-        generate_outputs_for_testcases(s)
+        generate_outputs_for_testcases(s, groups=groups)
 
     if verification > 0:
         with utils.StatusProgress(
@@ -27,7 +31,7 @@ def build(verification: environment.VerificationParam) -> None:
             'Validated [item]{processed}[/item] testcases...',
             keep=True,
         ) as s:
-            infos = validate_testcases(s)
+            infos = validate_testcases(s, groups=groups)
             print_validation_report(infos)
 
     console.console.print(

@@ -75,7 +75,9 @@ def get_all_built_testcases() -> Dict[str, List[Testcase]]:
     return res
 
 
-def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
+def generate_outputs_for_testcases(
+    progress: Optional[StatusProgress] = None, groups: Optional[Set[str]] = None
+):
     def step():
         if progress is not None:
             progress.step()
@@ -102,6 +104,8 @@ def generate_outputs_for_testcases(progress: Optional[StatusProgress] = None):
     extra_config = ExecutionConfig(sandbox=sandbox)
 
     for group in pkg.testcases:
+        if groups is not None and group.name not in groups:
+            continue
         group_testcases = built_testcases[group.name]
 
         for testcase in group_testcases:
@@ -172,7 +176,9 @@ def compile_generators(
     return generator_to_compiled_digest
 
 
-def generate_testcases(progress: Optional[StatusProgress] = None):
+def generate_testcases(
+    progress: Optional[StatusProgress] = None, groups: Optional[Set[str]] = None
+):
     def step():
         if progress is not None:
             progress.step()
@@ -183,6 +189,8 @@ def generate_testcases(progress: Optional[StatusProgress] = None):
     compiled_generators = compile_generators(progress=progress)
 
     for testcase in pkg.testcases:
+        if groups is not None and testcase.name not in groups:
+            continue
         group_path = package.get_build_testgroup_path(testcase.name)
 
         i = 0
