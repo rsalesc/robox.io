@@ -4,7 +4,7 @@
 
 ---
 
-If you want to dive deeper into {{robox}} configuration files you can proceed to [rbx Configuration](../setters/configuration.md) (to configure Robox for setters) or to [rbc Configuration](../contest/configuration.md) (to configure Robox for contestants).
+If you want to dive deeper into {{robox}} configuration files you can proceed to the Reference sections in the sidebar to understand each piece of configuration of the tool.
 
 ---
 
