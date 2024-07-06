@@ -51,6 +51,9 @@ The checker is controlled through the top-level parameter `checker`, and is opti
     !!! tip
         {{robox}} automatically places `testlib.h` together with your code when compiling it, but you can explicitly download it with `rbx download testlib` if you want.
 
+    !!! success "Recommended"
+        This is usually the recommended solution when building a custom checker.
+
 3. A custom checker (not necessarily using {{testlib}}). It can even be in other language, in which case we suggest specifying the `language` property.
 
     ```yaml
@@ -171,6 +174,10 @@ You can define multiple testgroups for you problem. For each testgroup, you can 
         The `.txt` extension is necessary for {{robox}} to identify this is a static
         script.
 
+    !!! success "Recommended"
+        This is usually the recommended approach to generate a few pre-defined testcases.
+        Prefer this over the `generators` call to keep `problem.rbx.yml` cleaner.
+
 5. Specifying a **dynamic** generator script with the `generatorScript` field:
 
     === "problem.rbx.yml"
@@ -187,6 +194,9 @@ You can define multiple testgroups for you problem. For each testgroup, you can 
         for i in range(10):
           print(f'gen 1000 {i}')
         ```
+
+    !!! success "Recommended"
+        This is usually the recommended approach to generate multiple random testcases.
 
 !!! warning
     If the platform you package the problem for does not support testgroups, tests will be **flattened into a single group**, and the tests will be executed in the order the groups were defined.
