@@ -54,153 +54,187 @@ class ExpectedOutcome(AutoEnum):
 class CodeItem(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    # The path of a file containing the code, relative to the package directory.
-    path: pathlib.Path
+    path: pathlib.Path = Field(
+        description="""The path to the code file, relative to the package directory."""
+    )
 
-    # The language identifier the could should be compiled/run in.
-    language: Optional[str] = None
+    language: Optional[str] = Field(
+        None, description="""The language of the code file."""
+    )
 
-    # Extra files that should be placed alongside the code file during its
-    # compilation, such as testlib.h, jngen.h, etc.
-    # The paths are relative to the package directory, but will be included relative
-    # to the `path` directory.
-    #
-    # Testlib and jngen are already included by default.
-    compilationFiles: Optional[List[str]] = []
+    compilationFiles: Optional[List[str]] = Field(
+        [],
+        description="""
+Extra files that should be placed alongside the code file during its compilation,
+such as testlib.h, jngen.h, etc.
+
+The paths should be given relative to the package directory, but will be included
+relative to the `path` directory.
+
+Testlib and jngen are already included by default.
+""",
+    )
 
 
 class Testcase(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    # The path of the input file, relative to the package directory.
-    inputPath: pathlib.Path
+    inputPath: pathlib.Path = Field(description="""The path of the input file.""")
 
-    # The path of the output file, relative to the package directory.
-    outputPath: Optional[pathlib.Path] = None
+    outputPath: Optional[pathlib.Path] = Field(
+        None, description="""The path of the output file."""
+    )
 
 
 class GeneratorCall(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    # The identifier of the generator to call.
-    name: str = NameField()
+    name: str = NameField(description='The name of the generator to call.')
 
-    # The args to pass to this generator.
-    # In case of a generator being called from a Stress test,
-    # these args can contain patterns such as `[1..10]` or `(abc|def)`.
-    args: Optional[str] = None
+    args: Optional[str] = Field(
+        None, description='The arguments to pass to the generator.'
+    )
 
 
 class TestcaseGroup(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    # The name of this test group.
-    name: str = NameField()
+    name: str = NameField(description='The name of the test group.')
 
     # Testcases below will be added to this group in the order
     # they're defined, from `testcases` first to `generatorScript` last.
 
-    # The path to testcases relative to the package directory
-    # to add to this group.
-    testcases: List[Testcase] = []
+    testcases: List[Testcase] = Field(
+        [],
+        description="""
+The path of testcases to add to this group,
+in the order they're defined.""",
+    )
 
-    # A Python glob that matches input file paths relative to the
-    # package directory. The globbed files should end with the extension
-    # ".in", and their corresponding outputs should have the same file name,
-    # but ending with ".out".
-    testcaseGlob: Optional[str] = None
+    testcaseGlob: Optional[str] = Field(
+        None,
+        description="""
+A Python glob that matches input file paths relative to the
+package directory. The globbed files should end with the extension
+".in", and their corresponding outputs, if defined, should have the same file name,
+but ending with ".out".
+""",
+    )
 
-    # The generators to call to generate testcases for this group.
-    generators: List[GeneratorCall] = []
+    generators: List[GeneratorCall] = Field(
+        [],
+        description="""
+A list of generators to call to generate testcases for this group.
+""",
+    )
 
-    # A generator script to call to generate testcases for this group.
-    generatorScript: Optional[CodeItem] = None
+    generatorScript: Optional[CodeItem] = Field(
+        None,
+        description="""
+A generator script to call to generate testcases for this group.
+""",
+    )
 
-    # A validator to use to validate the testcases of this group.
-    # If not specified, will use the package-level validator.
-    # Useful in cases where the constraints vary across test groups.
-    validator: Optional[CodeItem] = None
+    validator: Optional[CodeItem] = Field(
+        None,
+        description="""
+A validator to use to validate the testcases of this group.
+If not specified, will use the package-level validator.
+Useful in cases where the constraints vary across test groups.
+""",
+    )
 
-    # The weight of this group in the final score. Useful for
-    # problems that have points.
-    weight: Optional[float] = 1.0
+    weight: Optional[float] = Field(
+        1.0,
+        description="""
+The weight of this group in the final score. Useful for
+problems that have points.
+""",
+    )
 
 
 class Generator(CodeItem):
     model_config = ConfigDict(extra='forbid')
 
-    # The name of this generator.
-    # This can be further referenced in testcase groups and
-    # stress tests.
-    name: str = NameField()
+    name: str = NameField(description="""The name of the generator.""")
 
 
 class Solution(CodeItem):
     model_config = ConfigDict(extra='forbid')
 
-    # The expected outcome of this solution.
-    outcome: ExpectedOutcome
+    outcome: ExpectedOutcome = Field(
+        description="""The expected outcome of this solution."""
+    )
 
 
 class Stress(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    # The name of this stress test.
-    name: str = NameField()
+    name: str = NameField(description='The name of the stress test.')
 
-    # Generator pattern to call during stress-test.
-    # E.g. "gen1 10 [5..10] abacaba"
-    generator: GeneratorCall
+    generator: GeneratorCall = Field(
+        description='Generator pattern to call during stress-test.'
+    )
 
-    # Path of the solutions to be stress-tested.
-    # If empty, will stress-test only the main solution for
-    # non-WA verdicts.
-    solutions: List[str] = []
+    solutions: List[str] = Field(
+        [],
+        description="""
+Path of the solutions to be stress-tested.
 
-    # What verdict to look for while stress-testing.
-    outcome: ExpectedOutcome = ExpectedOutcome.INCORRECT
+If empty, will stress-test only the main solution for
+non-WA verdicts.""",
+    )
+
+    outcome: ExpectedOutcome = Field(
+        ExpectedOutcome.INCORRECT,
+        description="""
+What verdict to look for while stress-testing.
+                                     """,
+    )
 
 
 class Package(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     # Name of the problem.
-    name: str = NameField()
+    name: str = NameField(description='The name of the problem.')
 
-    # Time limit of the problem, in milliseconds.
-    timeLimit: int
+    timeLimit: int = Field(description='Time limit of the problem, in milliseconds.')
 
-    # Memory limit of the problem, in MB.
-    memoryLimit: int
+    memoryLimit: int = Field(description='Memory limit of the problem, in MB.')
 
-    # Definition of the checker for this problem.
-    checker: Optional[CodeItem] = None
+    checker: Optional[CodeItem] = Field(
+        None, description='The checker for this problem.'
+    )
 
-    # Definition of the validator for this problem.
-    validator: Optional[CodeItem] = None
+    validator: Optional[CodeItem] = Field(
+        None, description='The validator for this problem.'
+    )
 
-    # Definitions of the generators for this problem.
-    generators: List[Generator] = []
+    generators: List[Generator] = Field([], description='Generators for this problem.')
 
-    # All tested solutions for this problem.
-    # The first solution in this list is the default solution --
-    # the one that will be used as reference -- and should have
-    # the `accepted` outcome.
-    solutions: List[Solution] = []
+    solutions: List[Solution] = Field(
+        [],
+        description="""
+All tested solutions for this problem.
 
-    # Test groups for the problem.
-    testcases: List[TestcaseGroup] = []
+The first solution in this list should be the main solution -- the one
+that is correct and used as reference -- and should have the `accepted` outcome.
+""",
+    )
 
-    # List of pre-defined stress tests.
-    stresses: List[Stress] = []
+    testcases: List[TestcaseGroup] = Field([], description='Testcases for the problem.')
 
-    # Statements for the problem.
-    statements: List[Statement] = []
+    stresses: List[Stress] = Field([], description='Stress tests for the problem.')
+
+    statements: List[Statement] = Field([], description='Statements for the problem.')
 
     # Vars to be re-used across the package.
     #   - It will be passed as --key=value arguments to the validator.
     #   - It will be available as \VAR{key} variables in the robox statement.
-    vars: Dict[str, Primitive] = {}
+    vars: Dict[str, Primitive] = Field(
+        {}, description='Variables to be re-used across the package.'
+    )
 
     @model_validator(mode='after')
     def check_first_solution_is_main(self):

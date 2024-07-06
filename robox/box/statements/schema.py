@@ -12,8 +12,10 @@ from robox.autoenum import AutoEnum, alias
 class roboxToTeX(BaseModel):
     type: Literal['rbx-tex']
 
-    # Template that should be used to render the rbx-tex blocks.
-    template: pathlib.Path = pathlib.Path('template.rbx.tex')
+    template: pathlib.Path = Field(
+        pathlib.Path('template.rbx.tex'),
+        description='Path to the template that should be used to render the rbx-tex blocks.',
+    )
 
 
 class TexToPDF(BaseModel):
@@ -49,23 +51,25 @@ class StatementType(AutoEnum):
 class Statement(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    # Name of the problem, as it appears in the statement.
-    title: str
+    title: str = Field(
+        description='Name of the problem, as it appears in the statement.'
+    )
 
-    # Path relative to the package directory where the input statement is located.
-    path: pathlib.Path
+    path: pathlib.Path = Field(description='Path to the input statement file.')
 
-    # Type of the input statement.
-    type: StatementType
+    type: StatementType = Field(description='Type of the input statement file.')
 
     # Forces a certain sequence of conversion steps to happen during the statement
     # generation process.
     pipeline: List[PipelineStep] = Field(default_factory=list, discriminator='type')
 
-    # Assets relative to the package directory that should be included while building
-    # the statement. Files will be included in the same folder as the statement file, preserving
-    # their relativeness. Can be glob pattern as well, such as `imgs/*.png`.
-    assets: List[str] = []
+    assets: List[str] = Field(
+        [],
+        description="""
+Assets relative to the package directory that should be included while building
+the statement. Files will be included in the same folder as the statement file, preserving
+their relativeness. Can be glob pattern as well, such as `imgs/*.png`.
+""",
+    )
 
-    # Language this is statement is written in.
-    language: str = 'en'
+    language: str = Field('en', description='Language this is statement is written in.')
