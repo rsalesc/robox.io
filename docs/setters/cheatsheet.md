@@ -270,3 +270,5 @@ stresses:
       - path: "sols/my-potentially-slow-sol.cpp"
     outcome: TLE
 ```
+
+1.  The `@` at the end of the `args` string appends a random string to it. This is necessary here because `gen 100000` would return the same testcase over and over, since {{testlib}} rng is seeded from its command line argc and argv.
