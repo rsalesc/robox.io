@@ -186,6 +186,8 @@ solutions:
     outcome: WRONG_ANSWER
 ```
 
+You can find the full list of expected outcomes [here][robox.box.schema.ExpectedOutcome].
+
 ### Write the validator
 
 The {{testlib}} validator is implemented by `validator.cpp` and will look like this:

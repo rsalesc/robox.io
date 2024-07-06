@@ -86,7 +86,7 @@ solutions:
     outcome: WRONG_ANSWER
 ```
 
-TODO: add potential outcomes
+You can see the list of possible expected outcomes [here][robox.box.schema.ExpectedOutcome].
 
 ### Add testcases
 
