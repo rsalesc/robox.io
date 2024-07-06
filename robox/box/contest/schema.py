@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -60,21 +60,24 @@ If not specified, will expect the problem to be in ./{short_name}/ folder."""
     )
 
     color: Optional[str] = Field(
-        description="""Hex-based color that represents this problem in the contest."""
+        description="""Hex-based color that represents this problem in the contest.""",
+        pattern=r'^[A-Za-z0-9]+$',
+        max_length=6,
     )
 
 
 class Contest(BaseModel):
     name: str = NameField(description='Name of this contest.')
 
-    titles: dict[str, str] = Field(
-        description='Human-readable nome of the contest per language.'
+    titles: Dict[str, str] = Field(
+        {}, description='Human-readable nome of the contest per language.'
     )
 
-    problems: list[ContestProblem] = Field(
-        description='List of problems in this contest.'
+    problems: List[ContestProblem] = Field(
+        [], description='List of problems in this contest.'
     )
 
-    statements: ContestStatements = Field(
-        description='Override statement configuration for problems in this contest.'
+    statements: Optional[ContestStatements] = Field(
+        None,
+        description='Override statement configuration for problems in this contest.',
     )

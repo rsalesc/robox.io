@@ -1,0 +1,5 @@
+# Add problems by running `rbx contest add <problem-name> <short-name>`
+
+name: "new-contest"
+titles:
+  en: "New contest"
