@@ -2,6 +2,7 @@ import pathlib
 
 import pytest
 
+from robox.box.environment import VerificationLevel
 from robox.box.generators import (
     generate_outputs_for_testcases,
     generate_testcases,
@@ -15,7 +16,7 @@ def test_solutions(pkg_from_testdata: pathlib.Path):
     generate_testcases()
     generate_outputs_for_testcases()
 
-    res = run_solutions()
+    res = run_solutions(verification=VerificationLevel.FULL)
 
     # First solution should pass all tests.
     assert all(chk.result.outcome == Outcome.ACCEPTED for chk in res[0]['gen1'])

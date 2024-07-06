@@ -1,11 +1,9 @@
-name: ci 
+name: docs
 on:
   push:
     branches:
       - master 
       - main
-permissions:
-  contents: write
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -17,14 +15,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV 
-      - uses: actions/cache@v4
-        with:
-          key: mkdocs-material-${{ env.cache_id }}
-          path: .cache
-          restore-keys: |
-            mkdocs-material-
+          python-version: 3.10
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
@@ -34,7 +25,6 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
-
       #----------------------------------------------
       #       load cached venv if cache exists
       #----------------------------------------------
@@ -55,6 +45,11 @@ jobs:
       #----------------------------------------------
       - name: Install project
         run: poetry install --no-interaction
+      - name: Install GCC
+        run: |
+         sudo apt update
+         sudo apt install gcc-10 g++-10
+        shell: bash
       - run: |
           source .venv/bin/activate
-          mkdocs gh-deploy --force
+          pytest
