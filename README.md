@@ -26,7 +26,7 @@
 
 ##  Overview
 
-[![Usage video]](https://github.com/rsalesc/robox.io/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)
+<!--[![Usage video]](https://github.com/rsalesc/robox.io/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)-->
 
 [![GitHub license](https://img.shields.io/github/license/rsalesc/robox.io.svg)](https://github.com/rsalesc/robox.io/blob/master/LICENSE)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/robox.svg)](https://pypi.python.org/pypi/robox.io/)
