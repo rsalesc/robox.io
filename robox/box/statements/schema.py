@@ -10,6 +10,8 @@ from robox.autoenum import AutoEnum, alias
 
 ### Pipeline nodes.
 class roboxToTeX(BaseModel):
+    """Configures the conversion between roboxTeX and LaTeX."""
+
     type: Literal['rbx-tex']
 
     template: pathlib.Path = Field(
@@ -19,6 +21,8 @@ class roboxToTeX(BaseModel):
 
 
 class TexToPDF(BaseModel):
+    """Configures the conversion between LaTeX and PDF using pdfLaTeX."""
+
     type: Literal['tex2pdf']
 
 
@@ -32,9 +36,16 @@ PipelineStep = Union[TexToPDF, JinjaTeX, roboxToTeX]
 ### Statement types
 class StatementType(AutoEnum):
     roboxTeX = alias('robox-tex', 'rbx-tex', 'rbx')  # type: ignore
+    """Statement written in roboxTeX format."""
+
     TeX = alias('tex')
+    """Statement written in pure LaTeX format."""
+
     JinjaTeX = alias('jinja-tex')
+    """Statement written in LaTeX format with Jinja2 expressions."""
+
     PDF = alias('pdf')
+    """Statement is a PDF."""
 
     def get_file_suffix(self) -> str:
         if self == StatementType.TeX:
@@ -59,9 +70,17 @@ class Statement(BaseModel):
 
     type: StatementType = Field(description='Type of the input statement file.')
 
-    # Forces a certain sequence of conversion steps to happen during the statement
-    # generation process.
-    pipeline: List[PipelineStep] = Field(default_factory=list, discriminator='type')
+    pipeline: List[PipelineStep] = Field(
+        default_factory=list,
+        discriminator='type',
+        description="""
+Describes a sequence of conversion steps that should be applied to the statement file.
+
+Usually, it is not necessary to specify these, as they can be inferred from the
+input statement type and the output statement type, but you can use this to configure
+how the conversion steps happen.
+""",
+    )
 
     assets: List[str] = Field(
         [],
