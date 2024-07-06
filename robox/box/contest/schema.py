@@ -66,11 +66,23 @@ If not specified, will expect the problem to be in ./{short_name}/ folder."""
     )
 
 
+class ContestInformation(BaseModel):
+    title: str = Field(description='Title of the contest in this language.')
+
+    location: Optional[str] = Field(
+        None, description='Location of the contest in this language.'
+    )
+
+    date: Optional[str] = Field(
+        None, description='Date of the contest in this language.'
+    )
+
+
 class Contest(BaseModel):
     name: str = NameField(description='Name of this contest.')
 
-    titles: Dict[str, str] = Field(
-        {}, description='Human-readable nome of the contest per language.'
+    information: Dict[str, ContestInformation] = Field(
+        {}, description='Human-readable information of the contest per language.'
     )
 
     problems: List[ContestProblem] = Field(

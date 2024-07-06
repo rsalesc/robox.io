@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Tuple
 import typer
 
 from robox import console
+from robox.box.contest.schema import ContestInformation
 from robox.box.schema import Package, Testcase
 from robox.box.statements.latex import Latex
 from robox.box.statements.latex_jinja import (
@@ -44,19 +45,64 @@ class StatementBuilderContext:
         return {'languages': self.languages}
 
 
+class StatementBuilderItem(ABC):
+    @abstractmethod
+    def is_contest(self) -> bool:
+        pass
+
+    @abstractmethod
+    def build_jinja_kwargs(self) -> Dict[str, Any]:
+        pass
+
+
 @dataclasses.dataclass
-class StatementBuilderProblem:
+class StatementBuilderProblem(StatementBuilderItem):
     package: Package
     statement: Statement
     samples: List[Testcase] = dataclasses.field(default_factory=list)
 
-    def build_jinja_kwargs(self) -> Dict[str, Any]:
+    def is_contest(self) -> bool:
+        return True
+
+    def build_inner_jinja_kwargs(self) -> Dict[str, Any]:
         return {
             'package': self.package,
             'statement': self.statement,
             'samples': self.samples,
             'vars': self.package.vars,
             'title': self.statement.title or self.package.name,
+        }
+
+    def build_jinja_kwargs(self) -> Dict[str, Any]:
+        inner = self.build_inner_jinja_kwargs()
+        return {
+            'problem': inner,
+            'problems': [inner],
+        }
+
+
+@dataclasses.dataclass
+class StatementBuilderContest(StatementBuilderItem):
+    information: ContestInformation
+    problems: List[StatementBuilderProblem] = dataclasses.field(default_factory=list)
+
+    def is_contest(self) -> bool:
+        return True
+
+    def build_inner_jinja_kwargs(self) -> Dict[str, Any]:
+        res = {'title': self.information.title}
+        if self.information.location:
+            res['location'] = self.information.location
+        if self.information.date:
+            res['date'] = self.information.date
+        return res
+
+    def build_jinja_kwargs(self) -> Dict[str, Any]:
+        return {
+            'contest': self.build_inner_jinja_kwargs(),
+            'problems': [
+                problem.build_inner_jinja_kwargs() for problem in self.problems
+            ],
         }
 
 
@@ -144,7 +190,7 @@ class StatementBuilder(ABC):
         self,
         input: bytes,
         context: StatementBuilderContext,
-        problem: StatementBuilderProblem,
+        item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
         pass
@@ -167,14 +213,14 @@ class JinjaTeXBuilder(StatementBuilder):
         self,
         input: bytes,
         context: StatementBuilderContext,
-        problem: StatementBuilderProblem,
+        item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
         return render_jinja(
             context.assets,
             input,
             **context.build_jinja_kwargs(),
-            problem=problem.build_jinja_kwargs(),
+            **item.build_jinja_kwargs(),
         )
 
 
@@ -203,27 +249,39 @@ class roboxTeXBuilder(StatementBuilder):
         self,
         input: bytes,
         context: StatementBuilderContext,
-        problem: StatementBuilderProblem,
+        item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
         params = typing.cast(roboxToTeX, context.params)
         assert params.template is not None
-        blocks = render_jinja_blocks(
-            context.assets, input, **problem.build_jinja_kwargs()
+        problems: List[StatementBuilderProblem] = (
+            [problem for problem in item.problems]
+            if isinstance(item, StatementBuilderContest)
+            else [typing.cast(StatementBuilderProblem, item)]
         )
-
-        input_str = f'%- extends "{params.template}"'
-        problems = [
-            {
-                'blocks': blocks,
-                **problem.build_jinja_kwargs(),
-            }
+        blocks_per_problem = [
+            render_jinja_blocks(
+                context.assets, input, **problem.build_inner_jinja_kwargs()
+            )
+            for problem in problems
         ]
+
+        item_kwargs = item.build_jinja_kwargs()
+        # Add `blocks` to kwargs.
+        item_kwargs['problems'] = [
+            {**kwargs, 'blocks': blocks}
+            for kwargs, blocks in zip(item_kwargs['problems'], blocks_per_problem)
+        ]
+
+        if 'problem' in item_kwargs:
+            # Reload single problem kwargs.
+            item_kwargs['problem'] = item_kwargs['problems'][0]
+
         return render_jinja(
             context.assets,
-            input_str.encode(),
+            f'%- extends "{params.template}"'.encode(),
             **context.build_jinja_kwargs(),
-            problems=problems,
+            **item_kwargs,
         )
 
 
@@ -244,7 +302,7 @@ class TeX2PDFBuilder(StatementBuilder):
         self,
         input: bytes,
         context: StatementBuilderContext,
-        problem: StatementBuilderProblem,
+        item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
         latex = Latex(input.decode())

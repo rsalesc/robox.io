@@ -210,7 +210,7 @@ def build_statement(
                 params=params,
                 assets=assets,
             ),
-            problem=StatementBuilderProblem(
+            item=StatementBuilderProblem(
                 package=pkg,
                 statement=statement,
                 samples=get_samples(),
