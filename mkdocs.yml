@@ -8,6 +8,12 @@ nav:
   - 'rbx: robox for setters':
     - 'setters/first-steps.md'
     - 'setters/cheatsheet.md'
+    - 'Reference':
+      - 'Package':
+        - 'setters/reference/package/index.md'
+        - 'Schema': 'setters/reference/package/schema.md'
+      - 'setters/reference/environment.md'
+      - 'setters/reference/cli.md'
 theme:
   name: material
   palette:
@@ -22,6 +28,7 @@ theme:
     - navigation.sections
     - navigation.indexes
     - navigation.path
+    - navigation.expand
     - search.highlight
     - search.suggest
     - toc.follow
@@ -29,6 +36,13 @@ plugins:
   - search
   - macros
   - termynal
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            unwrap_annotated: true
+            extensions:
+            - griffe_fieldz
 extra:
   robox: "[robox](){:.robox}"
   roboxTeX: "[roboxTeX](){:.robox}"
@@ -37,6 +51,8 @@ extra:
   testlib: "[testlib](https://github.com/MikeMirzayanov/testlib)"
   jngen: "[jngen](https://github.com/ifsmirnov/jngen)"
   YAML: "[YAML](https://yaml.org)"
+  regex:
+    name: "^[a-zA-Z0-9][a-zA-Z0-9\\-]{2,32}$"
   # Commands
   rbx:
     build: '`rbx build`'

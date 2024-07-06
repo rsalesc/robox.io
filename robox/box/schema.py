@@ -14,7 +14,9 @@ Primitive = Union[str, int, float, bool]
 
 
 def NameField(**kwargs):
-    return Field(pattern=r'^[a-zA-Z0-9\-]+$', min_length=3, **kwargs)
+    return Field(
+        pattern=r'^[a-zA-Z0-9][a-zA-Z0-9\-]*$', min_length=3, max_length=32, **kwargs
+    )
 
 
 class ExpectedOutcome(AutoEnum):
