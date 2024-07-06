@@ -21,12 +21,28 @@ def NameField(**kwargs):
 
 class ExpectedOutcome(AutoEnum):
     ACCEPTED = alias('accepted', 'ac', 'correct')  # type: ignore
+    """Expected outcome for correct solutions (AC)."""
+
     WRONG_ANSWER = alias('wrong answer', 'wa')  # type: ignore
+    """Expected outcome for solutions that finish successfully,
+    but the produced output are incorrect (WA)."""
+
     INCORRECT = alias('fail', 'incorrect')  # type: ignore
+    """Expected outcome for solutions that finish with any non-AC verdict."""
+
     RUNTIME_ERROR = alias('runtime error', 'rte', 're')  # type: ignore
+    """Expected outcome solutions that finish with non-zero code (RTE)."""
+
     TIME_LIMIT_EXCEEDED = alias('time limit exceeded', 'timeout', 'tle')  # type: ignore
+    """Expected outcome for solutions that do not finish in time."""
+
     MEMORY_LIMIT_EXCEEDED = alias('memory limit exceeded', 'mle')  # type: ignore
+    """Expected outcome for solutions that use more memory than allowed."""
+
     TLE_OR_RTE = alias('tle or rte', 'tle/rte', 'tle+rte')  # type: ignore
+    """Expected outcome for solutions that finish with either TLE or RTE.
+    
+    Especially useful for environments where TLE and RTE are indistinguishable."""
 
     def match(self, outcome: Outcome) -> bool:
         if self == ExpectedOutcome.ACCEPTED:

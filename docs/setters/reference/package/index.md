@@ -108,6 +108,8 @@ solutions:
 
 Also, you **have to define** an accepted solution. The first accepted solution in this list will be considered the main solution to generate answers for the testcases.
 
+For a full list of expected outcomes, see [here][robox.box.schema.ExpectedOutcome].
+
 ## Testcase groups
 
 **Field**: `testcases`

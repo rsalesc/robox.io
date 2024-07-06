@@ -7,6 +7,9 @@
       show_root_heading: false
       show_root_toc_entry: false
       heading_level: 3
+      show_labels: false
+
+## Statements
 
 ::: robox.box.statements.schema.Statement
     options:
@@ -14,11 +17,11 @@
       show_root_full_path: false
       heading_level: 3
 
-## Statements
+### Statement types and nodes
 
 ::: robox.box.statements.schema
     options:
       filters: ["!Statement"]
       show_root_heading: false
       show_root_toc_entry: false
-      heading_level: 3
+      heading_level: 4
