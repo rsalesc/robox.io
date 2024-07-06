@@ -51,14 +51,14 @@ def run_packager(
     )
 
 
-@app.command('polygon')
+@app.command('polygon', help='Build a package for Polygon.')
 def polygon(
     verification: environment.VerificationParam,
 ):
     run_packager(PolygonPackager, verification=verification)
 
 
-@app.command('boca')
+@app.command('boca', help='Build a package for BOCA.')
 def boca(
     verification: environment.VerificationParam,
 ):

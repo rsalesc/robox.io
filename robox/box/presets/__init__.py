@@ -91,7 +91,7 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
     shutil.rmtree(str(installation_path / '.box'), ignore_errors=True)
 
 
-@app.command('install')
+@app.command('install', help='Install preset from current directory.')
 def install():
     _install()
 

@@ -209,12 +209,22 @@ def build_statement(
     return statement_path
 
 
-@app.command('build')
+@app.command('build', help='Build statements.')
 def build(
     verification: environment.VerificationParam,
-    languages: Annotated[Optional[List[str]], typer.Option(default_factory=list)],
+    languages: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            default_factory=list,
+            help='Languages to build statements for. If not specified, build statements for all available languages.',
+        ),
+    ],
     output: Annotated[
-        Optional[StatementType], typer.Option(case_sensitive=False)
+        Optional[StatementType],
+        typer.Option(
+            case_sensitive=False,
+            help='Output type to be generated. If not specified, will infer from the conversion steps specified in the package.',
+        ),
     ] = None,
 ):
     # At most run the validators.

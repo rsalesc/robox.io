@@ -21,13 +21,30 @@ from robox.box.solutions import print_run_report, run_solutions
 from robox.box.statements import build_statements
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
-app.add_typer(build_statements.app, name='statements', cls=annotations.AliasGroup)
-app.add_typer(download.app, name='download', cls=annotations.AliasGroup)
-app.add_typer(presets.app, name='presets', cls=annotations.AliasGroup)
-app.add_typer(packaging.app, name='package', cls=annotations.AliasGroup)
+app.add_typer(
+    build_statements.app,
+    name='statements',
+    cls=annotations.AliasGroup,
+    help='Manage statements.',
+)
+app.add_typer(
+    download.app,
+    name='download',
+    cls=annotations.AliasGroup,
+    help='Download an asset from supported repositories.',
+)
+app.add_typer(
+    presets.app, name='presets', cls=annotations.AliasGroup, help='Manage presets.'
+)
+app.add_typer(
+    packaging.app,
+    name='package',
+    cls=annotations.AliasGroup,
+    help='Build problem packages.',
+)
 
 
-@app.command('edit')
+@app.command('edit', help='Open problem.rbx.yml in your default editor.')
 def edit():
     console.console.print('Opening problem definition in editor...')
     # Call this function just to raise exception in case we're no in
@@ -36,22 +53,32 @@ def edit():
     config.open_editor(package.find_problem_yaml() or pathlib.Path())
 
 
-@app.command('build, b')
+@app.command('build, b', help='Build all tests for the problem.')
 def build(verification: environment.VerificationParam):
     builder.build(verification=verification)
 
 
-@app.command('verify')
+@app.command('verify', help='Build and verify all the tests for the problem.')
 def verify(verification: environment.VerificationParam):
     if not builder.verify(verification=verification):
         console.console.print('[error]Verification failed, check the report.[/error]')
 
 
-@app.command('run')
+@app.command('run', help='Build and run solution(s).')
 def run(
     verification: environment.VerificationParam,
-    solution: Annotated[Optional[str], typer.Argument()] = None,
-    detailed: bool = typer.Option(False, '--detailed', '-d'),
+    solution: Annotated[
+        Optional[str],
+        typer.Argument(
+            help='Path to solution to run. If not specified, will run all solutions.'
+        ),
+    ] = None,
+    detailed: bool = typer.Option(
+        False,
+        '--detailed',
+        '-d',
+        help='Whether to print a detailed view of the tests using tables.',
+    ),
 ):
     builder.build(verification=verification)
 
@@ -71,8 +98,13 @@ def run(
     )
 
 
-@app.command('create')
-def create(name: str, preset: Annotated[Optional[str], typer.Option()] = None):
+@app.command('create', help='Create a new problem package.')
+def create(
+    name: str,
+    preset: Annotated[
+        Optional[str], typer.Option(help='Preset to use when creating the problem.')
+    ] = None,
+):
     console.console.print(f'Creating new problem [item]{name}[/item]...')
 
     preset = preset or 'default'
@@ -103,11 +135,15 @@ def create(name: str, preset: Annotated[Optional[str], typer.Option()] = None):
     shutil.rmtree(str(dest_path / '.box'), ignore_errors=True)
 
 
-@app.command('stress')
+@app.command('stress', help='Run a stress test.')
 def stress(
     name: str,
-    timeout: Annotated[int, typer.Option()] = 10,
-    findings: Annotated[int, typer.Option()] = 1,
+    timeout: Annotated[
+        int, typer.Option(help='For how many seconds to run the stress test.')
+    ] = 10,
+    findings: Annotated[
+        int, typer.Option(help='How many breaking tests to look for.')
+    ] = 1,
 ):
     # Do not verify built package.
     builder.build(verification=VerificationLevel.NONE.value)
@@ -149,7 +185,7 @@ def stress(
         break
 
 
-@app.command('environment, env')
+@app.command('environment, env', help='Set or show the current box environment.')
 def environment_command(env: Annotated[Optional[str], typer.Argument()] = None):
     if env is None:
         cfg = config.get_config()
@@ -177,7 +213,7 @@ def environment_command(env: Annotated[Optional[str], typer.Argument()] = None):
     clear()
 
 
-@app.command('clear, clean')
+@app.command('clear, clean', help='Clears cache and build directories.')
 def clear():
     console.console.print('Cleaning cache and build directories...')
     shutil.rmtree('.box', ignore_errors=True)
