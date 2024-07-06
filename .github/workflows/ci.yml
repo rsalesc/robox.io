@@ -55,4 +55,6 @@ jobs:
       #----------------------------------------------
       - name: Install project
         run: poetry install --no-interaction
-      - run: mkdocs gh-deploy --force
+      - run: |
+          source .venv/bin/activate
+          mkdocs gh-deploy --force
