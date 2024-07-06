@@ -32,7 +32,7 @@ statements:
     type: roboxTeX
     language: 'en'
     assets: ['statement/olymp.sty', 'statement/*.png']
-    pipeline:
+    configure:
       - type: 'rbx-tex'  # Convert roboxTeX to TeX
         template: 'statement/template.rbx.tex'
 stresses:

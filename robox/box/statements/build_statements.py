@@ -14,7 +14,12 @@ from robox.box.statements.builders import (
     StatementBuilderProblem,
     StatementCodeLanguage,
 )
-from robox.box.statements.schema import PipelineStep, Statement, StatementType
+from robox.box.statements.schema import (
+    ConversionStep,
+    ConversionType,
+    Statement,
+    StatementType,
+)
 from robox.box.testcases import get_samples
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
@@ -41,7 +46,7 @@ def _get_environment_languages_for_statement() -> List[StatementCodeLanguage]:
     return res
 
 
-def get_builder(name: str) -> StatementBuilder:
+def get_builder(name: ConversionType) -> StatementBuilder:
     candidates = [builder for builder in BUILDER_LIST if builder.name() == name]
     if not candidates:
         console.console.print(
@@ -102,12 +107,23 @@ def _try_implicit_builders(
     return implicit_builders
 
 
+def _get_configured_params_for(
+    statement: Statement, conversion_type: ConversionType
+) -> Optional[ConversionStep]:
+    for step in statement.configure:
+        if step.type == conversion_type:
+            return step
+    return None
+
+
 def get_builders(
     statement: Statement, output_type: Optional[StatementType]
-) -> List[Tuple[StatementBuilder, PipelineStep]]:
+) -> List[Tuple[StatementBuilder, ConversionStep]]:
     last_output = statement.type
-    builders: List[Tuple[StatementBuilder, PipelineStep]] = []
-    for step in statement.pipeline:
+    builders: List[Tuple[StatementBuilder, ConversionStep]] = []
+
+    # Conversion steps to force during build.
+    for step in statement.steps:
         builder = get_builder(step.type)
         if builder.input_type() != last_output:
             implicit_builders = _try_implicit_builders(
@@ -124,7 +140,16 @@ def get_builders(
         builders.extend(
             (builder, builder.default_params()) for builder in implicit_builders
         )
-    return builders
+
+    # Override statement configs.
+    def reconfigure(params: ConversionStep) -> ConversionStep:
+        new_params = _get_configured_params_for(statement, params.type)
+        return new_params or params
+
+    reconfigured_builders = [
+        (builder, reconfigure(params)) for builder, params in builders
+    ]
+    return reconfigured_builders
 
 
 def _get_relative_assets(

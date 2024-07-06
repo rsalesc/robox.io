@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+from enum import Enum
 from typing import List, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -8,11 +9,23 @@ from pydantic import BaseModel, ConfigDict, Field
 from robox.autoenum import AutoEnum, alias
 
 
-### Pipeline nodes.
+### Conversion types
+class ConversionType(str, Enum):
+    roboxToTex = 'rbx-tex'
+    """Conversion from roboxTeX to LaTeX."""
+
+    TexToPDF = 'tex2pdf'
+    """Conversion from LaTeX to PDF using pdfLaTeX."""
+
+    JinjaTeX = 'jinja-tex'
+    """Conversion from LaTeX with Jinja2 expressions to LaTeX."""
+
+
+### Conversion nodes.
 class roboxToTeX(BaseModel):
     """Configures the conversion between roboxTeX and LaTeX."""
 
-    type: Literal['rbx-tex']
+    type: Literal[ConversionType.roboxToTex]
 
     template: pathlib.Path = Field(
         default=pathlib.Path('template.rbx.tex'),
@@ -23,14 +36,14 @@ class roboxToTeX(BaseModel):
 class TexToPDF(BaseModel):
     """Configures the conversion between LaTeX and PDF using pdfLaTeX."""
 
-    type: Literal['tex2pdf']
+    type: Literal[ConversionType.TexToPDF]
 
 
 class JinjaTeX(BaseModel):
-    type: Literal['jinja-tex']
+    type: Literal[ConversionType.JinjaTeX]
 
 
-PipelineStep = Union[TexToPDF, JinjaTeX, roboxToTeX]
+ConversionStep = Union[TexToPDF, JinjaTeX, roboxToTeX]
 
 
 ### Statement types
@@ -70,15 +83,26 @@ class Statement(BaseModel):
 
     type: StatementType = Field(description='Type of the input statement file.')
 
-    pipeline: List[PipelineStep] = Field(
-        default_factory=list,
+    steps: List[ConversionStep] = Field(
+        [],
         discriminator='type',
         description="""
 Describes a sequence of conversion steps that should be applied to the statement file.
 
 Usually, it is not necessary to specify these, as they can be inferred from the
-input statement type and the output statement type, but you can use this to configure
-how the conversion steps happen.
+input statement type and the output statement type, but you can use this to force
+certain conversion steps to happen.
+""",
+    )
+
+    configure: List[ConversionStep] = Field(
+        [],
+        discriminator='type',
+        description="""
+Configure how certain conversion steps should happen when applied to the statement file.
+
+Different from the `steps` field, this does not force the steps to happen, but rather only
+configure them in case they are applied.
 """,
     )
 

@@ -16,8 +16,9 @@ from robox.box.statements.latex_jinja import (
     render_latex_template_blocks,
 )
 from robox.box.statements.schema import (
+    ConversionStep,
+    ConversionType,
     JinjaTeX,
-    PipelineStep,
     Statement,
     StatementType,
     TexToPDF,
@@ -34,7 +35,7 @@ class StatementCodeLanguage:
 @dataclasses.dataclass
 class StatementBuilderContext:
     languages: List[StatementCodeLanguage]
-    params: PipelineStep
+    params: ConversionStep
     assets: List[Tuple[pathlib.Path, pathlib.Path]] = dataclasses.field(
         default_factory=list
     )
@@ -118,11 +119,11 @@ def render_jinja_blocks(
 
 class StatementBuilder(ABC):
     @abstractmethod
-    def name(self) -> str:
+    def name(self) -> ConversionType:
         pass
 
     @abstractmethod
-    def default_params(self) -> PipelineStep:
+    def default_params(self) -> ConversionStep:
         pass
 
     @abstractmethod
@@ -134,7 +135,7 @@ class StatementBuilder(ABC):
         pass
 
     def inject_assets(
-        self, params: PipelineStep
+        self, params: ConversionStep
     ) -> List[Tuple[pathlib.Path, pathlib.Path]]:
         return []
 
@@ -150,11 +151,11 @@ class StatementBuilder(ABC):
 
 
 class JinjaTeXBuilder(StatementBuilder):
-    def name(self) -> str:
-        return 'jinja-tex'
+    def name(self) -> ConversionType:
+        return ConversionType.JinjaTeX
 
-    def default_params(self) -> PipelineStep:
-        return JinjaTeX(type='jinja-tex')
+    def default_params(self) -> ConversionStep:
+        return JinjaTeX(type=ConversionType.JinjaTeX)
 
     def input_type(self) -> StatementType:
         return StatementType.JinjaTeX
@@ -178,11 +179,11 @@ class JinjaTeXBuilder(StatementBuilder):
 
 
 class roboxTeXBuilder(StatementBuilder):
-    def name(self) -> str:
-        return 'rbx-tex'
+    def name(self) -> ConversionType:
+        return ConversionType.roboxToTex
 
-    def default_params(self) -> PipelineStep:
-        return roboxToTeX(type='rbx-tex')
+    def default_params(self) -> ConversionStep:
+        return roboxToTeX(type=ConversionType.roboxToTex)
 
     def input_type(self) -> StatementType:
         return StatementType.roboxTeX
@@ -191,7 +192,7 @@ class roboxTeXBuilder(StatementBuilder):
         return StatementType.TeX
 
     def inject_assets(
-        self, params: PipelineStep
+        self, params: ConversionStep
     ) -> List[Tuple[pathlib.Path, pathlib.Path]]:
         params = typing.cast(roboxToTeX, params)
         if not params.template:
@@ -227,11 +228,11 @@ class roboxTeXBuilder(StatementBuilder):
 
 
 class TeX2PDFBuilder(StatementBuilder):
-    def name(self) -> str:
-        return 'tex2pdf'
+    def name(self) -> ConversionType:
+        return ConversionType.TexToPDF
 
-    def default_params(self) -> PipelineStep:
-        return TexToPDF(type='tex2pdf')
+    def default_params(self) -> ConversionStep:
+        return TexToPDF(type=ConversionType.TexToPDF)
 
     def input_type(self) -> StatementType:
         return StatementType.TeX
