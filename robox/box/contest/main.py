@@ -75,6 +75,12 @@ def add(name: str, short_name: str, preset: Optional[str] = None):
     utils.validate_field(ContestProblem, 'short_name', short_name)
     utils.validate_field(Package, 'name', name)
 
+    if short_name in [p.short_name for p in find_contest_package_or_die().problems]:
+        console.console.print(
+            f'[error]Problem [item]{short_name}[/item] already exists in contest.[/error]',
+        )
+        raise typer.Exit(1)
+
     creation.create(name, preset=preset, path=pathlib.Path(short_name))
 
     contest = find_contest_package_or_die()
