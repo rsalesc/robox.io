@@ -5,12 +5,15 @@ from typing import Annotated, Optional
 import typer
 
 from robox import annotations, console
-from robox.box import presets
+from robox.box import creation, presets
 from robox.box.contest import statements
 from robox.box.contest.contest_package import (
     find_contest,
+    find_contest_package_or_die,
     find_contest_yaml,
+    save_contest,
 )
+from robox.box.contest.schema import ContestProblem
 from robox.config import open_editor
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
@@ -22,7 +25,7 @@ app.add_typer(
 )
 
 
-@app.command('create', help='Create a new contest package.')
+@app.command('create, c', help='Create a new contest package.')
 def create(
     name: str,
     preset: Annotated[
@@ -57,10 +60,24 @@ def create(
     shutil.copytree(str(contest_path), str(dest_path))
 
 
-@app.command('edit', help='Open contest.rbx.yml in your default editor.')
+@app.command('edit, e', help='Open contest.rbx.yml in your default editor.')
 def edit():
     console.console.print('Opening contest definition in editor...')
     # Call this function just to raise exception in case we're no in
     # a problem package.
     find_contest()
     open_editor(find_contest_yaml() or pathlib.Path())
+
+
+@app.command('add, a', help='Add new problem to contest.')
+def add(name: str, short_name: str, preset: Optional[str] = None):
+    creation.create(name, preset=preset, path=pathlib.Path(short_name))
+
+    contest = find_contest_package_or_die()
+    contest.problems.append(
+        ContestProblem(short_name=short_name, path=pathlib.Path(short_name))
+    )
+
+    contest.problems.sort(key=lambda p: p.short_name)
+    save_contest(contest)
+    console.console.print(f'Problem [item]{short_name}[/item] added to contest.')

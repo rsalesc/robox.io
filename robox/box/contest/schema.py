@@ -15,7 +15,7 @@ class ContestStatement(BaseModel):
     language: str = Field('en', description='Language code for this statement.')
 
     steps: List[ConversionStep] = Field(
-        [],
+        default=[],
         discriminator='type',
         description="""
 Describes a sequence of conversion steps that should be applied to the statement file of
@@ -28,7 +28,7 @@ certain conversion steps to happen.
     )
 
     configure: List[ConversionStep] = Field(
-        [],
+        default=[],
         discriminator='type',
         description="""
 Configure how certain conversion steps should happen when applied to the statement files of
@@ -40,7 +40,7 @@ configure them in case they are applied.
     )
 
     assets: List[str] = Field(
-        [],
+        default=[],
         description="""
 Assets relative to the contest directory that should be included while building
 the statement. Files will be included in the same folder as the statement file.
@@ -56,14 +56,14 @@ Short name of the problem. Usually, just an uppercase letter,
 but can be a sequence of uppercase letters followed by a number."""
     )
     path: Optional[pathlib.Path] = Field(
-        None,
+        default=None,
         description="""
 Path to the problem relative to the contest package directory.
 If not specified, will expect the problem to be in ./{short_name}/ folder.""",
     )
 
     color: Optional[str] = Field(
-        None,
+        default=None,
         description="""Hex-based color that represents this problem in the contest.""",
         pattern=r'^[A-Za-z0-9]+$',
         max_length=6,
@@ -77,11 +77,11 @@ class ContestInformation(BaseModel):
     title: str = Field(description='Title of the contest in this language.')
 
     location: Optional[str] = Field(
-        None, description='Location of the contest in this language.'
+        default=None, description='Location of the contest in this language.'
     )
 
     date: Optional[str] = Field(
-        None, description='Date of the contest in this language.'
+        default=None, description='Date of the contest in this language.'
     )
 
 
@@ -89,14 +89,15 @@ class Contest(BaseModel):
     name: str = NameField(description='Name of this contest.')
 
     information: Dict[str, ContestInformation] = Field(
-        {}, description='Human-readable information of the contest per language.'
+        default={},
+        description='Human-readable information of the contest per language.',
     )
 
     problems: List[ContestProblem] = Field(
-        [], description='List of problems in this contest.'
+        default=[], description='List of problems in this contest.'
     )
 
     statements: List[ContestStatement] = Field(
-        None,
+        default=None,
         description='Override statement configuration for problems in this contest, per language.',
     )
