@@ -16,6 +16,7 @@ from robox.box import (
     presets,
     stresses,
 )
+from robox.box.contest import main as contest
 from robox.box.environment import VerificationLevel, get_environment_path
 from robox.box.solutions import print_run_report, run_solutions
 from robox.box.statements import build_statements
@@ -41,6 +42,9 @@ app.add_typer(
     name='package',
     cls=annotations.AliasGroup,
     help='Build problem packages.',
+)
+app.add_typer(
+    contest.app, name='contest', cls=annotations.AliasGroup, help='Contest management.'
 )
 
 

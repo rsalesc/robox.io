@@ -11,7 +11,9 @@ def ShortNameField(**kwargs):
     return Field(pattern=r'^[A-Z]+[0-9]*$', min_length=1, max_length=4, **kwargs)
 
 
-class ContestStatements(BaseModel):
+class ContestStatement(BaseModel):
+    language: str = Field('en', description='Language code for this statement.')
+
     steps: List[ConversionStep] = Field(
         [],
         discriminator='type',
@@ -53,17 +55,22 @@ class ContestProblem(BaseModel):
 Short name of the problem. Usually, just an uppercase letter,
 but can be a sequence of uppercase letters followed by a number."""
     )
-    path: pathlib.Path = Field(
+    path: Optional[pathlib.Path] = Field(
+        None,
         description="""
 Path to the problem relative to the contest package directory.
-If not specified, will expect the problem to be in ./{short_name}/ folder."""
+If not specified, will expect the problem to be in ./{short_name}/ folder.""",
     )
 
     color: Optional[str] = Field(
+        None,
         description="""Hex-based color that represents this problem in the contest.""",
         pattern=r'^[A-Za-z0-9]+$',
         max_length=6,
     )
+
+    def get_path(self) -> pathlib.Path:
+        return self.path or pathlib.Path(self.short_name)
 
 
 class ContestInformation(BaseModel):
@@ -89,7 +96,7 @@ class Contest(BaseModel):
         [], description='List of problems in this contest.'
     )
 
-    statements: Optional[ContestStatements] = Field(
+    statements: List[ContestStatement] = Field(
         None,
-        description='Override statement configuration for problems in this contest.',
+        description='Override statement configuration for problems in this contest, per language.',
     )

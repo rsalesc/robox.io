@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import typing
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import typer
 
@@ -188,7 +188,7 @@ class StatementBuilder(ABC):
     @abstractmethod
     def build(
         self,
-        input: bytes,
+        input: Union[bytes, List[bytes]],
         context: StatementBuilderContext,
         item: StatementBuilderItem,
         verbose: bool = False,
@@ -211,11 +211,16 @@ class JinjaTeXBuilder(StatementBuilder):
 
     def build(
         self,
-        input: bytes,
+        input: Union[bytes, List[bytes]],
         context: StatementBuilderContext,
         item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
+        if isinstance(input, list):
+            console.console.print(
+                '[error]Multiple inputs are not supported by JinjaTeX.[/error]'
+            )
+            raise typer.Exit(1)
         return render_jinja(
             context.assets,
             input,
@@ -243,11 +248,11 @@ class roboxTeXBuilder(StatementBuilder):
         params = typing.cast(roboxToTeX, params)
         if not params.template:
             return []
-        return [(params.template, params.template)]
+        return [(params.template.resolve(), params.template)]
 
     def build(
         self,
-        input: bytes,
+        input: Union[bytes, List[bytes]],
         context: StatementBuilderContext,
         item: StatementBuilderItem,
         verbose: bool = False,
@@ -259,12 +264,21 @@ class roboxTeXBuilder(StatementBuilder):
             if isinstance(item, StatementBuilderContest)
             else [typing.cast(StatementBuilderProblem, item)]
         )
-        blocks_per_problem = [
-            render_jinja_blocks(
-                context.assets, input, **problem.build_inner_jinja_kwargs()
-            )
-            for problem in problems
-        ]
+
+        if isinstance(input, list):
+            blocks_per_problem = [
+                render_jinja_blocks(
+                    context.assets, inp, **problem.build_inner_jinja_kwargs()
+                )
+                for problem, inp in zip(problems, input)
+            ]
+        else:
+            blocks_per_problem = [
+                render_jinja_blocks(
+                    context.assets, input, **problem.build_inner_jinja_kwargs()
+                )
+                for problem in problems
+            ]
 
         item_kwargs = item.build_jinja_kwargs()
         # Add `blocks` to kwargs.
@@ -300,11 +314,18 @@ class TeX2PDFBuilder(StatementBuilder):
 
     def build(
         self,
-        input: bytes,
+        input: Union[bytes, List[bytes]],
         context: StatementBuilderContext,
         item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
+        if isinstance(input, list):
+            console.console.print(
+                '[error]Multiple inputs are not supported by JinjaTeX.[/error]'
+            )
+            raise typer.Exit(1)
+
+        input = typing.cast(bytes, input)
         latex = Latex(input.decode())
         with tempfile.TemporaryDirectory() as td:
             temp_dir = pathlib.Path(td)

@@ -1,11 +1,13 @@
 import functools
 import pathlib
-from typing import Optional
+from typing import List, Optional
 
 import typer
 
 from robox import console, utils
 from robox.box.contest.schema import Contest
+from robox.box.package import find_problem_package_or_die
+from robox.box.schema import Package
 
 YAML_NAME = 'contest.rbx.yml'
 
@@ -54,3 +56,10 @@ def save_contest(
         console.console.print(f'Contest not found in {root.absolute()}', style='error')
         raise typer.Exit(1)
     contest_yaml_path.write_text(utils.model_to_yaml(package))
+
+
+def get_problems(contest: Contest) -> List[Package]:
+    problems = []
+    for problem in contest.problems:
+        problems.append(find_problem_package_or_die(problem.get_path()))
+    return problems

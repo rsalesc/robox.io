@@ -4,3 +4,9 @@ name: "new-contest"
 information:
   en:
     title: "New contest"
+statements: 
+  - language: en
+    assets: ['olymp.sty', '*.png']
+    configure:
+      - type: 'rbx-tex'  # Convert roboxTeX to TeX
+        template: 'template.rbx.tex'

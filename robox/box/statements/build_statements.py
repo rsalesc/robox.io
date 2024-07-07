@@ -25,7 +25,7 @@ from robox.box.testcases import get_samples
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
 
-def _get_environment_languages_for_statement() -> List[StatementCodeLanguage]:
+def get_environment_languages_for_statement() -> List[StatementCodeLanguage]:
     env = environment.get_environment()
 
     res = []
@@ -90,12 +90,12 @@ def get_implicit_builders(
 
 
 def _try_implicit_builders(
-    statement: Statement, input_type: StatementType, output_type: StatementType
+    statement_id: str, input_type: StatementType, output_type: StatementType
 ) -> List[StatementBuilder]:
     implicit_builders = get_implicit_builders(input_type, output_type)
     if implicit_builders is None:
         console.console.print(
-            f'[error]Cannot implicitly convert statement [item]{statement.path}[/item] '
+            f'[error]Cannot implicitly convert statement [item]{statement_id}[/item] '
             f'from [item]{input_type}[/item] '
             f'to specified output type [item]{output_type}[/item].[/error]'
         )
@@ -108,26 +108,30 @@ def _try_implicit_builders(
 
 
 def _get_configured_params_for(
-    statement: Statement, conversion_type: ConversionType
+    configure: List[ConversionStep], conversion_type: ConversionType
 ) -> Optional[ConversionStep]:
-    for step in statement.configure:
+    for step in configure:
         if step.type == conversion_type:
             return step
     return None
 
 
 def get_builders(
-    statement: Statement, output_type: Optional[StatementType]
+    statement_id: str,
+    steps: List[ConversionStep],
+    configure: List[ConversionStep],
+    input_type: StatementType,
+    output_type: Optional[StatementType],
 ) -> List[Tuple[StatementBuilder, ConversionStep]]:
-    last_output = statement.type
+    last_output = input_type
     builders: List[Tuple[StatementBuilder, ConversionStep]] = []
 
     # Conversion steps to force during build.
-    for step in statement.steps:
+    for step in steps:
         builder = get_builder(step.type)
         if builder.input_type() != last_output:
             implicit_builders = _try_implicit_builders(
-                statement, last_output, builder.input_type()
+                statement_id, last_output, builder.input_type()
             )
             builders.extend(
                 (builder, builder.default_params()) for builder in implicit_builders
@@ -136,14 +140,16 @@ def get_builders(
         last_output = builder.output_type()
 
     if output_type is not None and last_output != output_type:
-        implicit_builders = _try_implicit_builders(statement, last_output, output_type)
+        implicit_builders = _try_implicit_builders(
+            statement_id, last_output, output_type
+        )
         builders.extend(
             (builder, builder.default_params()) for builder in implicit_builders
         )
 
     # Override statement configs.
     def reconfigure(params: ConversionStep) -> ConversionStep:
-        new_params = _get_configured_params_for(statement, params.type)
+        new_params = _get_configured_params_for(configure, params.type)
         return new_params or params
 
     reconfigured_builders = [
@@ -152,10 +158,13 @@ def get_builders(
     return reconfigured_builders
 
 
-def _get_relative_assets(
-    statement_path: pathlib.Path,
+def get_relative_assets(
+    relative_to: pathlib.Path,
     assets: List[str],
 ) -> List[Tuple[pathlib.Path, pathlib.Path]]:
+    relative_to = relative_to.resolve()
+    if not relative_to.is_dir():
+        relative_to = relative_to.parent
     res = []
     for asset in assets:
         relative_path = pathlib.Path(asset)
@@ -165,14 +174,14 @@ def _get_relative_assets(
                 for path in pathlib.Path().glob(str(relative_path))
                 if path.is_file()
             )
-            if not globbed:
+            if not globbed and '*' not in str(relative_path):
                 console.console.print(
                     f'[error]Asset [item]{asset}[/item] does not exist.[/error]'
                 )
                 raise typer.Exit(1)
-            res.extend(_get_relative_assets(statement_path, list(map(str, globbed))))
+            res.extend(get_relative_assets(relative_to, list(map(str, globbed))))
             continue
-        if not relative_path.resolve().is_relative_to(statement_path.resolve().parent):
+        if not relative_path.resolve().is_relative_to(relative_to):
             console.console.print(
                 f'[error]Asset [item]{asset}[/item] is not relative to your statement.[/error]'
             )
@@ -180,8 +189,8 @@ def _get_relative_assets(
 
         res.append(
             (
-                relative_path,
-                relative_path.resolve().relative_to(statement_path.resolve().parent),
+                relative_path.resolve(),
+                relative_path.resolve().relative_to(relative_to),
             )
         )
 
@@ -196,17 +205,23 @@ def build_statement(
             f'[error]Statement file [item]{statement.path}[/item] does not exist.[/error]'
         )
         raise typer.Exit(1)
-    builders = get_builders(statement, output_type)
+    builders = get_builders(
+        str(statement.path),
+        statement.steps,
+        statement.configure,
+        statement.type,
+        output_type,
+    )
     last_output = statement.type
     last_content = statement.path.read_bytes()
     for bdr, params in builders:
-        assets = _get_relative_assets(
+        assets = get_relative_assets(
             statement.path, statement.assets
         ) + bdr.inject_assets(params)
         output = bdr.build(
             input=last_content,
             context=StatementBuilderContext(
-                languages=_get_environment_languages_for_statement(),
+                languages=get_environment_languages_for_statement(),
                 params=params,
                 assets=assets,
             ),
