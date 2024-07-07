@@ -3,6 +3,18 @@ import pathlib
 import subprocess
 from typing import Optional
 
+MAX_PDFLATEX_RUNS = 3
+
+
+def should_rerun(logs: str) -> bool:
+    logs = logs.lower()
+    for line in logs.splitlines():
+        if 'rerun to get cross-references right' in line:
+            return True
+        if 'rerun' in line and 'warning' in line:
+            return True
+    return False
+
 
 @dataclasses.dataclass
 class LatexResult:

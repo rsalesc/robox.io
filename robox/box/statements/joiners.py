@@ -10,7 +10,7 @@ from robox.box.statements.builders import (
     StatementBuilderContest,
     StatementCodeLanguage,
 )
-from robox.box.statements.latex import Latex
+from robox.box.statements.latex import MAX_PDFLATEX_RUNS, Latex, should_rerun
 from robox.box.statements.schema import Joiner, JoinerType, JoinTexToPDF, StatementType
 
 
@@ -82,13 +82,25 @@ class TeX2PDFJoiner(StatementJoiner):
         latex = Latex(input.decode())
         latex_result = latex.build_pdf(context.root)
         pdf = latex_result.pdf
+        logs = latex_result.result.stdout.decode()
+        runs = 1
+
+        while pdf is not None and should_rerun(logs) and runs < MAX_PDFLATEX_RUNS:
+            console.console.print(
+                'Re-running pdfLaTeX to get cross-references right...'
+            )
+            latex_result = latex.build_pdf(context.root)
+            pdf = latex_result.pdf
+            logs = latex_result.result.stdout.decode()
+            runs += 1
+
         if pdf is None:
-            console.console.print(f'{latex_result.result.stdout.decode()}')
+            console.console.print(f'{logs}')
             console.console.print('[error]PdfLaTeX compilation failed.[/error]')
             raise typer.Exit(1)
 
         if verbose:
-            console.console.print(f'{latex_result.result.stdout.decode()}')
+            console.console.print(f'{logs}')
 
         return pdf
 
