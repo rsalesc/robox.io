@@ -1,4 +1,4 @@
-# Package
+# Problem package
 
 This documentation goes over how each field (or group of fields) in `problem.rbx.yml` works.
 

@@ -21,6 +21,16 @@
 | Package problem for {{boca}}                    | `rbx package boca`                     |
 | Clear cache                                     | `rbx clear`                            |
 
+### Contest CLI
+
+| Task                                            | Command                                        |
+| ----------------------------------------------- | ---------------------------------------------- |
+| Show help message                               | `rbx contest --help`                           |
+| Create a new contest in folder `package`        | `rbx contest create package`                   |
+| Open the contest configuration in a text editor | `rbx edit`                                     |
+| Build PDF statements                            | `rbx contest statements build --output=pdf`    |
+| Build PDF statements for English                | `rbx contest statements build en --output=pdf` |
+
 ## `problem.rbx.yml`
 
 ### Change problem constraints
@@ -272,3 +282,14 @@ stresses:
 ```
 
 1.  The `@` at the end of the `args` string appends a random string to it. This is necessary here because `gen 100000` would return the same testcase over and over, since {{testlib}} rng is seeded from its command line argc and argv.
+
+## `contest.rbx.yml`
+
+### Add a new problem
+
+```yaml
+problems:
+  - short_name: "A"  # Letter of the problem
+    path: "problem_folder"
+    color: "ff0000"  # Optional
+```

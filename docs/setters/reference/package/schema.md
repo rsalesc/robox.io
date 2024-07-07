@@ -1,4 +1,4 @@
-# Package: full schema
+# Problem schema
 
 ## `problem.rbx.yml`
 

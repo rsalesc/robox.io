@@ -12,6 +12,9 @@ nav:
       - 'Package':
         - 'setters/reference/package/index.md'
         - 'Schema': 'setters/reference/package/schema.md'
+      - 'Contest':
+        - 'setters/reference/contest/index.md'
+        - 'Schema': 'setters/reference/contest/schema.md'
       - 'setters/reference/environment.md'
       - 'setters/reference/cli.md'
 theme:
