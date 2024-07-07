@@ -13,30 +13,6 @@ A barebones package would look something like:
 ```yaml
 name: "my-problem"
 ```
-
-## Contest information
-
-**Schema**: `Dict[str, `[`ContestInformation`][robox.box.contest.schema.ContestInformation]`]`
-
-In contest information we can configure localized information about the contest, such as:
-
-- Problem title;
-- Location;
-- Date
-
-```yaml
-name: "my-contest"
-information:
-  en:
-    title: "My contest"
-    location: "My house"  # Optional
-    date: "Today"  # Optional
-  pt:
-    title: "Meu contest"
-    location: "Minha casa"  # Optional
-    date: "Hoje"  # Optional
-```
-
 ## Contest problem
 
 **Schema**: `List[`[`ContestProblem`][robox.box.contest.schema.ContestProblem]`]`
