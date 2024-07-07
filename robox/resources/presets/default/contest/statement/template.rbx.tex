@@ -1,0 +1,36 @@
+\begin{problem}
+  %- if problem.short_name is defined
+    [\VAR{problem.short_name}]
+  %- endif
+    {\VAR{problem.title | escape}}
+    {stdin}
+    {stdout}
+    {\VAR{problem.package.timeLimit / 1000 | round(1, 'floor')} s}
+    {\VAR{problem.package.memoryLimit} MB}
+  
+  \VAR{problem.blocks.legend}
+  
+  %- if problem.blocks.input is defined
+  \InputFile
+  \VAR{problem.blocks.input}
+  %- endif
+  
+  %- if problem.blocks.output is defined
+  \OutputFile
+  \VAR{problem.blocks.output}
+  %- endif
+  
+  \Examples
+  
+  %- for sample in problem.samples
+  \begin{example}
+    \exmpfile{\VAR{sample.inputPath}}{\VAR{sample.outputPath if sample.outputPath is not none else ''}}%
+  \end{example}
+  %- endfor
+  
+  %- if problem.blocks.notes is defined
+  \Notes
+  \VAR{problem.blocks.notes}
+  %- endif
+  
+  \end{problem}

@@ -84,10 +84,14 @@ def add(name: str, short_name: str, preset: Optional[str] = None):
     creation.create(name, preset=preset, path=pathlib.Path(short_name))
 
     contest = find_contest_package_or_die()
-    contest.problems.append(
-        ContestProblem(short_name=short_name, path=pathlib.Path(short_name))
+    # Reassign mutable object before saving.
+    contest.problems = sorted(
+        [
+            *contest.problems,
+            ContestProblem(short_name=short_name, path=pathlib.Path(short_name)),
+        ],
+        key=lambda p: p.short_name,
     )
 
-    contest.problems.sort(key=lambda p: p.short_name)
     save_contest(contest)
     console.console.print(f'Problem [item]{short_name}[/item] added to contest.')

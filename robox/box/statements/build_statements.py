@@ -1,4 +1,5 @@
 import pathlib
+import tempfile
 import typing
 from typing import Annotated, Dict, List, Optional, Tuple
 
@@ -9,10 +10,12 @@ from robox.box import builder, environment, package
 from robox.box.schema import Package
 from robox.box.statements.builders import (
     BUILDER_LIST,
+    PROBLEM_BUILDER_LIST,
     StatementBuilder,
     StatementBuilderContext,
     StatementBuilderProblem,
     StatementCodeLanguage,
+    prepare_assets,
 )
 from robox.box.statements.schema import (
     ConversionStep,
@@ -46,8 +49,10 @@ def get_environment_languages_for_statement() -> List[StatementCodeLanguage]:
     return res
 
 
-def get_builder(name: ConversionType) -> StatementBuilder:
-    candidates = [builder for builder in BUILDER_LIST if builder.name() == name]
+def get_builder(
+    name: ConversionType, builder_list: List[StatementBuilder]
+) -> StatementBuilder:
+    candidates = [builder for builder in builder_list if builder.name() == name]
     if not candidates:
         console.console.print(
             f'[error]No statement builder found with name [name]{name}[/name][/error]'
@@ -122,13 +127,14 @@ def get_builders(
     configure: List[ConversionStep],
     input_type: StatementType,
     output_type: Optional[StatementType],
+    builder_list: List[StatementBuilder] = BUILDER_LIST,
 ) -> List[Tuple[StatementBuilder, ConversionStep]]:
     last_output = input_type
     builders: List[Tuple[StatementBuilder, ConversionStep]] = []
 
     # Conversion steps to force during build.
     for step in steps:
-        builder = get_builder(step.type)
+        builder = get_builder(step.type, builder_list=builder_list)
         if builder.input_type() != last_output:
             implicit_builders = _try_implicit_builders(
                 statement_id, last_output, builder.input_type()
@@ -197,9 +203,18 @@ def get_relative_assets(
     return res
 
 
-def build_statement(
-    statement: Statement, pkg: Package, output_type: Optional[StatementType] = None
-) -> pathlib.Path:
+def build_statement_bytes(
+    statement: Statement,
+    pkg: Package,
+    output_type: Optional[StatementType] = None,
+    short_name: Optional[str] = None,
+    overridden_params_root: pathlib.Path = pathlib.Path(),
+    overridden_params: Optional[Dict[ConversionType, ConversionStep]] = None,
+    overridden_assets: Optional[List[Tuple[pathlib.Path, pathlib.Path]]] = None,
+) -> Tuple[bytes, StatementType]:
+    overridden_params = overridden_params or {}
+    overridden_assets = overridden_assets or []
+
     if not statement.path.is_file():
         console.console.print(
             f'[error]Statement file [item]{statement.path}[/item] does not exist.[/error]'
@@ -211,30 +226,55 @@ def build_statement(
         statement.configure,
         statement.type,
         output_type,
+        builder_list=PROBLEM_BUILDER_LIST,
     )
     last_output = statement.type
     last_content = statement.path.read_bytes()
     for bdr, params in builders:
-        assets = get_relative_assets(
-            statement.path, statement.assets
-        ) + bdr.inject_assets(params)
-        output = bdr.build(
-            input=last_content,
-            context=StatementBuilderContext(
-                languages=get_environment_languages_for_statement(),
-                params=params,
-                assets=assets,
-            ),
-            item=StatementBuilderProblem(
-                package=pkg,
-                statement=statement,
-                samples=get_samples(),
-            ),
-            verbose=False,
-        )
+        with tempfile.TemporaryDirectory() as td:
+            # Here, create a new temp context for each builder call.
+            assets = get_relative_assets(statement.path, statement.assets)
+
+            # Use either overridden assets (by contest) or usual assets.
+            # Remember to modify the root to contest root if that's the case.
+            if bdr.name() in overridden_params:
+                assets.extend(
+                    bdr.inject_assets(
+                        overridden_params_root, overridden_params[bdr.name()]
+                    )
+                )
+            else:
+                assets.extend(bdr.inject_assets(pathlib.Path(), params))
+            assets.extend(overridden_assets)
+
+            prepare_assets(assets, pathlib.Path(td))
+            output = bdr.build(
+                input=last_content,
+                context=StatementBuilderContext(
+                    languages=get_environment_languages_for_statement(),
+                    params=params,
+                    root=pathlib.Path(td),
+                ),
+                item=StatementBuilderProblem(
+                    package=pkg,
+                    statement=statement,
+                    samples=get_samples(),
+                    short_name=short_name,
+                ),
+                verbose=False,
+            )
         last_output = bdr.output_type()
         last_content = output
 
+    return last_content, last_output
+
+
+def build_statement(
+    statement: Statement, pkg: Package, output_type: Optional[StatementType] = None
+) -> pathlib.Path:
+    last_content, last_output = build_statement_bytes(
+        statement, pkg, output_type=output_type
+    )
     statement_path = (
         package.get_build_path()
         / f'{statement.path.stem}{last_output.get_file_suffix()}'

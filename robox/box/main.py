@@ -153,7 +153,10 @@ def stress(
             break
         try:
             testgroup = package.get_testgroup(testgroup)
-            testgroup.generators.extend(f.generator for f in finding_list)
+            # Reassign mutable object before saving.
+            testgroup.generators = testgroup.generators + [
+                f.generator for f in finding_list
+            ]
             package.save_package()
             console.console.print(
                 f'Added [item]{len(finding_list)}[/item] tests to test group [item]{testgroup.name}[/item].'

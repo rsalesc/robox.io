@@ -3,6 +3,7 @@ that overrides Jinja2 defaults to make it work more seamlessly
 with Latex.
 """
 
+import pathlib
 import re
 from typing import Dict, Tuple
 
@@ -112,6 +113,14 @@ def scientific_notation(value: int, zeroes: int = 5) -> str:
     return f'{rest} \\times 10^{cnt}'
 
 
+def path_parent(path: pathlib.Path) -> pathlib.Path:
+    return path.parent
+
+
+def path_stem(path: pathlib.Path) -> str:
+    return path.stem
+
+
 ######################################################################
 # Declare module functions
 ######################################################################
@@ -120,6 +129,8 @@ def scientific_notation(value: int, zeroes: int = 5) -> str:
 def add_builtin_filters(j2_env: jinja2.Environment):
     j2_env.filters['escape'] = escape_latex_str_if_str
     j2_env.filters['sci'] = scientific_notation
+    j2_env.filters['parent'] = path_parent
+    j2_env.filters['stem'] = path_stem
 
 
 def render_latex_template(path_templates, template_filename, template_vars=None) -> str:

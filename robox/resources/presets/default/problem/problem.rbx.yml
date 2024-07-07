@@ -3,10 +3,8 @@
 name: 'new-problem'
 timeLimit: 1000
 memoryLimit: 256
-checker:
-  path: 'wcmp.cpp'  # Download others from testlib with `rbx download checker`
-validator:
-  path: 'validator.cpp'
+checker: {path: 'wcmp.cpp'}  # Download others from testlib with `rbx download checker`
+validator: {path: 'validator.cpp'}
 generators:
   - path: 'gen.cpp'
     name: 'gen'

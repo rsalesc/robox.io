@@ -1,15 +1,13 @@
 import dataclasses
 import pathlib
 import shutil
-import tempfile
 import typing
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import typer
 
 from robox import console
-from robox.box.contest.schema import ContestInformation
 from robox.box.schema import Package, Testcase
 from robox.box.statements.latex import Latex
 from robox.box.statements.latex_jinja import (
@@ -37,19 +35,13 @@ class StatementCodeLanguage:
 class StatementBuilderContext:
     languages: List[StatementCodeLanguage]
     params: ConversionStep
-    assets: List[Tuple[pathlib.Path, pathlib.Path]] = dataclasses.field(
-        default_factory=list
-    )
+    root: pathlib.Path
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
         return {'languages': self.languages}
 
 
 class StatementBuilderItem(ABC):
-    @abstractmethod
-    def is_contest(self) -> bool:
-        pass
-
     @abstractmethod
     def build_jinja_kwargs(self) -> Dict[str, Any]:
         pass
@@ -60,41 +52,45 @@ class StatementBuilderProblem(StatementBuilderItem):
     package: Package
     statement: Statement
     samples: List[Testcase] = dataclasses.field(default_factory=list)
+    short_name: Optional[str] = None
 
-    def is_contest(self) -> bool:
-        return True
+    # Will only be filled by contests.
+    io_path: Optional[pathlib.Path] = None
 
     def build_inner_jinja_kwargs(self) -> Dict[str, Any]:
-        return {
+        kwargs = {
             'package': self.package,
             'statement': self.statement,
             'samples': self.samples,
             'vars': self.package.vars,
             'title': self.statement.title or self.package.name,
         }
+        if self.short_name is not None:
+            kwargs['short_name'] = self.short_name
+        if self.io_path is not None:
+            kwargs['path'] = self.io_path
+        return kwargs
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
         inner = self.build_inner_jinja_kwargs()
         return {
             'problem': inner,
-            'problems': [inner],
         }
 
 
 @dataclasses.dataclass
 class StatementBuilderContest(StatementBuilderItem):
-    information: ContestInformation
+    title: str
+    location: Optional[str] = None
+    date: Optional[str] = None
     problems: List[StatementBuilderProblem] = dataclasses.field(default_factory=list)
 
-    def is_contest(self) -> bool:
-        return True
-
     def build_inner_jinja_kwargs(self) -> Dict[str, Any]:
-        res = {'title': self.information.title}
-        if self.information.location:
-            res['location'] = self.information.location
-        if self.information.date:
-            res['date'] = self.information.date
+        res = {'title': self.title}
+        if self.location:
+            res['location'] = self.location
+        if self.date:
+            res['date'] = self.date
         return res
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
@@ -125,42 +121,30 @@ def prepare_assets(
         shutil.copyfile(str(asset_in), str(dest_path))
 
 
-def render_jinja(
-    assets: List[Tuple[pathlib.Path, pathlib.Path]], content: bytes, **kwargs
-) -> bytes:
-    with tempfile.TemporaryDirectory() as td:
-        temp_dir = pathlib.Path(td)
-        prepare_assets(assets, temp_dir)
+def render_jinja(root: pathlib.Path, content: bytes, **kwargs) -> bytes:
+    temp_file = '__input__.tex'
+    temp_path = root / temp_file
+    temp_path.write_bytes(content)
 
-        temp_file = '__input__.tex'
-        temp_path = temp_dir / temp_file
-        temp_path.write_bytes(content)
-
-        result: str = render_latex_template(
-            str(temp_dir),
-            temp_file,
-            kwargs,
-        )
-        return result.encode()
+    result: str = render_latex_template(
+        str(root),
+        temp_file,
+        kwargs,
+    )
+    return result.encode()
 
 
-def render_jinja_blocks(
-    assets: List[Tuple[pathlib.Path, pathlib.Path]], content: bytes, **kwargs
-) -> Dict[str, str]:
-    with tempfile.TemporaryDirectory() as td:
-        temp_dir = pathlib.Path(td)
-        prepare_assets(assets, temp_dir)
+def render_jinja_blocks(root: pathlib.Path, content: bytes, **kwargs) -> Dict[str, str]:
+    temp_file = '__input__.tex'
+    temp_path = root / temp_file
+    temp_path.write_bytes(content)
 
-        temp_file = '__input__.tex'
-        temp_path = temp_dir / temp_file
-        temp_path.write_bytes(content)
-
-        result: Dict[str, str] = render_latex_template_blocks(
-            str(temp_dir),
-            temp_file,
-            kwargs,
-        )
-        return result
+    result: Dict[str, str] = render_latex_template_blocks(
+        str(root),
+        temp_file,
+        kwargs,
+    )
+    return result
 
 
 class StatementBuilder(ABC):
@@ -180,15 +164,21 @@ class StatementBuilder(ABC):
     def output_type(self) -> StatementType:
         pass
 
+    def handles_contest(self) -> bool:
+        return True
+
+    def handles_problem(self) -> bool:
+        return True
+
     def inject_assets(
-        self, params: ConversionStep
+        self, root: pathlib.Path, params: ConversionStep
     ) -> List[Tuple[pathlib.Path, pathlib.Path]]:
         return []
 
     @abstractmethod
     def build(
         self,
-        input: Union[bytes, List[bytes]],
+        input: bytes,
         context: StatementBuilderContext,
         item: StatementBuilderItem,
         verbose: bool = False,
@@ -211,18 +201,13 @@ class JinjaTeXBuilder(StatementBuilder):
 
     def build(
         self,
-        input: Union[bytes, List[bytes]],
+        input: bytes,
         context: StatementBuilderContext,
         item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
-        if isinstance(input, list):
-            console.console.print(
-                '[error]Multiple inputs are not supported by JinjaTeX.[/error]'
-            )
-            raise typer.Exit(1)
         return render_jinja(
-            context.assets,
+            context.root,
             input,
             **context.build_jinja_kwargs(),
             **item.build_jinja_kwargs(),
@@ -242,60 +227,40 @@ class roboxTeXBuilder(StatementBuilder):
     def output_type(self) -> StatementType:
         return StatementType.TeX
 
+    def handles_contest(self) -> bool:
+        # This builder cannot build contest statements.
+        return False
+
     def inject_assets(
-        self, params: ConversionStep
+        self, root: pathlib.Path, params: ConversionStep
     ) -> List[Tuple[pathlib.Path, pathlib.Path]]:
         params = typing.cast(roboxToTeX, params)
         if not params.template:
             return []
-        return [(params.template.resolve(), params.template)]
+        return [((root / params.template).resolve(), params.template)]
 
     def build(
         self,
-        input: Union[bytes, List[bytes]],
+        input: bytes,
         context: StatementBuilderContext,
         item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
         params = typing.cast(roboxToTeX, context.params)
         assert params.template is not None
-        problems: List[StatementBuilderProblem] = (
-            [problem for problem in item.problems]
-            if isinstance(item, StatementBuilderContest)
-            else [typing.cast(StatementBuilderProblem, item)]
+        problem = typing.cast(StatementBuilderProblem, item)
+
+        blocks = render_jinja_blocks(
+            context.root, input, **problem.build_inner_jinja_kwargs()
         )
-
-        if isinstance(input, list):
-            blocks_per_problem = [
-                render_jinja_blocks(
-                    context.assets, inp, **problem.build_inner_jinja_kwargs()
-                )
-                for problem, inp in zip(problems, input)
-            ]
-        else:
-            blocks_per_problem = [
-                render_jinja_blocks(
-                    context.assets, input, **problem.build_inner_jinja_kwargs()
-                )
-                for problem in problems
-            ]
-
-        item_kwargs = item.build_jinja_kwargs()
-        # Add `blocks` to kwargs.
-        item_kwargs['problems'] = [
-            {**kwargs, 'blocks': blocks}
-            for kwargs, blocks in zip(item_kwargs['problems'], blocks_per_problem)
-        ]
-
-        if 'problem' in item_kwargs:
-            # Reload single problem kwargs.
-            item_kwargs['problem'] = item_kwargs['problems'][0]
+        problem_kwargs = problem.build_jinja_kwargs()
+        problem_kwargs['problem']['blocks'] = blocks
 
         return render_jinja(
-            context.assets,
+            context.root,
             f'%- extends "{params.template}"'.encode(),
             **context.build_jinja_kwargs(),
-            **item_kwargs,
+            **problem_kwargs,
         )
 
 
@@ -314,23 +279,13 @@ class TeX2PDFBuilder(StatementBuilder):
 
     def build(
         self,
-        input: Union[bytes, List[bytes]],
+        input: bytes,
         context: StatementBuilderContext,
         item: StatementBuilderItem,
         verbose: bool = False,
     ) -> bytes:
-        if isinstance(input, list):
-            console.console.print(
-                '[error]Multiple inputs are not supported by JinjaTeX.[/error]'
-            )
-            raise typer.Exit(1)
-
-        input = typing.cast(bytes, input)
         latex = Latex(input.decode())
-        with tempfile.TemporaryDirectory() as td:
-            temp_dir = pathlib.Path(td)
-            prepare_assets(context.assets, temp_dir)
-            latex_result = latex.build_pdf(temp_dir)
+        latex_result = latex.build_pdf(context.root)
         pdf = latex_result.pdf
         if pdf is None:
             console.console.print(f'{latex_result.result.stdout.decode()}')
@@ -343,4 +298,14 @@ class TeX2PDFBuilder(StatementBuilder):
         return pdf
 
 
-BUILDER_LIST = [TeX2PDFBuilder(), JinjaTeXBuilder(), roboxTeXBuilder()]
+BUILDER_LIST: List[StatementBuilder] = [
+    TeX2PDFBuilder(),
+    JinjaTeXBuilder(),
+    roboxTeXBuilder(),
+]
+PROBLEM_BUILDER_LIST = [
+    builder for builder in BUILDER_LIST if builder.handles_problem()
+]
+CONTEST_BUILDER_LIST = [
+    builder for builder in BUILDER_LIST if builder.handles_contest()
+]

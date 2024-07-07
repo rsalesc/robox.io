@@ -1,24 +1,33 @@
 import dataclasses
 import pathlib
+import tempfile
 import typing
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 import typer
 
-from robox import console, utils
+from robox import console, testing_utils, utils
 from robox.box.contest import contest_utils
 from robox.box.contest.contest_package import get_problems
 from robox.box.contest.schema import Contest, ContestProblem, ContestStatement
 from robox.box.schema import Package, Testcase
+from robox.box.statements import build_statements
 from robox.box.statements.build_statements import (
     get_builders,
     get_environment_languages_for_statement,
     get_relative_assets,
 )
 from robox.box.statements.builders import (
+    CONTEST_BUILDER_LIST,
     StatementBuilderContest,
     StatementBuilderContext,
     StatementBuilderProblem,
+    prepare_assets,
+)
+from robox.box.statements.joiners import (
+    JOINER_LIST,
+    StatementJoiner,
+    StatementJoinerContext,
 )
 from robox.box.statements.schema import Statement, StatementType
 from robox.box.testcases import get_samples
@@ -30,6 +39,7 @@ class ExtractedProblem:
     statement: Statement
     problem: ContestProblem
     samples: List[Testcase]
+    built_statement: Optional[pathlib.Path] = None
 
     def get_statement_path(self) -> pathlib.Path:
         return self.problem.get_path() / self.statement.path
@@ -37,11 +47,38 @@ class ExtractedProblem:
     def get_statement_assets(self) -> List[str]:
         return [str(self.problem.get_path() / asset) for asset in self.statement.assets]
 
+    def get_statement_builder_problem(self) -> StatementBuilderProblem:
+        return StatementBuilderProblem(
+            package=self.package,
+            statement=self.statement,
+            samples=self.samples,
+            io_path=self.built_statement,
+            short_name=self.problem.short_name,
+        )
+
 
 def _get_samples(problem: ContestProblem) -> List[Testcase]:
     with utils.new_cd(problem.get_path()):
         contest_utils.clear_package_cache()
         return get_samples()
+
+
+def get_statement_builder_problems(
+    extracted_problems: List[ExtractedProblem],
+) -> List[StatementBuilderProblem]:
+    return [ex.get_statement_builder_problem() for ex in extracted_problems]
+
+
+def get_statement_builder_contest(
+    statement: ContestStatement,
+    extracted_problems: List[ExtractedProblem],
+) -> StatementBuilderContest:
+    return StatementBuilderContest(
+        title=statement.title,
+        location=statement.location,
+        date=statement.date,
+        problems=get_statement_builder_problems(extracted_problems),
+    )
 
 
 def get_problems_for_statement(
@@ -78,18 +115,6 @@ def get_problems_for_statement(
     return res
 
 
-def get_common_type(extracted_problems: List[ExtractedProblem]) -> StatementType:
-    all_types: Set[StatementType] = set()
-    for extracted_problem in extracted_problems:
-        all_types.add(extracted_problem.statement.type)
-    if len(all_types) > 1:
-        console.console.print(
-            '[error]Multiple statement types found in the contest, cannot infer common type.[/error]'
-        )
-        raise typer.Exit(1)
-    return all_types.pop()
-
-
 def get_builder_problems(
     extracted_problems: List[ExtractedProblem],
 ) -> List[StatementBuilderProblem]:
@@ -103,26 +128,164 @@ def get_builder_problems(
     ]
 
 
-def _get_problem_level_relative_assets(
-    extracted_problems: List[ExtractedProblem],
-) -> List[Tuple[pathlib.Path, pathlib.Path]]:
-    assets = []
+def get_joiner(name: str) -> StatementJoiner:
+    for joiner in JOINER_LIST:
+        if joiner.name() == name:
+            return joiner
+    console.console.print(f'[error]Joiner [item]{name}[/item] not found.[/error]')
+    raise typer.Exit(1)
+
+
+def _build_problem_statements(
+    statement: ContestStatement,
+    contest: Contest,
+    root: pathlib.Path,
+    output_type: StatementType,
+) -> List[ExtractedProblem]:
+    console.console.print('Building problem-level statements...')
+    extracted_problems = get_problems_for_statement(contest, statement.language)
+    res = []
+    contest_cwd_absolute = pathlib.Path().resolve()
+    contest_assets = get_relative_assets(statement.path, statement.assets)
+
     for extracted_problem in extracted_problems:
-        assets.extend(
+        console.console.print(
+            f'Building statement for problem {extracted_problem.problem.short_name}...'
+        )
+        with utils.new_cd(extracted_problem.problem.get_path()):
+            contest_utils.clear_package_cache()
+            # TODO: respect steps override
+            content, _ = build_statements.build_statement_bytes(
+                extracted_problem.statement,
+                extracted_problem.package,
+                output_type=output_type,
+                short_name=extracted_problem.problem.short_name,
+                overridden_params={
+                    cfg.type: cfg for cfg in statement.override.configure
+                }
+                if statement.override is not None
+                else {},  # overridden configure params
+                overridden_assets=contest_assets,  # overridden assets
+                overridden_params_root=contest_cwd_absolute,
+            )
+        dest_dir = root / '.problems' / extracted_problem.problem.short_name
+        dest_path = dest_dir / f'statement{output_type.get_file_suffix()}'
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest_path.write_bytes(content)
+
+        problem_assets = (
             get_relative_assets(
                 extracted_problem.get_statement_path(),
                 extracted_problem.get_statement_assets(),
             )
+            + contest_assets
         )
-    dest_assets = set()
-    for asset in assets:
-        if asset[1] in dest_assets:
-            console.console.print(
-                f'[warning]Duplicate asset [item]{asset[1]}[/item] found in the contest.[/warning]'
+        prepare_assets(problem_assets, dest_dir)
+
+        res.append(dataclasses.replace(extracted_problem, built_statement=dest_path))
+    return res
+
+
+def build_contest_only(
+    statement: ContestStatement,
+    contest: Contest,
+    extracted_problems: List[ExtractedProblem],
+    input: bytes,
+    input_type: StatementType,
+    output_type: Optional[StatementType] = None,
+) -> Tuple[bytes, StatementType]:
+    bdrs = get_builders(
+        contest.name,
+        statement.steps,
+        statement.configure,
+        input_type,
+        output_type=output_type,
+        builder_list=CONTEST_BUILDER_LIST,
+    )
+
+    last_content = input
+    last_output = input_type
+    for bdr, params in bdrs:
+        with tempfile.TemporaryDirectory() as td:
+            assets = get_relative_assets(
+                statement.path, statement.assets
+            ) + bdr.inject_assets(pathlib.Path(), params)
+            prepare_assets(assets, pathlib.Path(td))
+            output = bdr.build(
+                input=last_content,
+                context=StatementBuilderContext(
+                    languages=get_environment_languages_for_statement(),
+                    params=params,
+                    root=pathlib.Path(td),
+                ),
+                item=get_statement_builder_contest(statement, extracted_problems),
+                verbose=False,
             )
-            raise typer.Exit(1)
-        dest_assets.add(asset[1])
-    return assets
+        last_content = output
+        last_output = bdr.output_type()
+
+    return last_content, last_output
+
+
+def build_statement_rooted(
+    statement: ContestStatement,
+    contest: Contest,
+    root: pathlib.Path,
+    output_type: Optional[StatementType] = None,
+) -> Tuple[bytes, StatementType]:
+    # Validate.
+    if not statement.path.is_file():
+        console.console.print(
+            f'[error]Statement file [item]{statement.path}[/item] does not exist for contest.[/error]'
+        )
+        raise typer.Exit(1)
+
+    # Build problem-level statements.
+    joiner = get_joiner(statement.joiner.type)
+    extracted_problems = _build_problem_statements(
+        statement, contest, root, output_type=joiner.joined_type()
+    )
+
+    # Build contest-level statement into joiner input type.
+    last_content, _ = build_contest_only(
+        statement,
+        contest,
+        extracted_problems,
+        statement.path.read_bytes(),
+        statement.type,
+        output_type=joiner.joined_type(),
+    )
+
+    # Join statements.
+    console.console.print('Joining statements...')
+    joiner_assets = get_relative_assets(statement.path, statement.assets)
+    prepare_assets(joiner_assets, root)
+
+    testing_utils.print_directory_tree(root, show_hidden=True)
+
+    joiner_context = StatementJoinerContext(
+        languages=get_environment_languages_for_statement(),
+        params=statement.joiner,
+        root=root,
+    )
+    last_content = joiner.build(
+        last_content,
+        context=joiner_context,
+        contest=get_statement_builder_contest(statement, extracted_problems),
+    )
+    last_output = joiner.output_type()
+
+    # Finish statement.
+    last_content, last_output = build_contest_only(
+        statement,
+        contest,
+        extracted_problems,
+        last_content,
+        last_output,
+        output_type=output_type,
+    )
+
+    return last_content, last_output
 
 
 def build_statement(
@@ -130,41 +293,11 @@ def build_statement(
     contest: Contest,
     output_type: Optional[StatementType] = None,
 ) -> pathlib.Path:
-    extracted_problems = get_problems_for_statement(contest, statement.language)
-    common_type = get_common_type(extracted_problems)
-    builders = get_builders(
-        str(contest.name),
-        statement.steps,
-        statement.configure,
-        common_type,
-        output_type,
-    )
-    last_output = common_type
-    last_content = [
-        extracted_problem.get_statement_path().read_bytes()
-        for extracted_problem in extracted_problems
-    ]
-    for bdr, params in builders:
-        assets = (
-            get_relative_assets(pathlib.Path(), statement.assets)
-            + _get_problem_level_relative_assets(extracted_problems)
-            + bdr.inject_assets(params)
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        last_content, last_output = build_statement_rooted(
+            statement, contest, root, output_type=output_type
         )
-        output = bdr.build(
-            input=last_content,
-            context=StatementBuilderContext(
-                languages=get_environment_languages_for_statement(),
-                params=params,
-                assets=assets,
-            ),
-            item=StatementBuilderContest(
-                information=contest.information[statement.language],
-                problems=get_builder_problems(extracted_problems),
-            ),
-            verbose=False,
-        )
-        last_output = bdr.output_type()
-        last_content = output
 
     statement_path = pathlib.Path(f'statement{last_output.get_file_suffix()}')
     statement_path.parent.mkdir(parents=True, exist_ok=True)

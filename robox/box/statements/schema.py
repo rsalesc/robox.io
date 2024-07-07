@@ -46,7 +46,24 @@ class JinjaTeX(BaseModel):
     type: Literal[ConversionType.JinjaTeX]
 
 
+### Joiner types.
+class JoinerType(str, Enum):
+    TexToPDF = 'tex2pdf'
+    """Join contest tex and problem texs to PDF using pdfLaTeX."""
+
+    def __repr__(self):
+        return str.__repr__(self.value)
+
+
+### Joiner nodes.
+class JoinTexToPDF(BaseModel):
+    """Configures the joining of contest and problem texes to PDF."""
+
+    type: Literal[JoinerType.TexToPDF]
+
+
 ConversionStep = Union[TexToPDF, JinjaTeX, roboxToTeX]
+Joiner = JoinTexToPDF
 
 
 ### Statement types

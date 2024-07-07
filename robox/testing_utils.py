@@ -30,7 +30,9 @@ def clear_all_functools_cache():
                 fn.cache_clear()
 
 
-def walk_directory(directory: pathlib.Path, tree: rich.tree.Tree) -> None:
+def walk_directory(
+    directory: pathlib.Path, tree: rich.tree.Tree, show_hidden: bool = False
+) -> None:
     """Recursively build a Tree with directory contents."""
     # Sort dirs first then by filename
     paths = sorted(
@@ -39,7 +41,7 @@ def walk_directory(directory: pathlib.Path, tree: rich.tree.Tree) -> None:
     )
     for path in paths:
         # Remove hidden files
-        if path.name.startswith('.'):
+        if path.name.startswith('.') and not show_hidden:
             continue
         if path.is_dir():
             style = 'dim' if path.name.startswith('__') else ''
@@ -59,7 +61,7 @@ def walk_directory(directory: pathlib.Path, tree: rich.tree.Tree) -> None:
             tree.add(rich.text.Text(icon) + text_filename)
 
 
-def print_directory_tree(directory: pathlib.Path):
+def print_directory_tree(directory: pathlib.Path, show_hidden: bool = False):
     tree = rich.tree.Tree(directory.name)
-    walk_directory(directory, tree)
+    walk_directory(directory, tree, show_hidden=show_hidden)
     console.console.print(tree)
