@@ -20,6 +20,9 @@ class ConversionType(str, Enum):
     JinjaTeX = 'jinja-tex'
     """Conversion from LaTeX with Jinja2 expressions to LaTeX."""
 
+    def __repr__(self):
+        return str.__repr__(self.value)
+
 
 ### Conversion nodes.
 class roboxToTeX(BaseModel):

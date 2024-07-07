@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 import typer
 
-from robox import annotations, console
+from robox import annotations, console, utils
 from robox.box import creation, presets
 from robox.box.contest import statements
 from robox.box.contest.contest_package import (
@@ -14,6 +14,7 @@ from robox.box.contest.contest_package import (
     save_contest,
 )
 from robox.box.contest.schema import ContestProblem
+from robox.box.schema import Package
 from robox.config import open_editor
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
@@ -71,6 +72,9 @@ def edit():
 
 @app.command('add, a', help='Add new problem to contest.')
 def add(name: str, short_name: str, preset: Optional[str] = None):
+    utils.validate_field(ContestProblem, 'short_name', short_name)
+    utils.validate_field(Package, 'name', name)
+
     creation.create(name, preset=preset, path=pathlib.Path(short_name))
 
     contest = find_contest_package_or_die()

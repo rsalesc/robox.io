@@ -11,6 +11,7 @@ import rich.prompt
 import rich.status
 import typer
 import yaml
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from rich import text
 from rich.highlighter import JSONHighlighter
@@ -71,7 +72,9 @@ def model_json(model: BaseModel) -> str:
 def model_to_yaml(model: BaseModel) -> str:
     path = ensure_schema(model.__class__)
     return f'# yaml-language-server: $schema={path}\n\n' + yaml.dump(
-        model.model_dump(mode='json', exclude_unset=True, exclude_none=True),
+        jsonable_encoder(
+            model.model_dump(mode='json', exclude_unset=True, exclude_none=True)
+        ),
         sort_keys=False,
     )
 
@@ -79,6 +82,12 @@ def model_to_yaml(model: BaseModel) -> str:
 def model_from_yaml(model: Type[T], s: str) -> T:
     ensure_schema(model)
     return model(**yaml.safe_load(s))
+
+
+def validate_field(model: Type[T], field: str, value: Any):
+    model.__pydantic_validator__.validate_assignment(
+        model.model_construct(), field, value
+    )
 
 
 def confirm_on_status(status: Optional[rich.status.Status], *args, **kwargs) -> bool:
