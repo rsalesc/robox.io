@@ -59,3 +59,23 @@ if __name__ == '__main__':
 </problem>
 """)
     )
+
+    print(
+        polygon_schema.Contest.from_xml("""
+<contest>
+<names>
+<name language="russian" main="true" value="2012-2013 Тренировка СПбГУ B #12 Бинарный поиск, тернарный поиск"/>
+</names>
+<statements>
+<statement language="russian" path="statements/russian/20122013-tryenirovka-spbgu-b-12-binarnyy-poisk-tyernarnyy-poisk-ru.pdf" type="application/pdf"/>
+</statements>
+<problems>
+<problem index="A" path="problems/A"/>
+<problem index="B" path="problems/B"/>
+<problem index="C" path="problems/C"/>
+<problem index="D" path="problems/D"/>
+<problem index="E" path="problems/E"/>
+</problems>
+</contest>
+""")
+    )

@@ -14,6 +14,7 @@ from robox.box.contest.contest_package import (
     save_contest,
 )
 from robox.box.contest.schema import ContestProblem
+from robox.box.packaging import contest_main as packaging
 from robox.box.schema import Package
 from robox.config import open_editor
 
@@ -23,6 +24,12 @@ app.add_typer(
     name='statements',
     cls=annotations.AliasGroup,
     help='Manage contest-level statements.',
+)
+app.add_typer(
+    packaging.app,
+    name='package',
+    cls=annotations.AliasGroup,
+    help='Build contest-level packages.',
 )
 
 

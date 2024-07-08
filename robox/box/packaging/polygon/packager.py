@@ -7,9 +7,23 @@ import typer
 
 from robox import console
 from robox.box import package
-from robox.box.packaging.packager import BasePackager, BuiltStatement
+from robox.box.packaging.packager import (
+    BaseContestPackager,
+    BasePackager,
+    BuiltContestStatement,
+    BuiltProblemPackage,
+    BuiltStatement,
+)
 from robox.box.packaging.polygon import xml_schema as polygon_schema
 from robox.config import get_testlib
+
+DAT_TEMPLATE = """
+@contest "{name}"
+@contlen 300
+@problems {problems}
+@teams 0
+@submissions 0
+"""
 
 
 def langs_to_code(langs: List[str]) -> List[str]:
@@ -89,41 +103,40 @@ class PolygonPackager(BasePackager):
         into_path: pathlib.Path,
     ) -> polygon_schema.Statement:
         language = code_to_langs([built_statement.statement.language])[0]
-        final_path = (
-            into_path
-            / 'statements'
-            / language
-            / str(built_statement.output_type)
-            / built_statement.path.name
-        )
+        final_path = into_path / 'statements' / language / built_statement.path.name
 
         final_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(built_statement.path, final_path)
 
         return polygon_schema.Statement(
-            path=str(built_statement.path),
+            path=str(final_path.resolve().relative_to(into_path.resolve())),
             language=language,
             type=self._statement_application_type(built_statement),  # type: ignore
         )
 
     def _process_statements(
-        self, into_path: pathlib.Path
+        self, built_statements: List[BuiltStatement], into_path: pathlib.Path
     ) -> List[polygon_schema.Statement]:
         return [
             self._process_statement(built_statement, into_path)
-            for built_statement in self.built_statements
+            for built_statement in built_statements
         ]
 
     def name(self) -> str:
         return 'polygon'
 
-    def package(self, build_path: pathlib.Path, into_path: pathlib.Path):
+    def package(
+        self,
+        build_path: pathlib.Path,
+        into_path: pathlib.Path,
+        built_statements: List[BuiltStatement],
+    ):
         problem = polygon_schema.Problem(
             names=self._get_names(),
             checker=self._get_checker(),
             judging=self._get_judging(),
             files=self._get_files(),
-            statements=self._process_statements(into_path),
+            # statements=self._process_statements(built_statements, into_path),
         )
 
         descriptor: str = problem.to_xml(
@@ -163,3 +176,110 @@ class PolygonPackager(BasePackager):
 
         # Zip all.
         shutil.make_archive(str(build_path / 'problem'), 'zip', into_path)
+
+        return build_path / 'problem.zip'
+
+
+class PolygonContestPackager(BaseContestPackager):
+    def name(self) -> str:
+        return 'polygon'
+
+    def _get_names(self) -> List[polygon_schema.Name]:
+        names = [
+            polygon_schema.Name(
+                language=code_to_langs([lang])[0],
+                value=self.get_statement_for_language(lang).title,
+            )
+            for lang in self.languages()
+        ]
+        if names:
+            names[0].main = True
+        return names
+
+    def _process_statement(
+        self,
+        built_statement: BuiltContestStatement,
+        into_path: pathlib.Path,
+    ) -> polygon_schema.Statement:
+        language = code_to_langs([built_statement.statement.language])[0]
+        final_path = into_path / 'statements' / language / built_statement.path.name
+
+        final_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(built_statement.path, final_path)
+
+        return polygon_schema.Statement(
+            path=str(final_path.resolve().relative_to(into_path.resolve())),
+            language=language,
+            type='application/pdf',  # type: ignore
+        )
+
+    def _process_statements(
+        self, built_statements: List[BuiltContestStatement], into_path: pathlib.Path
+    ) -> List[polygon_schema.Statement]:
+        return [
+            self._process_statement(built_statement, into_path)
+            for built_statement in built_statements
+        ]
+
+    def _get_problems(
+        self, built_packages: List[BuiltProblemPackage]
+    ) -> List[polygon_schema.ContestProblem]:
+        return [
+            polygon_schema.ContestProblem(
+                index=built_package.problem.short_name,
+                path=str(pathlib.Path('problems') / built_package.problem.short_name),
+            )
+            for built_package in built_packages
+        ]
+
+    def _get_dat(self, built_packages: List[BuiltProblemPackage]) -> str:
+        dat = DAT_TEMPLATE.format(
+            name=self.get_statement_for_language(self.languages()[0]).title,
+            problems=len(built_packages),
+        )
+        return (
+            dat
+            + '\n'.join(
+                f'@p {pkg.problem.short_name},{pkg.problem.short_name},20,0'
+                for pkg in built_packages
+            )
+            + '\n'
+        )
+
+    def package(
+        self,
+        built_packages: List[BuiltProblemPackage],
+        into_path: pathlib.Path,
+        built_statements: List[BuiltContestStatement],
+    ) -> pathlib.Path:
+        for built_package in built_packages:
+            pkg_path = into_path / 'problems' / built_package.problem.short_name
+            pkg_path.mkdir(parents=True, exist_ok=True)
+
+            shutil.unpack_archive(built_package.path, pkg_path, format='zip')
+
+        # Build contest descriptor.
+        contest = polygon_schema.Contest(
+            names=self._get_names(),
+            statements=self._process_statements(built_statements, into_path),
+            problems=self._get_problems(built_packages),
+        )
+        descriptor: str = contest.to_xml(
+            skip_empty=True,
+            encoding='utf-8',
+            pretty_print=True,
+            standalone=True,
+        )  # type: ignore
+        if isinstance(descriptor, bytes):
+            descriptor = descriptor.decode()
+
+        # Write contest.xml
+        (into_path / 'contest.xml').write_text(descriptor)
+
+        # Write contest.dat
+        (into_path / 'contest.dat').write_text(self._get_dat(built_packages))
+
+        # Zip all.
+        shutil.make_archive('contest', 'zip', into_path)
+
+        return pathlib.Path('contest.zip')

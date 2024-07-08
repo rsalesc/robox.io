@@ -4,8 +4,10 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple
 
 from robox.box import package
+from robox.box.contest import contest_package
+from robox.box.contest.schema import ContestProblem, ContestStatement
 from robox.box.generators import get_all_built_testcases
-from robox.box.schema import Testcase, TestcaseGroup
+from robox.box.schema import Package, Testcase, TestcaseGroup
 from robox.box.statements.schema import Statement, StatementType
 
 
@@ -16,9 +18,21 @@ class BuiltStatement:
     output_type: StatementType
 
 
-class BasePackager(ABC):
-    built_statements: List[BuiltStatement]
+@dataclasses.dataclass
+class BuiltContestStatement:
+    statement: ContestStatement
+    path: pathlib.Path
+    output_type: StatementType
 
+
+@dataclasses.dataclass
+class BuiltProblemPackage:
+    path: pathlib.Path
+    package: Package
+    problem: ContestProblem
+
+
+class BasePackager(ABC):
     @abstractmethod
     def name(self) -> str:
         pass
@@ -29,13 +43,18 @@ class BasePackager(ABC):
         res = set()
         for statement in pkg.statements:
             res.add(statement.language)
-        return sorted(res)
+        return list(res)
 
     def statement_types(self) -> List[StatementType]:
         return [StatementType.PDF]
 
     @abstractmethod
-    def package(self, build_path: pathlib.Path, into_path: pathlib.Path):
+    def package(
+        self,
+        build_path: pathlib.Path,
+        into_path: pathlib.Path,
+        built_statements: List[BuiltStatement],
+    ) -> pathlib.Path:
         pass
 
     # Helper methods.
@@ -59,6 +78,39 @@ class BasePackager(ABC):
     def get_statement_for_language(self, lang: str) -> Statement:
         pkg = package.find_problem_package_or_die()
         for statement in pkg.statements:
+            if statement.language == lang:
+                return statement
+        raise
+
+
+class BaseContestPackager(ABC):
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
+    @abstractmethod
+    def package(
+        self,
+        built_packages: List[BuiltProblemPackage],
+        into_path: pathlib.Path,
+        built_statements: List[BuiltContestStatement],
+    ) -> pathlib.Path:
+        pass
+
+    def languages(self):
+        pkg = contest_package.find_contest_package_or_die()
+
+        res = set()
+        for statement in pkg.statements:
+            res.add(statement.language)
+        return list(res)
+
+    def statement_types(self) -> List[StatementType]:
+        return [StatementType.PDF]
+
+    def get_statement_for_language(self, lang: str) -> ContestStatement:
+        contest = contest_package.find_contest_package_or_die()
+        for statement in contest.statements:
             if statement.language == lang:
                 return statement
         raise

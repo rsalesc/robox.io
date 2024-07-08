@@ -43,9 +43,11 @@ class BocaPackager(BasePackager):
 
         return pkg.statements[0]
 
-    def _get_main_built_statement(self) -> BuiltStatement:
+    def _get_main_built_statement(
+        self, built_statements: List[BuiltStatement]
+    ) -> BuiltStatement:
         statement = self._get_main_statement()
-        for built_statement in self.built_statements:
+        for built_statement in built_statements:
             if built_statement.statement == statement:
                 return built_statement
 
@@ -167,7 +169,12 @@ class BocaPackager(BasePackager):
     def name(self) -> str:
         return 'boca'
 
-    def package(self, build_path: pathlib.Path, into_path: pathlib.Path):
+    def package(
+        self,
+        build_path: pathlib.Path,
+        into_path: pathlib.Path,
+        built_statements: List[BuiltStatement],
+    ) -> pathlib.Path:
         extension = get_extension_or_default('boca', BocaExtension)
         no_of_runs = self._get_number_of_runs()
 
@@ -214,7 +221,7 @@ class BocaPackager(BasePackager):
         description_path.mkdir(parents=True, exist_ok=True)
         (description_path / 'problem.info').write_text(self._get_problem_info())
         shutil.copyfile(
-            self._get_main_built_statement().path,
+            self._get_main_built_statement(built_statements).path,
             (description_path / self._get_problem_name()).with_suffix('.pdf'),
         )
 
@@ -236,3 +243,5 @@ class BocaPackager(BasePackager):
         shutil.make_archive(
             str(build_path / self._get_problem_name()), 'zip', into_path
         )
+
+        return (build_path / self._get_problem_name()).with_suffix('.zip')

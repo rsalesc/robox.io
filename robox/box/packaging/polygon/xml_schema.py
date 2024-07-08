@@ -6,6 +6,7 @@ from pydantic_xml import BaseXmlModel, attr, element, wrapped
 class Name(BaseXmlModel):
     language: str = attr()
     value: str = attr()
+    main: bool = attr(default=False)
 
 
 class Statement(BaseXmlModel):
@@ -82,3 +83,24 @@ class Problem(BaseXmlModel, tag='problem'):
     )
 
     checker: Checker = wrapped('assets', element(tag='checker'))
+
+
+class ContestProblem(BaseXmlModel):
+    index: str = attr()
+    path: str = attr()
+
+
+class Contest(BaseXmlModel, tag='contest'):
+    names: List[Name] = wrapped('names', element(tag='name'), default_factory=list)
+
+    statements: List[Statement] = wrapped(
+        'statements',
+        element(tag='statement', default=[]),
+        default=[],
+    )
+
+    problems: List[ContestProblem] = wrapped(
+        'problems',
+        element(tag='problem', default=[]),
+        default=[],
+    )

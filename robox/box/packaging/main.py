@@ -18,7 +18,7 @@ app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 def run_packager(
     packager_cls: Type[BasePackager],
     verification: environment.VerificationParam,
-):
+) -> pathlib.Path:
     if not builder.verify(verification=verification):
         console.console.print(
             '[error]Build or verification failed, check the report.[/error]'
@@ -40,15 +40,18 @@ def run_packager(
                 BuiltStatement(statement, statement_path, statement_type)
             )
 
-    packager.built_statements = built_statements
     console.console.print(f'Packaging problem for [item]{packager.name()}[/item]...')
 
     with tempfile.TemporaryDirectory() as td:
-        packager.package(get_build_path(), pathlib.Path(td))
+        result_path = packager.package(
+            get_build_path(), pathlib.Path(td), built_statements
+        )
 
     console.console.print(
         f'[success]Problem packaged for [item]{packager.name()}[/item]![/success]'
     )
+    console.console.print(f'Package was saved at [item]{result_path}[/item].')
+    return result_path
 
 
 @app.command('polygon', help='Build a package for Polygon.')
