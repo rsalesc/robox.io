@@ -13,8 +13,9 @@ from robox.box.environment import (
     EnvironmentSandbox,
     ExecutionConfig,
 )
-from robox.box.schema import CodeItem, Generator, Testcase
+from robox.box.schema import CodeItem, Generator, Testcase, TestcaseGroup
 from robox.box.testcases import find_built_testcases
+from robox.grading.judge.cacher import FileCacher
 from robox.grading.steps import (
     DigestHolder,
     DigestOrDest,
@@ -149,6 +150,67 @@ def generate_outputs_for_testcases(
             step()
 
 
+def run_generator_script(testcase: TestcaseGroup, cacher: FileCacher) -> str:
+    assert testcase.generatorScript is not None
+    script_digest = DigestHolder()
+    if testcase.generatorScript.path.suffix == '.txt':
+        script_digest.value = cacher.put_file_from_path(testcase.generatorScript.path)
+    else:
+        try:
+            compiled_digest = compile_item(testcase.generatorScript)
+        except:
+            console.console.print(
+                f'[error]Failed compiling generator script for group [item]{testcase.name}[/item].[/error]'
+            )
+            raise
+
+        run_log = run_item(
+            testcase.generatorScript,
+            DigestOrSource.create(compiled_digest),
+            stdout=DigestOrDest.create(script_digest),
+        )
+
+        if run_log is None or run_log.exitcode != 0:
+            console.console.print(
+                f'Could not run generator script for group {testcase.name}'
+            )
+            raise typer.Exit(1)
+
+    assert script_digest.value
+    script = cacher.get_file_content(script_digest.value).decode()
+    return script
+
+
+def extract_script_lines(script: str):
+    lines = script.splitlines()
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        yield shlex.split(line)[0], shlex.join(shlex.split(line)[1:])
+
+
+def get_necessary_generators(groups: Set[str], cacher: FileCacher) -> Set[str]:
+    pkg = package.find_problem_package_or_die()
+    existing_generators = set(generator.name for generator in pkg.generators)
+
+    necessary_generators = set()
+    for group in pkg.testcases:
+        if groups is not None and group.name not in groups:
+            continue
+
+        for generator_call in group.generators:
+            necessary_generators.add(generator_call.name)
+
+        if group.generatorScript is not None:
+            script = run_generator_script(group, cacher)
+            for generator_name, _ in extract_script_lines(script):
+                necessary_generators.add(generator_name)
+
+    return existing_generators.intersection(necessary_generators)
+
+
 def compile_generators(
     progress: Optional[StatusProgress] = None,
     tracked_generators: Optional[Set[str]] = None,
@@ -186,7 +248,12 @@ def generate_testcases(
     pkg = package.find_problem_package_or_die()
     cacher = package.get_file_cacher()
 
-    compiled_generators = compile_generators(progress=progress)
+    compiled_generators = compile_generators(
+        progress=progress,
+        tracked_generators=get_necessary_generators(groups, cacher)
+        if groups is not None
+        else None,
+    )
 
     for testcase in pkg.testcases:
         if groups is not None and testcase.name not in groups:
@@ -232,43 +299,10 @@ def generate_testcases(
 
         # Run generator script.
         if testcase.generatorScript is not None:
-            script_digest = DigestHolder()
-            if testcase.generatorScript.path.suffix == '.txt':
-                script_digest.value = cacher.put_file_from_path(
-                    testcase.generatorScript.path
-                )
-            else:
-                try:
-                    compiled_digest = compile_item(testcase.generatorScript)
-                except:
-                    console.console.print(
-                        f'[error]Failed compiling generator script for group [item]{testcase.name}[/item].[/error]'
-                    )
-                    raise
-
-                run_log = run_item(
-                    testcase.generatorScript,
-                    DigestOrSource.create(compiled_digest),
-                    stdout=DigestOrDest.create(script_digest),
-                )
-
-                if run_log is None or run_log.exitcode != 0:
-                    console.console.print(
-                        f'Could not run generator script for group {testcase.name}'
-                    )
-                    raise typer.Exit(1)
-
-            assert script_digest.value
-            script = cacher.get_file_content(script_digest.value).decode()
-            lines = script.splitlines()
+            script = run_generator_script(testcase, cacher)
 
             # Run each line from generator script.
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-
-                generator_name = shlex.split(line)[0]
+            for generator_name, args in extract_script_lines(script):
                 generator = package.get_generator(generator_name)
                 if generator.name not in compiled_generators:
                     console.console.print(f'Generator {generator.name} not compiled')
@@ -276,7 +310,7 @@ def generate_testcases(
 
                 _run_generator(
                     generator,
-                    shlex.join(shlex.split(line)[1:]),
+                    args,
                     compiled_generators[generator.name],
                     group_path,
                     i,
