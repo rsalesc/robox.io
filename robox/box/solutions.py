@@ -261,9 +261,12 @@ def print_detailed_run_report(
 
         for evals_per_group in evals_per_solution:
             evals = evals_per_group[group.name]
+            max_time = _get_evals_formatted_time(evals)
             for i, eval in enumerate(evals):
                 verdict = _get_testcase_markup_verdict(eval)
                 time = _get_evals_formatted_time([eval])
+                if time == max_time:
+                    time = f'[underline][bold]{time}[/bold][/underline]'
                 row_to_renderables[i].append(f'{verdict} {time}')
 
             time_summary_row.append('  ' + _get_evals_formatted_time(evals))
