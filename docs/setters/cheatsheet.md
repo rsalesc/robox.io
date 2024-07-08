@@ -27,7 +27,8 @@
 | ----------------------------------------------- | ---------------------------------------------- |
 | Show help message                               | `rbx contest --help`                           |
 | Create a new contest in folder `package`        | `rbx contest create package`                   |
-| Open the contest configuration in a text editor | `rbx edit`                                     |
+| Add a new problem to the contest with letter A  | `rbx contest add new-problem A`                |
+| Open the contest configuration in a text editor | `rbx contest edit`                             |
 | Build PDF statements                            | `rbx contest statements build --output=pdf`    |
 | Build PDF statements for English                | `rbx contest statements build en --output=pdf` |
 
