@@ -1,5 +1,6 @@
 import pathlib
 import shutil
+import subprocess
 from typing import Annotated, Optional
 
 import typer
@@ -102,3 +103,31 @@ def add(name: str, short_name: str, preset: Optional[str] = None):
 
     save_contest(contest)
     console.console.print(f'Problem [item]{short_name}[/item] added to contest.')
+
+
+@app.command(
+    'each',
+    help='Run a command for each problem in the contest.',
+    context_settings={'allow_extra_args': True, 'ignore_unknown_options': True},
+)
+def each(ctx: typer.Context) -> None:
+    command = ' '.join(['rbx'] + ctx.args)
+    contest = find_contest_package_or_die()
+    ok = True
+    for problem in contest.problems:
+        console.console.print(
+            f'[status]Running [item]{command}[/item] for [item]{problem.short_name}[/item]...[/status]'
+        )
+
+        retcode = subprocess.call(
+            command,
+            cwd=problem.get_path(),
+            shell=True,
+        )
+        ok = ok and retcode == 0
+        console.console.print()
+
+    if not ok:
+        console.console.print(
+            '[error]One of the commands above failed. Check the output![/error]'
+        )

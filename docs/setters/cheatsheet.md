@@ -31,7 +31,9 @@
 | Open the contest configuration in a text editor | `rbx contest edit`                             |
 | Build PDF statements                            | `rbx contest statements build --output=pdf`    |
 | Build PDF statements for English                | `rbx contest statements build en --output=pdf` |
-| Build Polygon contest package                   | `rbx contest package polygon`                  |
+| Package contest for {{polygon}}                 | `rbx contest package polygon`                  |
+| Build each problem in the contest               | `rbx contest each build`                       |
+| Package each problem in the contest             | `rbx contest each package boca`                |
 
 ## `problem.rbx.yml`
 
