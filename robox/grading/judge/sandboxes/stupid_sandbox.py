@@ -111,6 +111,11 @@ class StupidSandbox(SandboxBase):
             return self.exec_time
         return None
 
+    def use_soft_timeout(self) -> bool:
+        if platform == 'darwin':
+            return False
+        return True
+
     # TODO - It always returns None, since I have no way to check
     # memory usage (libev doesn't have wait4() support)
     def get_memory_used(self) -> Optional[int]:
@@ -255,6 +260,10 @@ class StupidSandbox(SandboxBase):
             if self.chdir:
                 os.chdir(self.chdir)
 
+            if platform == 'darwin':
+                # RLIMITs do not work properly on macOS.
+                return
+
             # TODO - We're not checking that setrlimit() returns
             # successfully (they may try to set to higher limits than
             # allowed to); anyway, this is just for testing
@@ -265,9 +274,6 @@ class StupidSandbox(SandboxBase):
                     rlimit_cpu += self.params.extra_timeout
                 rlimit_cpu = int((rlimit_cpu + 999) // 1000)
                 resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
-
-            if platform == 'darwin':
-                return
 
             if self.params.address_space:
                 rlimit_data = self.params.address_space * 1024 * 1024
@@ -353,7 +359,10 @@ class StupidSandbox(SandboxBase):
         if wait:
             with self.popen as p:
                 # Ensure popen fds are closed.
-                return self.translate_box_exitcode(wait_without_std([p])[0])
+                res = self.translate_box_exitcode(wait_without_std([p])[0])
+                # Ensure exec time is computed.
+                self.get_execution_wall_clock_time()
+                return res
         else:
             return self.popen
 

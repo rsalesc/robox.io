@@ -323,6 +323,9 @@ class SandboxBase(abc.ABC):
         """
         pass
 
+    def use_soft_timeout(self) -> bool:
+        return False
+
     def relative_path(self, path: pathlib.Path) -> pathlib.Path:
         """Translate from a relative path inside the sandbox to a
         system path.

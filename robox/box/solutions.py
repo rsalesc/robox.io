@@ -64,12 +64,16 @@ def run_solution(
 ) -> Dict[str, List[Evaluation]]:
     pkg = package.find_problem_package_or_die()
 
+    actual_sandbox = package.get_singleton_sandbox()
+
     sandbox = EnvironmentSandbox()
     sandbox.timeLimit = pkg.timeLimit
     if verification.value >= VerificationLevel.FULL.value:
         # Use double TL.
         sandbox.timeLimit = sandbox.timeLimit * 2
-    sandbox.wallTimeLimit = pkg.timeLimit * 2
+    sandbox.wallTimeLimit = (
+        pkg.timeLimit * 2 if actual_sandbox.use_soft_timeout() else sandbox.timeLimit
+    )
     sandbox.memoryLimit = pkg.memoryLimit
     extra_config = ExecutionConfig(sandbox=sandbox)
 

@@ -361,6 +361,9 @@ class IsolateSandbox(SandboxBase):
             return float(self.log['time-wall'][0])
         return None
 
+    def use_soft_timeout(self) -> bool:
+        return True
+
     def get_memory_used(self) -> Optional[int]:
         """Return the memory used by the sandbox, reading the logs if
         necessary.
