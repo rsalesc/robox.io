@@ -151,6 +151,8 @@ class StupidSandbox(SandboxBase):
         if self.popen.returncode >= 0:
             return self.EXIT_OK
         else:
+            if -self.popen.returncode == 24:
+                return self.EXIT_TIMEOUT
             return self.EXIT_SIGNAL
 
     def get_exit_code(self) -> int:

@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Set
 import typer
 
 from robox import console
-from robox.box import package
+from robox.box import checkers, package
 from robox.box.code import compile_item, run_item
 from robox.box.environment import (
     EnvironmentSandbox,
@@ -137,13 +137,22 @@ def generate_outputs_for_testcases(
 
             if run_log is None or run_log.exitcode != 0:
                 console.console.print(
-                    f'Failed generating output for {input_path}',
-                    style='error',
+                    f'[error]Failed generating output for [item]{input_path}[/item][/error]',
                 )
                 if run_log is not None:
                     console.console.print(
-                        f'Program exited with code {run_log.exitcode}',
+                        f'[error]Program exited with code [item]{-run_log.exitcode}[/item][/error]',
                         style='error',
+                    )
+                    checker_result = checkers.check_with_no_output(run_log)
+                    console.console.print(
+                        f'[warning]Time: [item]{run_log.time:.2f}s[/item][/warning]',
+                    )
+                    console.console.print(
+                        f'[warning]Verdict: {checker_result.outcome.value}[/warning]',
+                    )
+                    console.console.print(
+                        f'[warning]Message: [info]{checker_result.message}[/info][/warning]',
                     )
                 raise typer.Exit(1)
 

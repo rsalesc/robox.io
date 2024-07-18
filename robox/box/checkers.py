@@ -28,12 +28,7 @@ def compile_checker() -> str:
     return digest
 
 
-def check(
-    checker_digest: str,
-    run_log: Optional[RunLog],
-    testcase: Testcase,
-    program_output: pathlib.Path,
-) -> CheckerResult:
+def _check_pre_output(run_log: Optional[RunLog]) -> CheckerResult:
     pkg = package.find_problem_package_or_die()
 
     if run_log is None:
@@ -50,6 +45,35 @@ def check(
         return CheckerResult(outcome=Outcome.MEMORY_LIMIT_EXCEEDED)
     if run_log.exitstatus == SandboxBase.EXIT_SANDBOX_ERROR:
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
+    return CheckerResult(outcome=Outcome.ACCEPTED)
+
+
+def check_with_no_output(run_log: Optional[RunLog]) -> CheckerResult:
+    pkg = package.find_problem_package_or_die()
+
+    result = _check_pre_output(run_log)
+    if (
+        run_log is not None
+        and run_log.time is not None
+        and run_log.time * 1000 > pkg.timeLimit
+    ):
+        # Soft TLE.
+        result.no_tle_outcome = result.outcome
+        result.outcome = Outcome.TIME_LIMIT_EXCEEDED
+    return result
+
+
+def check(
+    checker_digest: str,
+    run_log: Optional[RunLog],
+    testcase: Testcase,
+    program_output: pathlib.Path,
+) -> CheckerResult:
+    pkg = package.find_problem_package_or_die()
+
+    pre_output_result = _check_pre_output(run_log)
+    if pre_output_result.outcome != Outcome.ACCEPTED:
+        return pre_output_result
 
     error = DigestHolder()
     inputs = [
