@@ -141,7 +141,7 @@ def generate_outputs_for_testcases(
                 )
                 if run_log is not None:
                     console.console.print(
-                        f'[error]Program exited with code [item]{-run_log.exitcode}[/item][/error]',
+                        f'[error]Main solution exited with code [item]{-run_log.exitcode}[/item][/error]',
                         style='error',
                     )
                     checker_result = checkers.check_with_no_output(run_log)

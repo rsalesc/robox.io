@@ -110,7 +110,11 @@ def check(
     if checker_run_log.exitcode == 3:
         result = CheckerResult(outcome=Outcome.JUDGE_FAILED, message=message)
 
-    if run_log.time is not None and run_log.time * 1000 > pkg.timeLimit:
+    if (
+        run_log is not None
+        and run_log.time is not None
+        and run_log.time * 1000 > pkg.timeLimit
+    ):
         # Soft TLE.
         result.no_tle_outcome = result.outcome
         result.outcome = Outcome.TIME_LIMIT_EXCEEDED
