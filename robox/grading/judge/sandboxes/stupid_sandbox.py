@@ -112,6 +112,8 @@ class StupidSandbox(SandboxBase):
         return None
 
     def use_soft_timeout(self) -> bool:
+        if platform == 'darwin':
+            return False
         return True
 
     # TODO - It always returns None, since I have no way to check
@@ -260,6 +262,10 @@ class StupidSandbox(SandboxBase):
             if self.chdir:
                 os.chdir(self.chdir)
 
+            if platform == 'darwin':
+                # These RLimits do not work properly on macOS.
+                return
+
             # TODO - We're not checking that setrlimit() returns
             # successfully (they may try to set to higher limits than
             # allowed to); anyway, this is just for testing
@@ -270,10 +276,6 @@ class StupidSandbox(SandboxBase):
                     rlimit_cpu += self.params.extra_timeout
                 rlimit_cpu = int((rlimit_cpu + 999) // 1000)
                 resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
-
-            if platform == 'darwin':
-                # These RLimits do not work properly on macOS.
-                return
 
             if self.params.address_space:
                 rlimit_data = self.params.address_space * 1024 * 1024

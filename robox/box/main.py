@@ -1,3 +1,5 @@
+from gevent import monkey; monkey.patch_all()
+
 import pathlib
 import shutil
 from typing import Annotated, Optional

@@ -71,9 +71,7 @@ def check(
 ) -> CheckerResult:
     pkg = package.find_problem_package_or_die()
 
-    pre_output_result = _check_pre_output(run_log)
-    if pre_output_result.outcome != Outcome.ACCEPTED:
-        return pre_output_result
+    result = _check_pre_output(run_log)
 
     error = DigestHolder()
     inputs = [
