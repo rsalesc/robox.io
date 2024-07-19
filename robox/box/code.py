@@ -94,7 +94,9 @@ def compile_item(code: CodeItem) -> str:
         )
     )
 
-    with dependency_cache(commands, [artifacts]) as is_cached:
+    with dependency_cache(
+        commands, [artifacts], sandbox_params.get_cacheable_params()
+    ) as is_cached:
         if not is_cached and not steps.compile(
             commands=commands,
             params=sandbox_params,
@@ -176,7 +178,9 @@ def run_item(
     if outputs:
         artifacts.outputs.extend(outputs)
 
-    with dependency_cache([command], [artifacts]) as is_cached:
+    with dependency_cache(
+        [command], [artifacts], sandbox_params.get_cacheable_params()
+    ) as is_cached:
         if not is_cached:
             steps.run(
                 command=command,

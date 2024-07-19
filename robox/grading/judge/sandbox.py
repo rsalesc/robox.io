@@ -9,7 +9,7 @@ import stat
 import subprocess
 import sys
 import typing
-from typing import IO, Dict, List, Optional, Union
+from typing import IO, Any, Dict, List, Optional, Union
 
 import pydantic
 
@@ -112,6 +112,9 @@ class SandboxParams(pydantic.BaseModel):
     timeout: Optional[int] = None  # ms
     wallclock_timeout: Optional[int] = None  # ms
     extra_timeout: Optional[int] = None  # ms
+
+    def get_cacheable_params(self) -> Dict[str, Any]:
+        return self.model_dump(mode='json', exclude_unset=True, exclude_none=True)
 
     def set_stdio(
         self,

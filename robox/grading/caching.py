@@ -3,7 +3,7 @@ import io
 import os
 import pathlib
 import shelve
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -15,6 +15,7 @@ from robox.grading.steps import DigestHolder, GradingArtifacts, GradingLogsHolde
 class CacheInput(BaseModel):
     commands: List[str]
     artifacts: List[GradingArtifacts]
+    extra_params: Dict[str, Any] = {}
 
 
 class CacheFingerprint(BaseModel):
@@ -127,23 +128,31 @@ class DependencyCacheBlock:
         cache: 'DependencyCache',
         commands: List[str],
         artifact_list: List[GradingArtifacts],
+        extra_params: Dict[str, Any],
     ):
         self.cache = cache
         self.commands = commands
         self.artifact_list = artifact_list
+        self.extra_params = extra_params
         self._key = None
 
     def __enter__(self):
-        input = CacheInput(commands=self.commands, artifacts=self.artifact_list)
+        input = CacheInput(
+            commands=self.commands,
+            artifacts=self.artifact_list,
+            extra_params=self.extra_params,
+        )
         self._key = _build_cache_key(input)
         found = self.cache.find_in_cache(
-            self.commands, self.artifact_list, key=self._key
+            self.commands, self.artifact_list, self.extra_params, key=self._key
         )
         return found
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
-            self.cache.store_in_cache(self.commands, self.artifact_list, key=self._key)
+            self.cache.store_in_cache(
+                self.commands, self.artifact_list, self.extra_params, key=self._key
+            )
         return None
 
 
@@ -167,18 +176,24 @@ class DependencyCache:
         self.db[key] = fingerprint
 
     def __call__(
-        self, commands: List[str], artifact_list: List[GradingArtifacts]
+        self,
+        commands: List[str],
+        artifact_list: List[GradingArtifacts],
+        extra_params: Optional[Dict[str, Any]] = None,
     ) -> DependencyCacheBlock:
         _check_digests(artifact_list)
-        return DependencyCacheBlock(self, commands, artifact_list)
+        return DependencyCacheBlock(self, commands, artifact_list, extra_params or {})
 
     def find_in_cache(
         self,
         commands: List[str],
         artifact_list: List[GradingArtifacts],
+        extra_params: Dict[str, Any],
         key: Optional[str] = None,
     ) -> bool:
-        input = CacheInput(commands=commands, artifacts=artifact_list)
+        input = CacheInput(
+            commands=commands, artifacts=artifact_list, extra_params=extra_params
+        )
         key = key or _build_cache_key(input)
 
         fingerprint = self._find_in_cache(key)
@@ -216,9 +231,12 @@ class DependencyCache:
         self,
         commands: List[str],
         artifact_list: List[GradingArtifacts],
+        extra_params: Dict[str, Any],
         key: Optional[str] = None,
     ):
-        input = CacheInput(commands=commands, artifacts=artifact_list)
+        input = CacheInput(
+            commands=commands, artifacts=artifact_list, extra_params=extra_params
+        )
         key = key or _build_cache_key(input)
 
         if not are_artifacts_ok(artifact_list, self.storage):
