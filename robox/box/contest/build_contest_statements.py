@@ -141,6 +141,7 @@ def _build_problem_statements(
     contest: Contest,
     root: pathlib.Path,
     output_type: StatementType,
+    use_samples: bool = True,
 ) -> List[ExtractedProblem]:
     console.console.print('Building problem-level statements...')
     extracted_problems = get_problems_for_statement(contest, statement.language)
@@ -167,6 +168,7 @@ def _build_problem_statements(
                 else {},  # overridden configure params
                 overridden_assets=contest_assets,  # overridden assets
                 overridden_params_root=contest_cwd_absolute,
+                use_samples=use_samples,
             )
         dest_dir = root / '.problems' / extracted_problem.problem.short_name
         dest_path = dest_dir / f'statement{output_type.get_file_suffix()}'
@@ -232,6 +234,7 @@ def build_statement_rooted(
     contest: Contest,
     root: pathlib.Path,
     output_type: Optional[StatementType] = None,
+    use_samples: bool = True,
 ) -> Tuple[bytes, StatementType]:
     # Validate.
     if not statement.path.is_file():
@@ -243,7 +246,7 @@ def build_statement_rooted(
     # Build problem-level statements.
     joiner = get_joiner(statement.joiner.type)
     extracted_problems = _build_problem_statements(
-        statement, contest, root, output_type=joiner.joined_type()
+        statement, contest, root, output_type=joiner.joined_type(), use_samples=use_samples
     )
 
     # Build contest-level statement into joiner input type.
@@ -292,11 +295,12 @@ def build_statement(
     statement: ContestStatement,
     contest: Contest,
     output_type: Optional[StatementType] = None,
+    use_samples: bool = True,
 ) -> pathlib.Path:
     with tempfile.TemporaryDirectory() as td:
         root = pathlib.Path(td)
         last_content, last_output = build_statement_rooted(
-            statement, contest, root, output_type=output_type
+            statement, contest, root, output_type=output_type, use_samples=use_samples,
         )
 
     statement_path = pathlib.Path(f'statement{last_output.get_file_suffix()}')

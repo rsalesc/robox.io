@@ -211,6 +211,7 @@ def build_statement_bytes(
     overridden_params_root: pathlib.Path = pathlib.Path(),
     overridden_params: Optional[Dict[ConversionType, ConversionStep]] = None,
     overridden_assets: Optional[List[Tuple[pathlib.Path, pathlib.Path]]] = None,
+    use_samples: bool = True,
 ) -> Tuple[bytes, StatementType]:
     overridden_params = overridden_params or {}
     overridden_assets = overridden_assets or []
@@ -258,7 +259,7 @@ def build_statement_bytes(
                 item=StatementBuilderProblem(
                     package=pkg,
                     statement=statement,
-                    samples=get_samples(),
+                    samples=get_samples() if use_samples else [],
                     short_name=short_name,
                 ),
                 verbose=False,
@@ -270,10 +271,10 @@ def build_statement_bytes(
 
 
 def build_statement(
-    statement: Statement, pkg: Package, output_type: Optional[StatementType] = None
+    statement: Statement, pkg: Package, output_type: Optional[StatementType] = None, use_samples: bool = True,
 ) -> pathlib.Path:
     last_content, last_output = build_statement_bytes(
-        statement, pkg, output_type=output_type
+        statement, pkg, output_type=output_type, use_samples=use_samples,
     )
     statement_path = (
         package.get_build_path()
@@ -306,9 +307,16 @@ def build(
             help='Output type to be generated. If not specified, will infer from the conversion steps specified in the package.',
         ),
     ] = None,
+    samples: Annotated[
+        bool,
+        typer.Option(
+            help='Whether to build the statement with samples or not.'
+        ),
+    ] = True,
 ):
     # At most run the validators, only in samples.
-    builder.build(verification=verification, groups=set(['samples']))
+    if samples:
+        builder.build(verification=verification, groups=set(['samples']))
 
     pkg = package.find_problem_package_or_die()
     candidate_languages = languages
@@ -323,7 +331,7 @@ def build(
             )
             raise typer.Exit(1)
 
-        build_statement(candidates_for_lang[0], pkg, output_type=output)
+        build_statement(candidates_for_lang[0], pkg, output_type=output, use_samples=samples)
 
 
 @app.callback()

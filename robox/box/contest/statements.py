@@ -29,16 +29,23 @@ def build(
             help='Output type to be generated. If not specified, will infer from the conversion steps specified in the package.',
         ),
     ] = None,
+    samples: Annotated[
+        bool,
+        typer.Option(
+            help='Whether to build the statement with samples or not.'
+        ),
+    ] = True,
 ):
     contest = find_contest_package_or_die()
     # At most run the validators, only in samples.
-    for problem in contest.problems:
-        console.console.print(
-            f'Processing problem [item]{problem.short_name}[/item]...'
-        )
-        with utils.new_cd(problem.get_path()):
-            contest_utils.clear_package_cache()
-            builder.build(verification=verification, groups=set(['samples']))
+    if samples:
+        for problem in contest.problems:
+            console.console.print(
+                f'Processing problem [item]{problem.short_name}[/item]...'
+            )
+            with utils.new_cd(problem.get_path()):
+                contest_utils.clear_package_cache()
+                builder.build(verification=verification, groups=set(['samples']))
 
     contest = find_contest_package_or_die()
     candidate_languages = languages
@@ -55,7 +62,7 @@ def build(
             )
             raise typer.Exit(1)
 
-        build_statement(candidates_for_lang[0], contest, output_type=output)
+        build_statement(candidates_for_lang[0], contest, output_type=output, use_samples=samples)
 
 
 @app.callback()
