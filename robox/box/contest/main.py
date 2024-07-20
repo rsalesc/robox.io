@@ -22,13 +22,13 @@ from robox.config import open_editor
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(
     statements.app,
-    name='statements',
+    name='statements, st',
     cls=annotations.AliasGroup,
     help='Manage contest-level statements.',
 )
 app.add_typer(
     packaging.app,
-    name='package',
+    name='package, pkg',
     cls=annotations.AliasGroup,
     help='Build contest-level packages.',
 )

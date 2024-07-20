@@ -27,7 +27,7 @@ from robox.box.statements import build_statements
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(
     build_statements.app,
-    name='statements',
+    name='statements, st',
     cls=annotations.AliasGroup,
     help='Manage statements.',
 )
@@ -42,7 +42,7 @@ app.add_typer(
 )
 app.add_typer(
     packaging.app,
-    name='package',
+    name='package, pkg',
     cls=annotations.AliasGroup,
     help='Build problem packages.',
 )
@@ -51,7 +51,7 @@ app.add_typer(
 )
 
 
-@app.command('edit', help='Open problem.rbx.yml in your default editor.')
+@app.command('edit, e', help='Open problem.rbx.yml in your default editor.')
 def edit():
     console.console.print('Opening problem definition in editor...')
     # Call this function just to raise exception in case we're no in
@@ -65,13 +65,13 @@ def build(verification: environment.VerificationParam):
     builder.build(verification=verification)
 
 
-@app.command('verify', help='Build and verify all the tests for the problem.')
+@app.command('verify, v', help='Build and verify all the tests for the problem.')
 def verify(verification: environment.VerificationParam):
     if not builder.verify(verification=verification):
         console.console.print('[error]Verification failed, check the report.[/error]')
 
 
-@app.command('run', help='Build and run solution(s).')
+@app.command('run, r', help='Build and run solution(s).')
 def run(
     verification: environment.VerificationParam,
     solution: Annotated[
@@ -105,7 +105,7 @@ def run(
     )
 
 
-@app.command('create', help='Create a new problem package.')
+@app.command('create, c', help='Create a new problem package.')
 def create(
     name: str,
     preset: Annotated[

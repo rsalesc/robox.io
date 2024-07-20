@@ -12,7 +12,7 @@ from robox.box.statements.schema import StatementType
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
 
-@app.command('build', help='Build statements.')
+@app.command('build, b', help='Build statements.')
 def build(
     verification: environment.VerificationParam,
     languages: Annotated[
@@ -28,7 +28,7 @@ def build(
             case_sensitive=False,
             help='Output type to be generated. If not specified, will infer from the conversion steps specified in the package.',
         ),
-    ] = None,
+    ] = StatementType.PDF,
     samples: Annotated[
         bool,
         typer.Option(
