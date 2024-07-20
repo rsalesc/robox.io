@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "robox.io"
-version = "0.3.1"
+version = "0.3.2"
 description = ""
 packages = [
   {include = "robox"}
