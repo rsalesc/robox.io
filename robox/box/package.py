@@ -48,7 +48,7 @@ def find_problem_package(root: pathlib.Path = pathlib.Path()) -> Optional[Packag
 def find_problem_package_or_die(root: pathlib.Path = pathlib.Path()) -> Package:
     package = find_problem_package(root)
     if package is None:
-        console.console.print(f'Problem not found in {root.absolute()}', style='error')
+        console.console.print(f'[error]Problem not found in {root.absolute()}[/error]')
         raise typer.Exit(1)
     return package
 
@@ -56,7 +56,7 @@ def find_problem_package_or_die(root: pathlib.Path = pathlib.Path()) -> Package:
 def find_problem(root: pathlib.Path = pathlib.Path()) -> pathlib.Path:
     found = find_problem_yaml(root)
     if found is None:
-        console.console.print(f'Problem not found in {root.absolute()}', style='error')
+        console.console.print(f'[error]Problem not found in {root.absolute()}[/error]')
         raise typer.Exit(1)
     return found.parent
 
@@ -67,7 +67,7 @@ def save_package(
     package = package or find_problem_package_or_die(root)
     problem_yaml_path = find_problem_yaml(root)
     if not problem_yaml_path:
-        console.console.print(f'Problem not found in {root.absolute()}', style='error')
+        console.console.print(f'[error]Problem not found in {root.absolute()}[/error]')
         raise typer.Exit(1)
     problem_yaml_path.write_text(utils.model_to_yaml(package))
 
@@ -153,7 +153,7 @@ def get_generator(name: str, root: pathlib.Path = pathlib.Path()) -> Generator:
     for generator in package.generators:
         if generator.name == name:
             return generator
-    console.console.print(f'Generator [item]{name}[/item] not found', style='error')
+    console.console.print(f'[error]Generator [item]{name}[/item] not found[/error]')
     raise typer.Exit(1)
 
 
@@ -185,7 +185,7 @@ def get_solution(name: str, root: pathlib.Path = pathlib.Path()) -> Solution:
     for solution in get_solutions(root):
         if str(solution.path) == name:
             return solution
-    console.console.print(f'Solution [item]{name}[/item] not found', style='error')
+    console.console.print(f'[error]Solution [item]{name}[/item] not found[/error]')
     raise typer.Exit(1)
 
 
@@ -195,7 +195,7 @@ def get_stress(name: str, root: pathlib.Path = pathlib.Path()) -> Stress:
     for stress in pkg.stresses:
         if stress.name == name:
             return stress
-    console.console.print(f'Stress [item]{name}[/item] not found', style='error')
+    console.console.print(f'[error]Stress [item]{name}[/item] not found[/error]')
     raise typer.Exit(1)
 
 
@@ -205,7 +205,7 @@ def get_testgroup(name: str, root: pathlib.Path = pathlib.Path()) -> TestcaseGro
     for testgroup in pkg.testcases:
         if testgroup.name == name:
             return testgroup
-    console.console.print(f'Test group [item]{name}[/item] not found', style='error')
+    console.console.print(f'[error]Test group [item]{name}[/item] not found[/error]')
     raise typer.Exit(1)
 
 
