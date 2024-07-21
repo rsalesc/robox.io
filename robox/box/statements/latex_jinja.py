@@ -86,31 +86,36 @@ def escape_latex_str_if_str(value):
     return value
 
 
-def _count_zeroes(value: int) -> Tuple[int, int]:
+def _process_zeroes(value: int) -> Tuple[int, int]:
     cnt = 0
-    while value > 0 and value % 10 == 0:
-        value //= 10
+
+    acc = value
+    while acc >= 10:
+        acc //= 10
         cnt += 1
-    return cnt, value
+    return acc, cnt, value - acc * 10**cnt
 
 
-def scientific_notation(value: int, zeroes: int = 5) -> str:
+def scientific_notation(value: int, zeroes: int = 2) -> str:
     assert isinstance(value, int)
-    if value == 1000000007:
-        return '10^9 + 7'
+    assert zeroes >= 1
     if value == 0:
         return '0'
     if value < 0:
         return f'-{scientific_notation(-value, zeroes=zeroes)}'
 
-    cnt, rest = _count_zeroes(value)
-    if cnt < zeroes:
+    mult, exp, rest = _process_zeroes(value)
+    if exp < zeroes:
         return str(value)
-    if rest >= 10:
+    res = '10' if exp == 1 else f'10^{exp}'
+    if rest > 0 and len(str(rest)) + 1 >= len(str(value)):
+        # Should not convert numbers like 532 to 5*10^2 + 32.
         return str(value)
-    if rest == 1:
-        return f'10^{cnt}'
-    return f'{rest} \\times 10^{cnt}'
+    if mult > 1:
+        res = f'{mult} \\times {res}'
+    if rest > 0:
+        res = f'{res} + {rest}'
+    return res
 
 
 def path_parent(path: pathlib.Path) -> pathlib.Path:
