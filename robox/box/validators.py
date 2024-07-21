@@ -148,7 +148,7 @@ def validate_testcases(
 
         for testcase in testcases:
             ok, message, hit_bounds = _validate_testcase(
-                testcase, validator, compiled_digest, vars=pkg.vars
+                testcase, validator, compiled_digest, vars=pkg.expanded_vars
             )
             validation_info.append(
                 TestcaseValidationInfo(

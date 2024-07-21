@@ -58,7 +58,7 @@ def _parse_var(name: str) -> str:
     if name not in pkg.vars:
         console.console.print(f'[error]Variable [item]{name}[/item] not found.[/error]')
         raise typer.Exit(1)
-    return f'{pkg.vars[name]}'
+    return f'{pkg.expanded_vars[name]}'
 
 
 def _parse_int(pattern: str) -> int:

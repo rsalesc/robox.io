@@ -62,7 +62,7 @@ class StatementBuilderProblem(StatementBuilderItem):
             'package': self.package,
             'statement': self.statement,
             'samples': self.samples,
-            'vars': self.package.vars,
+            'vars': self.package.expanded_vars,
             'title': self.statement.title or self.package.name,
         }
         if self.short_name is not None:

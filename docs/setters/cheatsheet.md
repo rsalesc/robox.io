@@ -195,6 +195,7 @@ The variables below can be reused across validators and statements.
 vars:
   "MAX_N": 1000
   "MAX_V": 100000
+  "MOD": py`10**9+7` # Backticks force the var to be evaluated as a Python expression.
 ```
 
 #### Use variables

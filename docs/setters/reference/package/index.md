@@ -220,6 +220,7 @@ This is useful to maintain consistency when changing constraints of your problem
 vars:
   MAX_N: 10000
   MAX_A: 100000
+  MOD: py`10**9+7` # Backticks force the var to be evaluated as a Python expression.
 ```
 
 !!! note
