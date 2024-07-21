@@ -9,6 +9,7 @@ int32_t main() {
     int n; cin >> n;
 
     vector<int> divisors;
+    assert(false);
     for(int i = 0; i*i <= n; i++) {
       if (n % i == 0) {
         divisors.push_back(i);

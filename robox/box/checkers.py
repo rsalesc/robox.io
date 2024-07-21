@@ -47,11 +47,8 @@ def _check_pre_output(run_log: Optional[RunLog]) -> CheckerResult:
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
     return CheckerResult(outcome=Outcome.ACCEPTED)
 
-
-def check_with_no_output(run_log: Optional[RunLog]) -> CheckerResult:
+def _convert_tle(result: CheckerResult, run_log: Optional[RunLog]) -> CheckerResult:
     pkg = package.find_problem_package_or_die()
-
-    result = _check_pre_output(run_log)
     if (
         run_log is not None
         and run_log.time is not None
@@ -61,6 +58,10 @@ def check_with_no_output(run_log: Optional[RunLog]) -> CheckerResult:
         result.no_tle_outcome = result.outcome
         result.outcome = Outcome.TIME_LIMIT_EXCEEDED
     return result
+
+def check_with_no_output(run_log: Optional[RunLog]) -> CheckerResult:
+    result = _check_pre_output(run_log)
+    return _convert_tle(result, run_log)
 
 
 def check(
@@ -72,6 +73,8 @@ def check(
     pkg = package.find_problem_package_or_die()
 
     result = _check_pre_output(run_log)
+    if result.outcome != Outcome.ACCEPTED:
+        return _convert_tle(result, run_log)
 
     error = DigestHolder()
     inputs = [
@@ -108,12 +111,4 @@ def check(
     if checker_run_log.exitcode == 3:
         result = CheckerResult(outcome=Outcome.JUDGE_FAILED, message=message)
 
-    if (
-        run_log is not None
-        and run_log.time is not None
-        and run_log.time * 1000 > pkg.timeLimit
-    ):
-        # Soft TLE.
-        result.no_tle_outcome = result.outcome
-        result.outcome = Outcome.TIME_LIMIT_EXCEEDED
-    return result
+    return _convert_tle(result, run_log)
