@@ -2,6 +2,7 @@ import pathlib
 import random
 import shlex
 import time
+from shutil import rmtree
 from typing import List, Optional, Union
 
 import typer
@@ -117,6 +118,7 @@ def run_stress(
     findingsLimit: int = 1,
     progress: Optional[StatusProgress] = None,
 ) -> StressReport:
+    # TODO: show proper errors at each compilation error.
     stress = package.get_stress(name)
 
     call = stress.generator
@@ -141,9 +143,14 @@ def run_stress(
 
     validator = validators.compile_main_validator()
 
+    # Erase old stress directory
+    runs_dir = package.get_problem_runs_dir()
+    stress_dir = runs_dir / '.stress'
+    rmtree(str(stress_dir))
+    stress_dir.mkdir(parents=True, exist_ok=True)
+
     startTime = time.monotonic()
     parsed_args = parse_generator_pattern(call.args or '')
-    runs_dir = package.get_problem_runs_dir()
 
     executed = 0
     findings = []
