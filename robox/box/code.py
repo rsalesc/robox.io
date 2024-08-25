@@ -81,6 +81,10 @@ def compile_item(code: CodeItem) -> str:
     compiled_digest = DigestHolder()
 
     artifacts = GradingArtifacts()
+    artifacts.inputs.extend(
+        GradingFileInput(src=src, dest=dest)
+        for src, dest in package.get_compilation_files(code)
+    )
     download.maybe_add_testlib(code, artifacts)
     download.maybe_add_jngen(code, artifacts)
     artifacts.inputs.append(
