@@ -178,16 +178,27 @@ def run_generator_script(testcase: TestcaseGroup, cacher: FileCacher) -> str:
             )
             raise
 
+        run_stderr = DigestHolder()
         run_log = run_item(
             testcase.generatorScript,
             DigestOrSource.create(compiled_digest),
             stdout=DigestOrDest.create(script_digest),
+            stderr=DigestOrDest.create(run_stderr),
         )
 
         if run_log is None or run_log.exitcode != 0:
             console.console.print(
                 f'Could not run generator script for group {testcase.name}'
             )
+            if run_log is not None:
+                console.console.print(
+                    f'[error]Script exited with code [item]{-run_log.exitcode}[/item][/error]',
+                )
+            if run_stderr.value is not None:
+                console.console.print('[error]Stderr:[/error]')
+                console.console.print(
+                    package.get_digest_as_string(run_stderr.value) or ''
+                )
             raise typer.Exit(1)
 
     assert script_digest.value
