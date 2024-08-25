@@ -15,6 +15,7 @@ from robox.box.schema import GeneratorCall, Testcase
 from robox.box.solutions import compile_solutions, get_outcome_style_verdict
 from robox.grading.steps import (
     CheckerResult,
+    DigestHolder,
     DigestOrDest,
     DigestOrSource,
 )
@@ -172,18 +173,25 @@ def run_stress(
 
         input_path = runs_dir / '.stress' / 'input'
         input_path.parent.mkdir(parents=True, exist_ok=True)
+        generation_stderr = DigestHolder()
 
         generation_log = run_item(
             generator,
             DigestOrSource.create(generator_digest),
             stdout=DigestOrDest.create(input_path),
+            stderr=DigestOrDest.create(generation_stderr),
             extra_args=expanded_args_str or None,
         )
         if not generation_log or generation_log.exitcode != 0:
             console.console.print(
-                f'Failed generating test for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args}[/info]',
-                style='error',
+                f'[error]Failed generating test for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args}[/info].[/error]',
             )
+            if generation_stderr.value is not None:
+                console.console.print('[error]Stderr:[/error]')
+                console.console.print(
+                    package.get_digest_as_string(generation_stderr.value) or ''
+                )
+
             raise typer.Exit(1)
 
         if validator is not None:
