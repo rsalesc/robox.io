@@ -46,7 +46,10 @@ def _bounds_or(lhs: Tuple[bool, bool], rhs: Tuple[bool, bool]) -> Tuple[bool, bo
 def _process_bounds(log: str) -> HitBounds:
     bounds: HitBounds = {}
     for line in log.splitlines():
-        k, v = line.split(':')
+        items = line.split(':')
+        if len(items) != 2:
+            continue
+        k, v = items
         k = k[1:-1]
         v = v.strip()
 
