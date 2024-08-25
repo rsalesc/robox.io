@@ -110,6 +110,8 @@ def generate_outputs_for_testcases(
     sandbox.memoryLimit = pkg.memoryLimit
     extra_config = ExecutionConfig(sandbox=sandbox)
 
+    gen_runs_dir = package.get_problem_runs_dir() / '.gen'
+
     for group in pkg.testcases:
         if groups is not None and group.name not in groups:
             continue
@@ -118,12 +120,12 @@ def generate_outputs_for_testcases(
         for testcase in group_testcases:
             input_path = testcase.inputPath
             output_path = testcase.outputPath
+            stderr_path = gen_runs_dir / 'main.stderr'
 
             assert output_path is not None
             if main_solution is None or solution_digest is None:
                 console.console.print(
-                    'No main solution found to generate outputs for testcases',
-                    style='error',
+                    '[error]No main solution found to generate outputs for testcases.[/error]',
                 )
                 raise typer.Exit(1)
 
@@ -133,6 +135,7 @@ def generate_outputs_for_testcases(
                     DigestOrSource.create(solution_digest),
                     stdin=DigestOrSource.create(input_path),
                     stdout=DigestOrDest.create(output_path),
+                    stderr=DigestOrDest.create(stderr_path),
                     extra_config=extra_config,
                 )
             except:
@@ -154,10 +157,19 @@ def generate_outputs_for_testcases(
                         f'[warning]Time: [item]{run_log.time:.2f}s[/item][/warning]',
                     )
                     console.console.print(
-                        f'[warning]Verdict: {checker_result.outcome.value}[/warning]',
+                        f'[warning]Verdict: [item]{checker_result.outcome.value}[/item][/warning]',
                     )
                     console.console.print(
                         f'[warning]Message: [info]{checker_result.message}[/info][/warning]',
+                    )
+                    console.console.print(
+                        f'Input written at [item]{input_path}[/item].'
+                    )
+                    console.console.print(
+                        f'Output written at [item]{output_path}[/item].'
+                    )
+                    console.console.print(
+                        f'Stderr written at [item]{stderr_path}[/item].'
                     )
                 raise typer.Exit(1)
 
