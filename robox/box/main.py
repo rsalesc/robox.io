@@ -129,7 +129,7 @@ def stress(
     ] = 1,
 ):
     # Do not verify built package.
-    builder.build(verification=VerificationLevel.NONE.value)
+    # builder.build(verification=VerificationLevel.NONE.value)
 
     with utils.StatusProgress('Running stress...') as s:
         report = stresses.run_stress(name, timeout, findingsLimit=findings, progress=s)

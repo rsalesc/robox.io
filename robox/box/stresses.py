@@ -128,6 +128,7 @@ def run_stress(
     main_solution = package.get_main_solution()
     solutions = [package.get_solution(solutions) for solutions in stress.solutions]
     solutions = [main_solution] + solutions
+    is_main_stress = not stress.solutions
 
     try:
         generator_digest = compile_item(generator)
@@ -148,7 +149,7 @@ def run_stress(
     # Erase old stress directory
     runs_dir = package.get_problem_runs_dir()
     stress_dir = runs_dir / '.stress'
-    rmtree(str(stress_dir))
+    rmtree(str(stress_dir), ignore_errors=True)
     stress_dir.mkdir(parents=True, exist_ok=True)
 
     startTime = time.monotonic()
@@ -209,16 +210,20 @@ def run_stress(
         for i, solution in enumerate(solutions):
             if solution is None:
                 continue
-            output_path = input_path.with_stem(f'{i}').with_suffix('.out')
+            output_stem = f'{i}' if i > 0 else 'main'
+            output_path = input_path.with_stem(output_stem).with_suffix('.out')
             if i == 0:
                 # This is the main solution.
                 expected_output_path = output_path
 
+            stderr_path = output_path.with_suffix('.err')
             run_log = run_item(
                 solution,
                 DigestOrSource.create(solutions_digest[solution.path]),
                 stdin=DigestOrSource.create(input_path),
                 stdout=DigestOrDest.create(output_path),
+                # Log stderr for main solution.
+                stderr=DigestOrDest.create(stderr_path) if i == 0 else None,
             )
 
             checker_result = checkers.check(
@@ -234,6 +239,24 @@ def run_stress(
                 )
                 console.console.print('[error]Message:[/error]')
                 console.console.print(checker_result.message)
+                raise typer.Exit(1)
+
+            if (
+                i == 0
+                and not is_main_stress
+                and checker_result.outcome != Outcome.ACCEPTED
+            ):
+                console.console.print(
+                    '[error]Error while generating main solution output.[/error]'
+                )
+                console.console.print(f'Input written at [item]{input_path}[/item].')
+                console.console.print(f'Output written at [item]{output_path}[/item].')
+                console.console.print(f'Stderr written at [item]{stderr_path}[/item].')
+                console.console.print()
+                console.console.print(
+                    '[warning]If you intended to stress test the main solution, '
+                    're-run this stress test with the [item]stress.solutions[/item] unset.[/warning]'
+                )
                 raise typer.Exit(1)
 
             if not stress.outcome.match(checker_result.outcome):
