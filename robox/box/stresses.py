@@ -18,6 +18,7 @@ from robox.grading.steps import (
     DigestHolder,
     DigestOrDest,
     DigestOrSource,
+    Outcome,
 )
 from robox.utils import StatusProgress
 
@@ -226,6 +227,14 @@ def run_stress(
                 Testcase(inputPath=input_path, outputPath=expected_output_path),
                 program_output=output_path,
             )
+
+            if checker_result.outcome == Outcome.INTERNAL_ERROR:
+                console.console.print(
+                    f'[error]Checker failed during stress test [item]{name}[/item] with args [info]{call.name} {expanded_args}[/info].[/error]'
+                )
+                console.console.print('[error]Message:[/error]')
+                console.console.print(checker_result.message)
+                raise typer.Exit(1)
 
             if not stress.outcome.match(checker_result.outcome):
                 continue

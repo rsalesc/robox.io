@@ -47,6 +47,7 @@ def _check_pre_output(run_log: Optional[RunLog]) -> CheckerResult:
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
     return CheckerResult(outcome=Outcome.ACCEPTED)
 
+
 def _convert_tle(result: CheckerResult, run_log: Optional[RunLog]) -> CheckerResult:
     pkg = package.find_problem_package_or_die()
     if (
@@ -59,6 +60,7 @@ def _convert_tle(result: CheckerResult, run_log: Optional[RunLog]) -> CheckerRes
         result.outcome = Outcome.TIME_LIMIT_EXCEEDED
     return result
 
+
 def check_with_no_output(run_log: Optional[RunLog]) -> CheckerResult:
     result = _check_pre_output(run_log)
     return _convert_tle(result, run_log)
@@ -70,8 +72,6 @@ def check(
     testcase: Testcase,
     program_output: pathlib.Path,
 ) -> CheckerResult:
-    pkg = package.find_problem_package_or_die()
-
     result = _check_pre_output(run_log)
     if result.outcome != Outcome.ACCEPTED:
         return _convert_tle(result, run_log)
@@ -99,10 +99,10 @@ def check(
         extra_args='input.txt output.txt expected.txt',
     )
 
+    message = package.get_digest_as_string(error.value or '') or ''
+
     if checker_run_log is None or checker_run_log.exitcode not in [0, 1, 2, 3]:
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
-
-    message = package.get_digest_as_string(error.value or '') or ''
 
     result = CheckerResult(outcome=Outcome.ACCEPTED, message=message)
 
