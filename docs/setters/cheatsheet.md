@@ -11,6 +11,7 @@
 | Generate all testcases and run validators       | `rbx verify`                           |
 | Run all solutions and check their tags          | `rbx run`                              |
 | Run all solutions except the slow ones          | `rbx run -v2`                          |
+| Run all solutions without checking              | `rbx run --nocheck`                    |
 | Run a stress test with name `break`             | `rbx stress break`                     |
 | Download {{testlib}} to the current folder      | `rbx download testlib`                 |
 | Download {{jngen}} to the current folder        | `rbx download jngen`                   |

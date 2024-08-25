@@ -9,7 +9,9 @@ from robox.box.validators import print_validation_report, validate_testcases
 
 
 def build(
-    verification: environment.VerificationParam, groups: Optional[Set[str]] = None
+    verification: environment.VerificationParam,
+    groups: Optional[Set[str]] = None,
+    output: bool = True,
 ) -> None:
     with utils.StatusProgress(
         'Building testcases...',
@@ -23,7 +25,8 @@ def build(
         'Built [item]{processed}[/item] outputs...',
         keep=True,
     ) as s:
-        generate_outputs_for_testcases(s, groups=groups)
+        if output:
+            generate_outputs_for_testcases(s, groups=groups)
 
     if verification > 0:
         with utils.StatusProgress(

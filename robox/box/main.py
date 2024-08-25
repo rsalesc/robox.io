@@ -83,6 +83,12 @@ def run(
             help='Path to solution to run. If not specified, will run all solutions.'
         ),
     ] = None,
+    check: bool = typer.Option(
+        True,
+        '--nocheck',
+        flag_value=False,
+        help='Whether to not build outputs for tests and run checker.',
+    ),
     detailed: bool = typer.Option(
         False,
         '--detailed',
@@ -90,7 +96,14 @@ def run(
         help='Whether to print a detailed view of the tests using tables.',
     ),
 ):
-    builder.build(verification=verification)
+    main_solution = package.get_main_solution()
+    if check and main_solution is None:
+        console.console.print(
+            '[warning]No main solution found, running without checkers.[/warning]'
+        )
+        check = False
+
+    builder.build(verification=verification, output=check)
 
     with utils.StatusProgress('Running solutions...') as s:
         tracked_solutions = None
@@ -99,6 +112,7 @@ def run(
         evals_per_solution = run_solutions(
             s,
             tracked_solutions=tracked_solutions,
+            check=check,
         )
 
     console.console.print()
@@ -128,9 +142,6 @@ def stress(
         int, typer.Option(help='How many breaking tests to look for.')
     ] = 1,
 ):
-    # Do not verify built package.
-    # builder.build(verification=VerificationLevel.NONE.value)
-
     with utils.StatusProgress('Running stress...') as s:
         report = stresses.run_stress(name, timeout, findingsLimit=findings, progress=s)
 

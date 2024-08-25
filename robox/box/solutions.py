@@ -57,7 +57,7 @@ def compile_solutions(
 def run_solution(
     solution: Solution,
     compiled_digest: str,
-    checker_digest: str,
+    checker_digest: Optional[str],
     index: int,
     progress: Optional[StatusProgress] = None,
     verification: VerificationLevel = VerificationLevel.NONE,
@@ -102,12 +102,15 @@ def run_solution(
                 extra_config=extra_config,
             )
 
-            checker_result = checkers.check(
-                checker_digest,
-                run_log,
-                testcase,
-                program_output=output_path,
-            )
+            if checker_digest is not None:
+                checker_result = checkers.check(
+                    checker_digest,
+                    run_log,
+                    testcase,
+                    program_output=output_path,
+                )
+            else:
+                checker_result = checkers.check_with_no_output(run_log)
 
             eval = Evaluation(
                 result=checker_result,
@@ -133,10 +136,11 @@ def run_solutions(
     progress: Optional[StatusProgress] = None,
     tracked_solutions: Optional[Set[str]] = None,
     verification: VerificationLevel = VerificationLevel.NONE,
+    check: bool = True,
 ) -> List[Dict[str, List[Evaluation]]]:
     pkg = package.find_problem_package_or_die()
 
-    checker_digest = checkers.compile_checker()
+    checker_digest = checkers.compile_checker() if check else None
     compiled_solutions = compile_solutions(
         progress=progress, tracked_solutions=tracked_solutions
     )
