@@ -1,4 +1,7 @@
-from gevent import monkey; monkey.patch_all()
+# flake8: noqa
+from gevent import monkey
+
+monkey.patch_all()
 
 import pathlib
 import shutil
@@ -129,13 +132,11 @@ def stress(
     builder.build(verification=VerificationLevel.NONE.value)
 
     with utils.StatusProgress('Running stress...') as s:
-        finding_list = stresses.run_stress(
-            name, timeout, findingsLimit=findings, progress=s
-        )
+        report = stresses.run_stress(name, timeout, findingsLimit=findings, progress=s)
 
-    stresses.print_stress_report(finding_list)
+    stresses.print_stress_report(report)
 
-    if not finding_list:
+    if not report.findings:
         return
 
     # Add found tests.
@@ -157,11 +158,11 @@ def stress(
             testgroup = package.get_testgroup(testgroup)
             # Reassign mutable object before saving.
             testgroup.generators = testgroup.generators + [
-                f.generator for f in finding_list
+                f.generator for f in report.findings
             ]
             package.save_package()
             console.console.print(
-                f'Added [item]{len(finding_list)}[/item] tests to test group [item]{testgroup.name}[/item].'
+                f'Added [item]{len(report.findings)}[/item] tests to test group [item]{testgroup.name}[/item].'
             )
         except typer.Exit:
             continue

@@ -28,6 +28,11 @@ class StressFinding(BaseModel):
     result: CheckerResult
 
 
+class StressReport(BaseModel):
+    findings: List[StressFinding] = []
+    executed: int = 0
+
+
 class RandomInt:
     def __init__(self, min: int, max: int):
         self.min = min
@@ -111,7 +116,7 @@ def run_stress(
     timeoutInSeconds: int,
     findingsLimit: int = 1,
     progress: Optional[StatusProgress] = None,
-) -> List[StressFinding]:
+) -> StressReport:
     stress = package.get_stress(name)
 
     call = stress.generator
@@ -140,6 +145,7 @@ def run_stress(
     parsed_args = parse_generator_pattern(call.args or '')
     runs_dir = package.get_problem_runs_dir()
 
+    executed = 0
     findings = []
 
     while len(findings) < findingsLimit:
@@ -150,6 +156,7 @@ def run_stress(
             seconds = timeoutInSeconds - int(time.monotonic() - startTime)
             progress.update(
                 f'Stress testing: found [item]{len(findings)}[/item] tests, '
+                f'executed [item]{executed}[/item], '
                 f'[item]{seconds}[/item] second(s) remaining...'
             )
 
@@ -224,18 +231,22 @@ def run_stress(
             )
 
         # Be cooperative.
+        executed += 1
         time.sleep(0.001)
 
-    return findings
+    return StressReport(findings=findings, executed=executed)
 
 
-def print_stress_report(findings: List[StressFinding]):
+def print_stress_report(report: StressReport):
     console.console.rule('Stress test report', style='status')
-    if not findings:
-        console.console.print('[info]No stress test findings.[/info]')
+    console.console.print(f'Executed [item]{report.executed}[/item] tests.')
+    if not report.findings:
+        console.console.print('No stress test findings.')
         return
+    console.console.print(f'Found [item]{len(report.findings)}[/item] testcases.')
+    console.console.print()
 
-    for i, finding in enumerate(findings):
+    for i, finding in enumerate(report.findings):
         console.console.print(f'[error]Finding {i + 1}[/error]')
         console.console.print(
             f'Generator: [status]{finding.generator.name} {finding.generator.args}[/status]'
