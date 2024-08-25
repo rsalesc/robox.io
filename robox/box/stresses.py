@@ -8,7 +8,7 @@ import typer
 from pydantic import BaseModel
 
 from robox import console
-from robox.box import checkers, package
+from robox.box import checkers, package, validators
 from robox.box.code import compile_item, run_item
 from robox.box.schema import GeneratorCall, Testcase
 from robox.box.solutions import compile_solutions, get_outcome_style_verdict
@@ -134,6 +134,8 @@ def run_stress(
         )
     )
 
+    validator = validators.compile_main_validator()
+
     startTime = time.monotonic()
     parsed_args = parse_generator_pattern(call.args or '')
     runs_dir = package.get_problem_runs_dir()
@@ -165,10 +167,20 @@ def run_stress(
         )
         if not generation_log or generation_log.exitcode != 0:
             console.console.print(
-                f'Failed generating test for stress test [item]{name}[/item] with args [info]{expanded_args}[/info]',
+                f'Failed generating test for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args}[/info]',
                 style='error',
             )
             raise typer.Exit(1)
+
+        if validator is not None:
+            ok, message, *_ = validators.validate_test(input_path, *validator)
+            if not ok:
+                console.console.print(
+                    f'[error]Failed validating testcase for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args}[/info].[/error]'
+                )
+                console.console.print(f'[error]Message:[/error] {message}')
+                console.console.print(f'Testcase written at [item]{input_path}[/item]')
+                raise typer.Exit(1)
 
         expected_output_path = runs_dir / '.stress' / 'output'
         for i, solution in enumerate(solutions):

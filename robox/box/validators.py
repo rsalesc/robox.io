@@ -100,6 +100,25 @@ def _validate_testcase(
     )
 
 
+def validate_test(
+    testcase: pathlib.Path,
+    validator: CodeItem,
+    validator_digest: str,
+) -> Tuple[bool, Optional[str], HitBounds]:
+    pkg = package.find_problem_package_or_die()
+    return _validate_testcase(
+        testcase, validator, validator_digest, vars=pkg.expanded_vars
+    )
+
+
+def compile_main_validator() -> Optional[Tuple[CodeItem, str]]:
+    pkg = package.find_problem_package_or_die()
+    if pkg.validator is None:
+        return None
+
+    return pkg.validator, _compile_validator(pkg.validator)
+
+
 def compile_validators(
     progress: Optional[StatusProgress] = None,
 ) -> Dict[str, str]:
@@ -147,8 +166,8 @@ def validate_testcases(
         testcases = find_built_testcase_inputs(group)
 
         for testcase in testcases:
-            ok, message, hit_bounds = _validate_testcase(
-                testcase, validator, compiled_digest, vars=pkg.expanded_vars
+            ok, message, hit_bounds = validate_test(
+                testcase, validator, compiled_digest
             )
             validation_info.append(
                 TestcaseValidationInfo(
