@@ -55,18 +55,24 @@ def _run_generator(
     group_path: pathlib.Path,
     i: int = 0,
 ):
+    generation_stderr = DigestHolder()
     run_log = run_item(
         generator,
         DigestOrSource.create(compiled_digest),
         stdout=DigestOrDest.create(_get_group_input(group_path, i)),
+        stderr=DigestOrDest.create(generation_stderr),
         extra_args=args or None,
     )
 
     if not run_log or run_log.exitcode != 0:
         console.console.print(
-            f'Failed generating test {i} from group path {group_path}',
-            style='error',
+            f'[error]Failed generating test {i} from group path {group_path}[/error]',
         )
+        if generation_stderr.value is not None:
+            console.console.print('[error]Stderr:[/error]')
+            console.console.print(
+                package.get_digest_as_string(generation_stderr.value) or ''
+            )
         raise typer.Exit(1)
 
 
