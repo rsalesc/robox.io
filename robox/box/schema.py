@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 from typing import Dict, List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, computed_field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticCustomError
 
 from robox.autoenum import AutoEnum, alias
@@ -18,6 +18,7 @@ def NameField(**kwargs):
         pattern=r'^[a-zA-Z0-9][a-zA-Z0-9\-]*$', min_length=3, max_length=32, **kwargs
     )
 
+
 def _expand_var(value: Primitive) -> Primitive:
     if not isinstance(value, str):
         return value
@@ -30,7 +31,10 @@ def _expand_var(value: Primitive) -> Primitive:
         if isinstance(res, supported_type):
             return res
 
-    raise TypeError(f'Variable with backticks should evaluate to a primitive Python type: {value}')
+    raise TypeError(
+        f'Variable with backticks should evaluate to a primitive Python type: {value}'
+    )
+
 
 class ExpectedOutcome(AutoEnum):
     ACCEPTED = alias('accepted', 'ac', 'correct')  # type: ignore
@@ -265,13 +269,9 @@ that is correct and used as reference -- and should have the `accepted` outcome.
         {}, description='Variables to be re-used across the package.'
     )
 
-    @computed_field
     @property
     def expanded_vars(self) -> Dict[str, Primitive]:
-        return {
-            key: _expand_var(value)
-            for key, value in self.vars.items()
-        }
+        return {key: _expand_var(value) for key, value in self.vars.items()}
 
     @model_validator(mode='after')
     def check_first_solution_is_main(self):
