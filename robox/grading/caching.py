@@ -21,6 +21,7 @@ class CacheInput(BaseModel):
 class CacheFingerprint(BaseModel):
     digests: List[Optional[str]]
     fingerprints: List[str]
+    output_fingerprints: List[str]
     logs: List[GradingLogsHolder]
 
 
@@ -65,6 +66,20 @@ def _build_fingerprint_list(artifacts_list: List[GradingArtifacts]) -> List[str]
     return fingerprints
 
 
+def _build_output_fingerprint_list(artifacts_list: List[GradingArtifacts]) -> List[str]:
+    fingerprints = []
+    for artifacts in artifacts_list:
+        for output in artifacts.outputs:
+            if output.dest is None or output.intermediate:
+                continue
+            if not output.dest.is_file():
+                fingerprints.append('')  # file does not exist
+                continue
+            with output.dest.open('rb') as f:
+                fingerprints.append(digest_cooperatively(f))
+    return fingerprints
+
+
 def _build_logs_list(artifacts_list: List[GradingArtifacts]) -> List[GradingLogsHolder]:
     logs = []
     for artifacts in artifacts_list:
@@ -78,14 +93,27 @@ def _build_cache_fingerprint(
 ) -> CacheFingerprint:
     digests = [digest.value for digest in _build_digest_list(artifacts_list)]
     fingerprints = _build_fingerprint_list(artifacts_list)
+    output_fingerprints = _build_output_fingerprint_list(artifacts_list)
     logs = _build_logs_list(artifacts_list)
-    return CacheFingerprint(digests=digests, fingerprints=fingerprints, logs=logs)
+    return CacheFingerprint(
+        digests=digests,
+        fingerprints=fingerprints,
+        output_fingerprints=output_fingerprints,
+        logs=logs,
+    )
 
 
 def _fingerprints_match(
     fingerprint: CacheFingerprint, reference: CacheFingerprint
 ) -> bool:
     lhs, rhs = fingerprint.fingerprints, reference.fingerprints
+    return tuple(lhs) == tuple(rhs)
+
+
+def _output_fingerprints_match(
+    fingerprint: CacheFingerprint, reference: CacheFingerprint
+) -> bool:
+    lhs, rhs = fingerprint.output_fingerprints, reference.output_fingerprints
     return tuple(lhs) == tuple(rhs)
 
 
@@ -175,6 +203,10 @@ class DependencyCache:
     def _store_in_cache(self, key: str, fingerprint: CacheFingerprint):
         self.db[key] = fingerprint
 
+    def _evict_from_cache(self, key: str):
+        if key in self.db:
+            del self.db[key]
+
     def __call__(
         self,
         commands: List[str],
@@ -203,6 +235,11 @@ class DependencyCache:
         reference_fingerprint = _build_cache_fingerprint(artifact_list)
 
         if not _fingerprints_match(fingerprint, reference_fingerprint):
+            self._evict_from_cache(key)
+            return False
+
+        if not _output_fingerprints_match(fingerprint, reference_fingerprint):
+            self._evict_from_cache(key)
             return False
 
         reference_digests = _build_digest_list(artifact_list)
@@ -218,6 +255,7 @@ class DependencyCache:
                 old_digest_values, reference_digests
             ):
                 reference_digest.value = old_digest_value
+            self._evict_from_cache(key)
             return False
 
         # Apply logs changes.
