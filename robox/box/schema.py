@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Self, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from pydantic_core import PydanticCustomError
 
 from robox.autoenum import AutoEnum, alias
@@ -16,6 +16,19 @@ Primitive = Union[str, int, float, bool]
 def NameField(**kwargs):
     return Field(
         pattern=r'^[a-zA-Z0-9][a-zA-Z0-9\-]*$', min_length=3, max_length=32, **kwargs
+    )
+
+
+def _check_oneof(model_obj: BaseModel, fields: List[str]):
+    has = []
+    for field in fields:
+        if hasattr(model_obj, field) and getattr(model_obj, field):
+            has.append(field)
+    if len(has) <= 1:
+        return
+    raise ValueError(
+        f'fields {has} were specified at the same time '
+        'in a testgroup; only one of them can be specified'
     )
 
 
@@ -129,13 +142,10 @@ class GeneratorCall(BaseModel):
     )
 
 
-class TestcaseGroup(BaseModel):
+class TestcaseSubgroup(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     name: str = NameField(description='The name of the test group.')
-
-    # Testcases below will be added to this group in the order
-    # they're defined, from `testcases` first to `generatorScript` last.
 
     testcases: List[Testcase] = Field(
         [],
@@ -166,6 +176,30 @@ A list of generators to call to generate testcases for this group.
         description="""
 A generator script to call to generate testcases for this group.
 """,
+    )
+
+    @model_validator(mode='after')
+    def check_oneof(self) -> Self:
+        _check_oneof(
+            self,
+            [
+                'testcases',
+                'testcaseGlob',
+                'generators',
+                'generatorScript',
+            ],
+        )
+        return self
+
+
+class TestcaseGroup(TestcaseSubgroup):
+    model_config = ConfigDict(extra='forbid')
+
+    subgroups: List[TestcaseSubgroup] = Field(
+        [],
+        description="""
+A list of test subgroups to define for this group.
+        """,
     )
 
     validator: Optional[CodeItem] = Field(

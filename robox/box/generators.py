@@ -2,7 +2,7 @@ import pathlib
 import shlex
 import shutil
 from pathlib import PosixPath
-from typing import Dict, List, Optional, Set
+from typing import Callable, Dict, List, Optional, Set
 
 import typer
 
@@ -13,7 +13,12 @@ from robox.box.environment import (
     EnvironmentSandbox,
     ExecutionConfig,
 )
-from robox.box.schema import CodeItem, Generator, Testcase, TestcaseGroup
+from robox.box.schema import (
+    CodeItem,
+    Generator,
+    Testcase,
+    TestcaseSubgroup,
+)
 from robox.box.testcases import find_built_testcases
 from robox.grading.judge.cacher import FileCacher
 from robox.grading.steps import (
@@ -28,23 +33,29 @@ def _compile_generator(generator: CodeItem) -> str:
     return compile_item(generator)
 
 
-def _get_group_input(group_path: pathlib.Path, i: int) -> pathlib.Path:
-    return group_path / f'{i:03d}.in'
+def _get_group_input(
+    group_path: pathlib.Path, subgroup_prefix: str, i: int
+) -> pathlib.Path:
+    return group_path / f'{subgroup_prefix}{i:03d}.in'
 
 
-def _get_group_output(group_path: pathlib.Path, i: int) -> pathlib.Path:
-    return group_path / f'{i:03d}.out'
+def _get_group_output(
+    group_path: pathlib.Path, subgroup_prefix: str, i: int
+) -> pathlib.Path:
+    return group_path / f'{subgroup_prefix}{i:03d}.out'
 
 
-def _copy_testcase_over(testcase: Testcase, group_path: pathlib.Path, i: int):
+def _copy_testcase_over(
+    testcase: Testcase, group_path: pathlib.Path, subgroup_prefix: str, i: int
+):
     shutil.copy(
         str(testcase.inputPath),
-        _get_group_input(group_path, i),
+        _get_group_input(group_path, subgroup_prefix, i),
     )
     if testcase.outputPath is not None and testcase.outputPath.is_file():
         shutil.copy(
             str(testcase.outputPath),
-            _get_group_output(group_path, i),
+            _get_group_output(group_path, subgroup_prefix, i),
         )
 
 
@@ -53,13 +64,14 @@ def _run_generator(
     args: Optional[str],
     compiled_digest: str,
     group_path: pathlib.Path,
+    subgroup_prefix: str,
     i: int = 0,
 ):
     generation_stderr = DigestHolder()
     run_log = run_item(
         generator,
         DigestOrSource.create(compiled_digest),
-        stdout=DigestOrDest.create(_get_group_input(group_path, i)),
+        stdout=DigestOrDest.create(_get_group_input(group_path, subgroup_prefix, i)),
         stderr=DigestOrDest.create(generation_stderr),
         extra_args=args or None,
     )
@@ -176,7 +188,7 @@ def generate_outputs_for_testcases(
             step()
 
 
-def run_generator_script(testcase: TestcaseGroup, cacher: FileCacher) -> str:
+def run_generator_script(testcase: TestcaseSubgroup, cacher: FileCacher) -> str:
     assert testcase.generatorScript is not None
     script_digest = DigestHolder()
     if testcase.generatorScript.path.suffix == '.txt':
@@ -275,6 +287,76 @@ def compile_generators(
     return generator_to_compiled_digest
 
 
+def _generate_testcases_for_subgroup(
+    subgroup: TestcaseSubgroup,
+    group_path: pathlib.Path,
+    subgroup_prefix: str,
+    compiled_generators: Dict[str, str],
+    step: Callable,
+):
+    cacher = package.get_file_cacher()
+
+    i = 0
+    # Individual testcases.
+    for tc in subgroup.testcases or []:
+        _copy_testcase_over(tc, group_path, subgroup_prefix, i)
+        i += 1
+        step()
+
+    # Glob testcases.
+    if subgroup.testcaseGlob:
+        matched_inputs = sorted(PosixPath().glob(subgroup.testcaseGlob))
+
+        for input_path in matched_inputs:
+            if not input_path.is_file() or input_path.suffix != '.in':
+                continue
+            output_path = input_path.parent / f'{input_path.stem}.out'
+            tc = Testcase(inputPath=input_path, outputPath=output_path)
+            _copy_testcase_over(tc, group_path, subgroup_prefix, i)
+            i += 1
+            step()
+
+    # Run single generators.
+    for generator_call in subgroup.generators:
+        generator = package.get_generator(generator_call.name)
+        if generator.name not in compiled_generators:
+            console.console.print(f'Generator {generator.name} not compiled')
+            raise typer.Exit(1)
+
+        _run_generator(
+            generator,
+            generator_call.args,
+            compiled_generators[generator.name],
+            group_path,
+            subgroup_prefix,
+            i,
+        )
+        i += 1
+        step()
+
+    # Run generator script.
+    if subgroup.generatorScript is not None:
+        script = run_generator_script(subgroup, cacher)
+
+        # Run each line from generator script.
+        for generator_name, args in extract_script_lines(script):
+            generator = package.get_generator(generator_name)
+            if generator.name not in compiled_generators:
+                console.console.print(f'Generator {generator.name} not compiled')
+                raise typer.Exit(1)
+
+            _run_generator(
+                generator,
+                args,
+                compiled_generators[generator.name],
+                group_path,
+                subgroup_prefix,
+                i,
+            )
+            i += 1
+            step()
+
+
 def generate_testcases(
     progress: Optional[StatusProgress] = None, groups: Optional[Set[str]] = None
 ):
@@ -297,60 +379,17 @@ def generate_testcases(
             continue
         group_path = package.get_build_testgroup_path(testcase.name)
 
-        i = 0
-        # Individual testcases.
-        for tc in testcase.testcases or []:
-            _copy_testcase_over(tc, group_path, i)
-            i += 1
-            step()
-
-        # Glob testcases.
-        if testcase.testcaseGlob:
-            matched_inputs = sorted(PosixPath().glob(testcase.testcaseGlob))
-
-            for input_path in matched_inputs:
-                if not input_path.is_file() or input_path.suffix != '.in':
-                    continue
-                output_path = input_path.parent / f'{input_path.stem}.out'
-                tc = Testcase(inputPath=input_path, outputPath=output_path)
-                _copy_testcase_over(tc, group_path, i)
-                i += 1
-                step()
-
-        # Run single generators.
-        for generator_call in testcase.generators:
-            generator = package.get_generator(generator_call.name)
-            if generator.name not in compiled_generators:
-                console.console.print(f'Generator {generator.name} not compiled')
-                raise typer.Exit(1)
-
-            _run_generator(
-                generator,
-                generator_call.args,
-                compiled_generators[generator.name],
-                group_path,
-                i,
+        if not testcase.subgroups:
+            # Testcase group is itself a test subgroup.
+            _generate_testcases_for_subgroup(
+                testcase, group_path, '', compiled_generators, step
             )
-            i += 1
-            step()
+            continue
 
-        # Run generator script.
-        if testcase.generatorScript is not None:
-            script = run_generator_script(testcase, cacher)
-
-            # Run each line from generator script.
-            for generator_name, args in extract_script_lines(script):
-                generator = package.get_generator(generator_name)
-                if generator.name not in compiled_generators:
-                    console.console.print(f'Generator {generator.name} not compiled')
-                    raise typer.Exit(1)
-
-                _run_generator(
-                    generator,
-                    args,
-                    compiled_generators[generator.name],
-                    group_path,
-                    i,
-                )
-                i += 1
-                step()
+        renamed_testcase = testcase.model_copy(update={'name': 'main'})
+        subgroups = [renamed_testcase] + testcase.subgroups
+        for i, subgroup in enumerate(subgroups):
+            # Test subgroups were specified, use them.
+            _generate_testcases_for_subgroup(
+                subgroup, group_path, f'{i}-{subgroup.name}-', compiled_generators, step
+            )
