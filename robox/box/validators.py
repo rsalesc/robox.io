@@ -206,12 +206,11 @@ def print_validation_report(infos: List[TestcaseValidationInfo]):
             hit_bounds[k] = _bounds_or(hit_bounds[k], v)
 
     for group, hit_bounds in hit_bounds_per_group.items():
+        if group == 'samples':
+            # Skip samples.
+            continue
         console.console.print(f'Group [item]{group}[/item] hit bounds:')
         for k, v in hit_bounds.items():
-            if k == 'samples':
-                # Skip samples.
-                continue
-
             if all(v):
                 continue
 
