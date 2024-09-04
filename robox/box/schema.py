@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 from typing import Dict, List, Optional, Self, Union
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticCustomError
 
 from robox.autoenum import AutoEnum, alias
