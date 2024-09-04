@@ -61,6 +61,23 @@ def _process_bounds(log: str) -> HitBounds:
     return bounds
 
 
+def _merge_hit_bounds(hit_bounds: List[HitBounds]) -> HitBounds:
+    res: HitBounds = {}
+    for hb in hit_bounds:
+        for k, hit in hb.items():
+            if k not in res:
+                res[k] = hit
+                continue
+            res[k] = _bounds_or(res[k], hit)
+    return res
+
+
+def _has_group_specific_validator() -> bool:
+    pkg = package.find_problem_package_or_die()
+
+    return any(group.validator is not None for group in pkg.testcases)
+
+
 def _validate_testcase(
     testcase: pathlib.Path,
     validator: CodeItem,
@@ -198,18 +215,22 @@ def print_validation_report(infos: List[TestcaseValidationInfo]):
 
         if info.group not in hit_bounds_per_group:
             hit_bounds_per_group[info.group] = {}
-        hit_bounds = hit_bounds_per_group[info.group]
+        hit_bounds_per_group[info.group] = _merge_hit_bounds(
+            [hit_bounds_per_group[info.group], info.hit_bounds]
+        )
 
-        for k, v in info.hit_bounds.items():
-            if k not in hit_bounds:
-                hit_bounds[k] = (False, False)
-            hit_bounds[k] = _bounds_or(hit_bounds[k], v)
+    if not _has_group_specific_validator():
+        hit_bounds_per_group = {None: _merge_hit_bounds(hit_bounds_per_group.values())}
 
     for group, hit_bounds in hit_bounds_per_group.items():
         if group == 'samples':
             # Skip samples.
             continue
-        console.console.print(f'Group [item]{group}[/item] hit bounds:')
+        if group is None:
+            console.console.print('Hit bounds:')
+        else:
+            console.console.print(f'Group [item]{group}[/item] hit bounds:')
+
         for k, v in hit_bounds.items():
             if all(v):
                 continue
