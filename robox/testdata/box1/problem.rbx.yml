@@ -12,12 +12,15 @@ validator:
 testcases:
   - name: "gen1"
     testcaseGlob: "tests/*.in"
-    generators:
-      - name: "gen1"
-      - name: "gen2"
-        args: "424242"
-    generatorScript:
-      path: "genScript.py"
+    subgroups:
+      - name: "gen"
+        generators:
+          - name: "gen1"
+          - name: "gen2"
+            args: "424242"
+      - name: "genScript"
+        generatorScript:
+          path: "genScript.py"
 solutions:
   - path: "sol.cpp"
     outcome: "ac"
@@ -30,4 +33,4 @@ solutions:
   - path: "tle-and-incorrect.sol.cpp"
     outcome: "tle"
   - path: "hard-tle.sol.cpp"
-    outcome: "tle+rte"  # Will RTE in Stupid, TLE in isolate
+    outcome: "tle+rte" # Will RTE in Stupid, TLE in isolate
