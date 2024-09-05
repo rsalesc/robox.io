@@ -123,6 +123,8 @@ def generate_outputs_for_testcases(
     extra_config = ExecutionConfig(sandbox=sandbox)
 
     gen_runs_dir = package.get_problem_runs_dir() / '.gen'
+    shutil.rmtree(str(gen_runs_dir), ignore_errors=True)
+    gen_runs_dir.mkdir(parents=True, exist_ok=True)
 
     for group in pkg.testcases:
         if groups is not None and group.name not in groups:

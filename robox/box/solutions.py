@@ -1,5 +1,6 @@
 import collections
 import pathlib
+import shutil
 from typing import Any, Dict, List, Optional, Set
 
 import rich
@@ -78,11 +79,11 @@ def run_solution(
     extra_config = ExecutionConfig(sandbox=sandbox)
 
     res = collections.defaultdict(list)
+    runs_dir = package.get_problem_runs_dir()
 
     for group in pkg.testcases:
         testcases = find_built_testcases(group)
         for i, testcase in enumerate(testcases):
-            runs_dir = package.get_problem_runs_dir()
             assert testcase.outputPath is not None
             output_path = runs_dir / f'{index}' / group.name / testcase.outputPath.name
             error_path = output_path.with_suffix('.err')
@@ -145,6 +146,12 @@ def run_solutions(
         progress=progress, tracked_solutions=tracked_solutions
     )
     res = []
+
+    # Clear run directory and rely on cache to
+    # repopulate it.
+    runs_dir = package.get_problem_runs_dir()
+    shutil.rmtree(str(runs_dir), ignore_errors=True)
+    runs_dir.mkdir(parents=True, exist_ok=True)
 
     for i, solution in enumerate(pkg.solutions):
         if (
