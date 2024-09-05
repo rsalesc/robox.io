@@ -8,21 +8,50 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 from robox.grading.judge.digester import digest_cooperatively
-from robox.grading.judge.storage import Storage
+from robox.grading.judge.storage import Storage, copyfileobj
 from robox.grading.steps import DigestHolder, GradingArtifacts, GradingLogsHolder
 
 
 class CacheInput(BaseModel):
+    """
+    The exact command that was executed, together with
+    its set of input and output artifacts.
+
+    This is used as a cache key, which means that, if across
+    executions, the command, or the set of artifacts it
+    consumes/produces changes, then there will be a cache key
+    change, and thus the command will be re-run.
+    """
+
     commands: List[str]
     artifacts: List[GradingArtifacts]
     extra_params: Dict[str, Any] = {}
 
 
 class CacheFingerprint(BaseModel):
+    """
+    The state of the artifacts that are not stored in the
+    cache key (usually for efficiency/key size reasons), such
+    as the hashes of every FS input artifact, or the hashes of
+    the produced artifacts.
+
+    This is used for a few things:
+        - Check whether the IO files have changed in disk since
+          this command was cached, and evict this entry in such case.
+        - Check whether the caching storage has changed since this
+          command was cached, and evict this entry in such case.
+        - Store small side-effects of the cached execution, such as
+          execution time, memory, exit codes, etc.
+    """
+
     digests: List[Optional[str]]
     fingerprints: List[str]
     output_fingerprints: List[str]
     logs: List[GradingLogsHolder]
+
+
+class NoCacheException(Exception):
+    pass
 
 
 def _check_digests(artifacts_list: List[GradingArtifacts]):
@@ -49,6 +78,8 @@ def _build_digest_list(artifacts_list: List[GradingArtifacts]) -> List[DigestHol
     digests = []
     for artifacts in artifacts_list:
         for output in artifacts.outputs:
+            if output.hash and output.digest is None:
+                output.digest = DigestHolder()
             if output.digest is None:
                 continue
             digests.append(output.digest)
@@ -70,7 +101,7 @@ def _build_output_fingerprint_list(artifacts_list: List[GradingArtifacts]) -> Li
     fingerprints = []
     for artifacts in artifacts_list:
         for output in artifacts.outputs:
-            if output.dest is None or output.intermediate:
+            if output.dest is None or output.intermediate or output.hash:
                 continue
             if not output.dest.is_file():
                 fingerprints.append('')  # file does not exist
@@ -117,9 +148,45 @@ def _output_fingerprints_match(
     return tuple(lhs) == tuple(rhs)
 
 
+def _build_cache_input(
+    commands: List[str],
+    artifact_list: List[GradingArtifacts],
+    extra_params: Dict[str, Any],
+) -> CacheInput:
+    cloned_artifact_list = [
+        artifacts.model_copy(deep=True) for artifacts in artifact_list
+    ]
+    for artifacts in cloned_artifact_list:
+        for output in artifacts.outputs:
+            if output.hash:
+                # Cleanup dest field from hash artifacts
+                # since they only their digest value should
+                # be tracked by cache.
+                output.dest = None
+    return CacheInput(
+        commands=commands, artifacts=cloned_artifact_list, extra_params=extra_params
+    )
+
+
 def _build_cache_key(input: CacheInput) -> str:
     with io.BytesIO(input.model_dump_json().encode()) as fobj:
         return digest_cooperatively(fobj)
+
+
+def _copy_hashed_files(artifact_list: List[GradingArtifacts], storage: Storage):
+    for artifact in artifact_list:
+        for output in artifact.outputs:
+            if not output.hash or output.dest is None:
+                continue
+            assert output.digest is not None
+            if output.optional and output.digest.value is None:
+                continue
+            assert output.digest.value is not None
+            with storage.get_file(output.digest.value) as fobj:
+                with output.dest.open('wb') as f:
+                    copyfileobj(fobj, f, maxlen=output.maxlen)
+            if output.executable:
+                output.dest.chmod(0o755)
 
 
 def is_artifact_ok(artifact: GradingArtifacts, storage: Storage) -> bool:
@@ -165,9 +232,9 @@ class DependencyCacheBlock:
         self._key = None
 
     def __enter__(self):
-        input = CacheInput(
+        input = _build_cache_input(
             commands=self.commands,
-            artifacts=self.artifact_list,
+            artifact_list=self.artifact_list,
             extra_params=self.extra_params,
         )
         self._key = _build_cache_key(input)
@@ -181,6 +248,8 @@ class DependencyCacheBlock:
             self.cache.store_in_cache(
                 self.commands, self.artifact_list, self.extra_params, key=self._key
             )
+        if exc_type is NoCacheException:
+            return True
         return None
 
 
@@ -223,8 +292,8 @@ class DependencyCache:
         extra_params: Dict[str, Any],
         key: Optional[str] = None,
     ) -> bool:
-        input = CacheInput(
-            commands=commands, artifacts=artifact_list, extra_params=extra_params
+        input = _build_cache_input(
+            commands=commands, artifact_list=artifact_list, extra_params=extra_params
         )
         key = key or _build_cache_key(input)
 
@@ -258,10 +327,14 @@ class DependencyCache:
             self._evict_from_cache(key)
             return False
 
+        # Copy hashed files to file system.
+        _copy_hashed_files(artifact_list, self.storage)
+
         # Apply logs changes.
         for logs, reference_logs in zip(fingerprint.logs, reference_fingerprint.logs):
             if logs.run is not None:
                 reference_logs.run = logs.run.model_copy(deep=True)
+            reference_logs.cached = True
 
         return True
 

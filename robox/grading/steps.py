@@ -33,6 +33,7 @@ class DigestHolder(BaseModel):
 
 class GradingLogsHolder(BaseModel):
     run: Optional['RunLog'] = None
+    cached: bool = False
 
 
 class DigestOrSource(BaseModel):
@@ -107,6 +108,8 @@ class GradingFileOutput(BaseModel):
     maxlen: Optional[int] = None
     # Whether the file is just an intermediate file that should not be tracked.
     intermediate: bool = False
+    # Whether to track file through its hash (disable for optimization).
+    hash: bool = True
 
 
 class GradingArtifacts(BaseModel):
@@ -180,6 +183,8 @@ def _process_output_artifacts(
     artifacts: GradingArtifacts, sandbox: SandboxBase
 ) -> bool:
     for output_artifact in artifacts.outputs:
+        if output_artifact.hash and output_artifact.digest is None:
+            output_artifact.digest = DigestHolder()
         if not sandbox.file_exists(output_artifact.src):
             if output_artifact.optional:
                 continue
@@ -187,13 +192,13 @@ def _process_output_artifacts(
                 f'[error]Output artifact [item]{output_artifact.src}[/item] does not exist.[/error]'
             )
             return False
+
         if output_artifact.digest is not None:
             output_artifact.digest.value = sandbox.get_file_to_storage(
-                output_artifact.src,
-                trunc_len=output_artifact.maxlen,
+                output_artifact.src, trunc_len=output_artifact.maxlen
             )
+        if output_artifact.dest is None:
             continue
-        assert output_artifact.dest
         dst: pathlib.Path = artifacts.root / output_artifact.dest
         # Ensure dst directory exists.
         dst.parent.mkdir(parents=True, exist_ok=True)

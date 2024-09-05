@@ -1,5 +1,6 @@
 import os
 import pathlib
+import shutil
 import tempfile
 from collections.abc import Iterator
 
@@ -23,3 +24,15 @@ def cleandir() -> Iterator[pathlib.Path]:
             yield abspath
         finally:
             os.chdir(str(old_cwd))
+
+
+@pytest.fixture
+def cleandir_with_testdata(
+    request, testdata_path: pathlib.Path, cleandir: pathlib.Path
+) -> Iterator[pathlib.Path]:
+    marker = request.node.get_closest_marker('test_pkg')
+    if marker is None:
+        raise ValueError('test_pkg marker not found')
+    testdata = testdata_path / marker.args[0]
+    shutil.copytree(str(testdata), str(cleandir), dirs_exist_ok=True)
+    yield cleandir

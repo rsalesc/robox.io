@@ -21,7 +21,7 @@ from robox.box.environment import (
     merge_execution_configs,
 )
 from robox.box.schema import CodeItem
-from robox.grading import steps
+from robox.grading import steps_with_caching
 from robox.grading.steps import (
     DigestHolder,
     DigestOrDest,
@@ -29,7 +29,6 @@ from robox.grading.steps import (
     GradingArtifacts,
     GradingFileInput,
     GradingFileOutput,
-    GradingLogsHolder,
     RunLog,
 )
 
@@ -98,16 +97,14 @@ def compile_item(code: CodeItem) -> str:
         )
     )
 
-    with dependency_cache(
-        commands, [artifacts], sandbox_params.get_cacheable_params()
-    ) as is_cached:
-        if not is_cached and not steps.compile(
-            commands=commands,
-            params=sandbox_params,
-            artifacts=artifacts,
-            sandbox=sandbox,
-        ):
-            raise typer.Exit(1)
+    if not steps_with_caching.compile(
+        commands,
+        params=sandbox_params,
+        artifacts=artifacts,
+        sandbox=sandbox,
+        dependency_cache=dependency_cache,
+    ):
+        raise typer.Exit(1)
 
     assert compiled_digest.value is not None
     return compiled_digest.value
@@ -148,7 +145,6 @@ def run_item(
         command = shlex.join(splitted_command)
 
     artifacts = GradingArtifacts()
-    artifacts.logs = GradingLogsHolder()
     artifacts.inputs.append(
         GradingFileInput(
             **executable.expand(),
@@ -182,15 +178,10 @@ def run_item(
     if outputs:
         artifacts.outputs.extend(outputs)
 
-    with dependency_cache(
-        [command], [artifacts], sandbox_params.get_cacheable_params()
-    ) as is_cached:
-        if not is_cached:
-            steps.run(
-                command=command,
-                params=sandbox_params,
-                artifacts=artifacts,
-                sandbox=sandbox,
-            )
-
-    return artifacts.logs.run
+    return steps_with_caching.run(
+        command,
+        params=sandbox_params,
+        sandbox=sandbox,
+        artifacts=artifacts,
+        dependency_cache=dependency_cache,
+    )
