@@ -7,7 +7,7 @@ from typing import Callable, Dict, List, Optional, Set
 import typer
 
 from robox import console
-from robox.box import checkers, package
+from robox.box import checkers, package, testcases
 from robox.box.code import compile_item, run_item
 from robox.box.environment import (
     EnvironmentSandbox,
@@ -188,7 +188,7 @@ def generate_outputs_for_testcases(
             step()
 
 
-def run_generator_script(testcase: TestcaseSubgroup, cacher: FileCacher) -> str:
+def _run_generator_script(testcase: TestcaseSubgroup, cacher: FileCacher) -> str:
     assert testcase.generatorScript is not None
     script_digest = DigestHolder()
     if testcase.generatorScript.path.suffix == '.txt':
@@ -230,7 +230,7 @@ def run_generator_script(testcase: TestcaseSubgroup, cacher: FileCacher) -> str:
     return script
 
 
-def extract_script_lines(script: str):
+def _extract_script_lines(script: str):
     lines = script.splitlines()
     for line in lines:
         line = line.strip()
@@ -240,7 +240,7 @@ def extract_script_lines(script: str):
         yield shlex.split(line)[0], shlex.join(shlex.split(line)[1:])
 
 
-def get_necessary_generators(groups: Set[str], cacher: FileCacher) -> Set[str]:
+def _get_necessary_generators(groups: Set[str], cacher: FileCacher) -> Set[str]:
     pkg = package.find_problem_package_or_die()
     existing_generators = set(generator.name for generator in pkg.generators)
 
@@ -253,8 +253,8 @@ def get_necessary_generators(groups: Set[str], cacher: FileCacher) -> Set[str]:
             necessary_generators.add(generator_call.name)
 
         if group.generatorScript is not None:
-            script = run_generator_script(group, cacher)
-            for generator_name, _ in extract_script_lines(script):
+            script = _run_generator_script(group, cacher)
+            for generator_name, _ in _extract_script_lines(script):
                 necessary_generators.add(generator_name)
 
     return existing_generators.intersection(necessary_generators)
@@ -336,10 +336,10 @@ def _generate_testcases_for_subgroup(
 
     # Run generator script.
     if subgroup.generatorScript is not None:
-        script = run_generator_script(subgroup, cacher)
+        script = _run_generator_script(subgroup, cacher)
 
         # Run each line from generator script.
-        for generator_name, args in extract_script_lines(script):
+        for generator_name, args in _extract_script_lines(script):
             generator = package.get_generator(generator_name)
             if generator.name not in compiled_generators:
                 console.console.print(f'Generator {generator.name} not compiled')
@@ -369,10 +369,12 @@ def generate_testcases(
 
     compiled_generators = compile_generators(
         progress=progress,
-        tracked_generators=get_necessary_generators(groups, cacher)
+        tracked_generators=_get_necessary_generators(groups, cacher)
         if groups is not None
         else None,
     )
+
+    testcases.clear_built_testcases()
 
     for testcase in pkg.testcases:
         if groups is not None and testcase.name not in groups:

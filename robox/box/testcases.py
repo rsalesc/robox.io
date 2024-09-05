@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 from typing import List
 
 import typer
@@ -6,7 +7,7 @@ from pydantic import BaseModel
 
 from robox import console
 from robox.box import package
-from robox.box.package import get_build_testgroup_path
+from robox.box.package import get_build_testgroup_path, get_build_tests_path
 from robox.box.schema import Testcase, TestcaseGroup
 
 
@@ -34,6 +35,10 @@ def find_built_testcase_inputs(group: TestcaseGroup) -> List[pathlib.Path]:
         raise typer.Exit(1)
 
     return sorted(testgroup_path.glob('*.in'))
+
+
+def clear_built_testcases():
+    shutil.rmtree(str(get_build_tests_path()), ignore_errors=True)
 
 
 def get_samples() -> List[Testcase]:
