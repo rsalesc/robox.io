@@ -298,6 +298,8 @@ def _generate_testcases_for_subgroup(
 ):
     cacher = package.get_file_cacher()
 
+    group_path.mkdir(parents=True, exist_ok=True)
+
     i = 0
     # Individual testcases.
     for tc in subgroup.testcases or []:
