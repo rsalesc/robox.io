@@ -7,7 +7,10 @@ from robox.box.generators import (
     generate_outputs_for_testcases,
     generate_testcases,
 )
-from robox.box.solutions import run_solutions
+from robox.box.solutions import (
+    convert_list_of_solution_evaluations_to_dict,
+    run_solutions,
+)
 from robox.grading.steps import Outcome
 
 
@@ -16,7 +19,8 @@ def test_solutions(pkg_from_testdata: pathlib.Path):
     generate_testcases()
     generate_outputs_for_testcases()
 
-    res = run_solutions(verification=VerificationLevel.FULL)
+    solution_iterable = list(run_solutions(verification=VerificationLevel.FULL))
+    res = convert_list_of_solution_evaluations_to_dict(solution_iterable)
 
     # First solution should pass all tests.
     assert all(chk.result.outcome == Outcome.ACCEPTED for chk in res[0]['gen1'])

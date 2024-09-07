@@ -1,7 +1,8 @@
 import collections
 import pathlib
 import shutil
-from typing import Any, Dict, List, Optional, Set
+from collections.abc import Iterator
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import rich
 import rich.table
@@ -62,7 +63,7 @@ def run_solution(
     index: int,
     progress: Optional[StatusProgress] = None,
     verification: VerificationLevel = VerificationLevel.NONE,
-) -> Dict[str, List[Evaluation]]:
+) -> Iterator[Tuple[str, Evaluation]]:
     pkg = package.find_problem_package_or_die()
 
     actual_sandbox = package.get_singleton_sandbox()
@@ -78,7 +79,6 @@ def run_solution(
     sandbox.memoryLimit = pkg.memoryLimit
     extra_config = ExecutionConfig(sandbox=sandbox)
 
-    res = collections.defaultdict(list)
     runs_dir = package.get_problem_runs_dir()
 
     for group in pkg.testcases:
@@ -128,9 +128,20 @@ def run_solution(
 
             log_path.write_text(model_to_yaml(eval))
 
-            res[group.name].append(eval)
+            yield (group.name, eval)
 
-    return dict(res)
+
+def convert_list_of_solution_evaluations_to_dict(
+    evaluations: Iterable[Tuple[int, str, Evaluation]],
+) -> List[Dict[str, List[Evaluation]]]:
+    res = []
+
+    for index, group_name, eval in evaluations:
+        while index >= len(res):
+            res.append(collections.defaultdict(list))
+        res[index][group_name].append(eval)
+
+    return res
 
 
 def run_solutions(
@@ -138,7 +149,7 @@ def run_solutions(
     tracked_solutions: Optional[Set[str]] = None,
     verification: VerificationLevel = VerificationLevel.NONE,
     check: bool = True,
-) -> List[Dict[str, List[Evaluation]]]:
+) -> Iterator[Tuple[int, str, Evaluation]]:
     pkg = package.find_problem_package_or_die()
 
     checker_digest = checkers.compile_checker() if check else None
@@ -160,17 +171,15 @@ def run_solutions(
         ):
             res.append({})
             continue
-        results_per_group = run_solution(
+        for group_name, eval in run_solution(
             solution,
             compiled_solutions[solution.path],
             checker_digest,
             i,
             progress=progress,
             verification=verification,
-        )
-        res.append(results_per_group)
-
-    return res
+        ):
+            yield i, group_name, eval
 
 
 def get_outcome_style_verdict(outcome: Outcome) -> str:
@@ -298,48 +307,81 @@ def print_detailed_run_report(
 
 
 def print_run_report(
-    evals_per_solution: List[Dict[str, List[Evaluation]]],
+    evals: Iterable[Tuple[int, str, Evaluation]],
     console: rich.console.Console,
     verification: environment.VerificationParam,
     detailed: bool = False,
 ) -> bool:
     pkg = package.find_problem_package_or_die()
 
-    assert len(pkg.solutions) == len(evals_per_solution)
-
     if detailed:
+        evals = list(
+            evals
+        )  # Consume evals list to iterate over it twice (it is a generator).
+        evals_per_solution = convert_list_of_solution_evaluations_to_dict(evals)
+        assert len(pkg.solutions) == len(evals_per_solution)
         print_detailed_run_report(evals_per_solution, console, verification)
 
+    # Since we're now streaming the evaluation results, the for-loop is a bit
+    # confusing. We must keep state across the iteration to understand whether
+    # we're seeing a new solution or a new testgroup.
     ok = True
-    for s, (solution, evals_per_group) in enumerate(
-        zip(pkg.solutions, evals_per_solution)
-    ):
-        if not evals_per_group:
-            continue
-        solution_testdir = package.get_problem_runs_dir() / f'{s}'
-        console.print(f'[item]{solution.path}[/item]', end=' ')
-        console.print(f'({solution_testdir})')
+    last_solution: Optional[Solution] = None
+    last_group: Optional[str] = None
+    test_index = 0
+    all_evals = []
+    group_evals = []
 
-        all_evals = []
-        for group, evals in evals_per_group.items():
-            all_evals.extend(evals)
-            if detailed:
-                continue
-            console.print(f'[bold][status]{group}[/status][/bold]', end=' ')
-            console.print(f'({_get_evals_formatted_time(evals)})', end=' ')
-            for i, eval in enumerate(evals):
-                console.print(f'{i}/', end='')
-                console.print(_get_testcase_markup_verdict(eval), end=' ')
-            console.print()
-
+    def print_last_solution():
+        nonlocal ok
+        if last_solution is None:
+            return
         cur_ok = _print_solution_outcome(
-            solution,
+            last_solution,
             all_evals,
             pkg.timeLimit,
             console,
             verification=VerificationLevel(verification),
         )
-        ok = ok and cur_ok
         console.print()
+        ok = ok and cur_ok
+
+    for s, group_name, eval in evals:
+        solution = pkg.solutions[s]
+        is_new_solution = last_solution is None or solution.path != last_solution.path
+        is_new_group = is_new_solution or last_group != group_name
+        is_closing_group = last_group is not None and is_new_group
+
+        if is_closing_group:
+            if not detailed:
+                console.print(f'({_get_evals_formatted_time(group_evals)})')
+
+        if is_new_solution:
+            print_last_solution()
+            all_evals = []
+            last_solution = solution
+            solution_testdir = package.get_problem_runs_dir() / f'{s}'
+            console.print(f'[item]{solution.path}[/item]', end=' ')
+            console.print(f'({solution_testdir})')
+
+        if is_new_group:
+            group_evals = []
+            last_group = group_name
+            test_index = 0
+            if not detailed:
+                console.print(f'[bold][status]{group_name}[/status][/bold]', end=' ')
+
+        all_evals.append(eval)
+        group_evals.append(eval)
+        if not detailed:
+            console.print(f'{test_index}/', end='')
+            console.print(_get_testcase_markup_verdict(eval), end=' ')
+
+        test_index += 1
+
+    if not detailed:
+        console.print(f'({_get_evals_formatted_time(group_evals)})', end=' ')
+        console.print()
+    print_last_solution()
 
     return ok

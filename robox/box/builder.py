@@ -4,7 +4,11 @@ from robox import console, utils
 from robox.box import environment, package
 from robox.box.environment import VerificationLevel
 from robox.box.generators import generate_outputs_for_testcases, generate_testcases
-from robox.box.solutions import is_fast, print_run_report, run_solutions
+from robox.box.solutions import (
+    is_fast,
+    print_run_report,
+    run_solutions,
+)
 from robox.box.validators import print_validation_report, validate_testcases
 
 

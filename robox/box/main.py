@@ -24,7 +24,11 @@ from robox.box import (
 from robox.box.contest import main as contest
 from robox.box.environment import VerificationLevel, get_environment_path
 from robox.box.packaging import main as packaging
-from robox.box.solutions import print_run_report, run_solutions
+from robox.box.solutions import (
+    convert_list_of_solution_evaluations_to_dict,
+    print_run_report,
+    run_solutions,
+)
 from robox.box.statements import build_statements
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
