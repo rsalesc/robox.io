@@ -1,17 +1,21 @@
 import collections
+import dataclasses
 import pathlib
 import shutil
 from collections.abc import Iterator
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 import rich
+import rich.live
 import rich.table
+from more_itertools import seekable
+from pydantic import BaseModel
 
 from robox import console
 from robox.box import checkers, environment, package
 from robox.box.code import compile_item, run_item
 from robox.box.environment import EnvironmentSandbox, ExecutionConfig, VerificationLevel
-from robox.box.schema import Solution
+from robox.box.schema import Solution, Testcase, TestcaseGroup
 from robox.box.testcases import find_built_testcases
 from robox.grading.steps import (
     DigestOrDest,
@@ -22,6 +26,49 @@ from robox.grading.steps import (
     TestcaseLog,
 )
 from robox.utils import StatusProgress, model_to_yaml
+
+StructuredEvaluation = Dict[str, Dict[str, List[Optional[Evaluation]]]]
+
+
+class EvaluationItem(BaseModel):
+    solution_index: int
+    group_name: str
+    testcase_index: int
+    eval: Evaluation
+
+
+class GroupSkeleton(BaseModel):
+    name: str
+    testcases: List[Testcase]
+
+
+class SolutionReportSkeleton(BaseModel):
+    solutions: List[Solution]
+    groups: List[GroupSkeleton]
+    group_first: bool
+
+    def find_group_skeleton(self, group_name: str) -> Optional[GroupSkeleton]:
+        groups = [group for group in self.groups if group.name == group_name]
+        if not groups:
+            return None
+        return groups[0]
+
+    def empty_structured_evaluation(self) -> StructuredEvaluation:
+        res: StructuredEvaluation = {}
+        for solution in self.solutions:
+            res[str(solution.path)] = {}
+            for group in self.groups:
+                res[str(solution.path)][group.name] = [None for _ in group.testcases]
+        return res
+
+
+@dataclasses.dataclass
+class RunSolutionResult:
+    skeleton: SolutionReportSkeleton
+    items: Iterator[EvaluationItem]
+
+    def empty_structured_evaluation(self) -> StructuredEvaluation:
+        return self.skeleton.empty_structured_evaluation()
 
 
 def is_fast(solution: Solution) -> bool:
@@ -56,14 +103,15 @@ def compile_solutions(
     return compiled_solutions
 
 
-def run_solution(
+def _run_solution(
     solution: Solution,
     compiled_digest: str,
     checker_digest: Optional[str],
-    index: int,
+    solution_index: int,
+    group_name: str,
     progress: Optional[StatusProgress] = None,
     verification: VerificationLevel = VerificationLevel.NONE,
-) -> Iterator[Tuple[str, Evaluation]]:
+) -> Iterator[Evaluation]:
     pkg = package.find_problem_package_or_die()
 
     actual_sandbox = package.get_singleton_sandbox()
@@ -81,67 +129,150 @@ def run_solution(
 
     runs_dir = package.get_problem_runs_dir()
 
-    for group in pkg.testcases:
-        testcases = find_built_testcases(group)
-        for i, testcase in enumerate(testcases):
-            assert testcase.outputPath is not None
-            output_path = runs_dir / f'{index}' / group.name / testcase.outputPath.name
-            error_path = output_path.with_suffix('.err')
-            log_path = output_path.with_suffix('.log')
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+    group = package.get_testgroup(group_name)
+    testcases = find_built_testcases(group)
+    for i, testcase in enumerate(testcases):
+        assert testcase.outputPath is not None
+        output_path = (
+            runs_dir / f'{solution_index}' / group.name / testcase.outputPath.name
+        )
+        error_path = output_path.with_suffix('.err')
+        log_path = output_path.with_suffix('.log')
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            if progress:
-                progress.update(
-                    f'Running solution [item]{solution.path}[/item] on test [item]{group.name}[/item] / [item]{i}[/item]...'
-                )
-            run_log = run_item(
-                solution,
-                DigestOrSource.create(compiled_digest),
-                stdin=DigestOrSource.create(testcase.inputPath),
-                stdout=DigestOrDest.create(output_path),
-                stderr=DigestOrDest.create(error_path),
-                extra_config=extra_config,
+        if progress:
+            progress.update(
+                f'Running solution [item]{solution.path}[/item] on test [item]{group.name}[/item] / [item]{i}[/item]...'
             )
+        run_log = run_item(
+            solution,
+            DigestOrSource.create(compiled_digest),
+            stdin=DigestOrSource.create(testcase.inputPath),
+            stdout=DigestOrDest.create(output_path),
+            stderr=DigestOrDest.create(error_path),
+            extra_config=extra_config,
+        )
 
-            if checker_digest is not None:
-                checker_result = checkers.check(
-                    checker_digest,
-                    run_log,
-                    testcase,
-                    program_output=output_path,
-                )
-            else:
-                checker_result = checkers.check_with_no_output(run_log)
-
-            eval = Evaluation(
-                result=checker_result,
-                testcase=TestcaseIO(
-                    index=i, input=testcase.inputPath, output=testcase.outputPath
-                ),
-                log=TestcaseLog(
-                    **(run_log.model_dump() if run_log is not None else {}),
-                    stdout_absolute_path=output_path.absolute(),
-                    stderr_absolute_path=error_path.absolute(),
-                    log_absolute_path=log_path.absolute(),
-                ),
+        if checker_digest is not None:
+            checker_result = checkers.check(
+                checker_digest,
+                run_log,
+                testcase,
+                program_output=output_path,
             )
+        else:
+            checker_result = checkers.check_with_no_output(run_log)
 
-            log_path.write_text(model_to_yaml(eval))
+        eval = Evaluation(
+            result=checker_result,
+            testcase=TestcaseIO(
+                index=i, input=testcase.inputPath, output=testcase.outputPath
+            ),
+            log=TestcaseLog(
+                **(run_log.model_dump() if run_log is not None else {}),
+                stdout_absolute_path=output_path.absolute(),
+                stderr_absolute_path=error_path.absolute(),
+                log_absolute_path=log_path.absolute(),
+            ),
+        )
 
-            yield (group.name, eval)
+        log_path.write_text(model_to_yaml(eval))
+
+        yield eval
 
 
 def convert_list_of_solution_evaluations_to_dict(
-    evaluations: Iterable[Tuple[int, str, Evaluation]],
+    items: Iterator[EvaluationItem],
 ) -> List[Dict[str, List[Evaluation]]]:
-    res = []
+    pkg = package.find_problem_package_or_die()
+    res: List[Dict[str, List[Evaluation]]] = [
+        collections.defaultdict(list) for _ in pkg.solutions
+    ]
 
-    for index, group_name, eval in evaluations:
-        while index >= len(res):
-            res.append(collections.defaultdict(list))
-        res[index][group_name].append(eval)
+    for item in items:
+        res[item.solution_index][item.group_name].append(item.eval)
 
     return res
+
+
+def _get_report_skeleton(
+    tracked_solutions: Optional[Set[str]] = None,
+    group_first: bool = False,
+) -> SolutionReportSkeleton:
+    pkg = package.find_problem_package_or_die()
+    solutions = pkg.solutions
+    if tracked_solutions is not None:
+        solutions = [
+            solution
+            for solution in solutions
+            if str(solution.path) in tracked_solutions
+        ]
+
+    groups = []
+    for group in pkg.testcases:
+        testcases = find_built_testcases(group)
+        groups.append(GroupSkeleton(name=group.name, testcases=testcases))
+    return SolutionReportSkeleton(
+        solutions=solutions, groups=groups, group_first=group_first
+    )
+
+
+def _produce_solution_items(
+    progress: Optional[StatusProgress] = None,
+    tracked_solutions: Optional[Set[str]] = None,
+    verification: VerificationLevel = VerificationLevel.NONE,
+    check: bool = True,
+    group_first: bool = False,
+) -> Iterator[EvaluationItem]:
+    pkg = package.find_problem_package_or_die()
+
+    checker_digest = checkers.compile_checker() if check else None
+    compiled_solutions = compile_solutions(
+        progress=progress, tracked_solutions=tracked_solutions
+    )
+
+    # Clear run directory and rely on cache to
+    # repopulate it.
+    runs_dir = package.get_problem_runs_dir()
+    shutil.rmtree(str(runs_dir), ignore_errors=True)
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    solutions = list(enumerate(pkg.solutions))
+    if tracked_solutions is not None:
+        solutions = [
+            (i, sol) for i, sol in solutions if str(sol.path) in tracked_solutions
+        ]
+
+    def yield_items(
+        solution_index: int, solution: Solution, group_name: str
+    ) -> Iterator[EvaluationItem]:
+        for i, eval in enumerate(
+            _run_solution(
+                solution,
+                compiled_solutions[solution.path],
+                checker_digest,
+                solution_index,
+                group_name,
+                progress=progress,
+                verification=verification,
+            )
+        ):
+            yield EvaluationItem(
+                solution_index=solution_index,
+                group_name=group_name,
+                testcase_index=i,
+                eval=eval,
+            )
+
+    groups = pkg.testcases
+    if group_first:
+        for group in groups:
+            for i, solution in solutions:
+                yield from yield_items(i, solution, group.name)
+        return
+
+    for i, solution in solutions:
+        for group in groups:
+            yield from yield_items(i, solution, group.name)
 
 
 def run_solutions(
@@ -149,37 +280,18 @@ def run_solutions(
     tracked_solutions: Optional[Set[str]] = None,
     verification: VerificationLevel = VerificationLevel.NONE,
     check: bool = True,
-) -> Iterator[Tuple[int, str, Evaluation]]:
-    pkg = package.find_problem_package_or_die()
-
-    checker_digest = checkers.compile_checker() if check else None
-    compiled_solutions = compile_solutions(
-        progress=progress, tracked_solutions=tracked_solutions
-    )
-    res = []
-
-    # Clear run directory and rely on cache to
-    # repopulate it.
-    runs_dir = package.get_problem_runs_dir()
-    shutil.rmtree(str(runs_dir), ignore_errors=True)
-    runs_dir.mkdir(parents=True, exist_ok=True)
-
-    for i, solution in enumerate(pkg.solutions):
-        if (
-            tracked_solutions is not None
-            and str(solution.path) not in tracked_solutions
-        ):
-            res.append({})
-            continue
-        for group_name, eval in run_solution(
-            solution,
-            compiled_solutions[solution.path],
-            checker_digest,
-            i,
+    group_first: bool = False,
+) -> RunSolutionResult:
+    return RunSolutionResult(
+        skeleton=_get_report_skeleton(tracked_solutions, group_first),
+        items=_produce_solution_items(
             progress=progress,
+            tracked_solutions=tracked_solutions,
             verification=verification,
-        ):
-            yield i, group_name, eval
+            check=check,
+            group_first=group_first,
+        ),
+    )
 
 
 def get_outcome_style_verdict(outcome: Outcome) -> str:
@@ -225,10 +337,11 @@ def _get_evals_formatted_time(evals: List[Evaluation]) -> str:
 def _print_solution_outcome(
     solution: Solution,
     evals: List[Evaluation],
-    timeLimit: int,
     console: rich.console.Console,
     verification: VerificationLevel = VerificationLevel.NONE,
 ) -> bool:
+    pkg = package.find_problem_package_or_die()
+
     bad_verdicts = set()
     for eval in evals:
         if eval.result.outcome != Outcome.ACCEPTED:
@@ -255,8 +368,8 @@ def _print_solution_outcome(
     if (
         not (matched_bad_verdicts - {Outcome.TIME_LIMIT_EXCEEDED})
         and verification.value >= VerificationLevel.FULL.value
-        and evals_time > timeLimit
-        and evals_time < timeLimit * 2
+        and evals_time > pkg.timeLimit
+        and evals_time < pkg.timeLimit * 2
     ):
         console.print(
             '[yellow]WARNING[/yellow] The solution still passed in double TL.'
@@ -265,63 +378,139 @@ def _print_solution_outcome(
     return len(unmatched_bad_verdicts) == 0
 
 
-def print_detailed_run_report(
-    evals_per_solution: List[Dict[str, List[Evaluation]]],
-    console: rich.console.Console,
-    verification: environment.VerificationParam,
-):
+def _consume_and_key_evaluation_items(
+    items: Iterator[EvaluationItem],
+    skeleton: SolutionReportSkeleton,
+) -> Iterator[StructuredEvaluation]:
+    """
+    Consumes EvaluationItems from a run_solutions call and build a view
+    with them, possibly marking with optional unprocessed items.
+    """
     pkg = package.find_problem_package_or_die()
+    res = skeleton.empty_structured_evaluation()
 
-    for group in pkg.testcases:
-        console.print(f'[bold][status]{group.name}[/status][/bold]')
+    for item in items:
+        solution = pkg.solutions[item.solution_index]
+        res[str(solution.path)][item.group_name][item.testcase_index] = item.eval
+        yield res
 
+
+def _print_solution_header(solution: Solution, console: rich.console.Console):
+    solutions = package.get_solutions()
+    solution_index = [
+        i for i, sol in enumerate(solutions) if sol.path == solution.path
+    ][0]
+    solution_testdir = package.get_problem_runs_dir() / f'{solution_index}'
+    console.print(f'[item]{solution.path}[/item]', end=' ')
+    console.print(f'({solution_testdir})')
+
+
+def _render_detailed_group_table(
+    group: TestcaseGroup,
+    skeleton: SolutionReportSkeleton,
+    structured_evaluations: Iterator[StructuredEvaluation],
+    console: rich.console.Console,
+):
+    group_skeleton = skeleton.find_group_skeleton(group.name)
+    assert group_skeleton is not None
+
+    def generate_table(
+        structured_evaluation: StructuredEvaluation, group_name: str
+    ) -> rich.table.Table:
         table = rich.table.Table()
-
-        for solution in pkg.solutions:
+        for solution in skeleton.solutions:
             table.add_column(f'[item]{solution.path}[/item]', justify='full')
 
-        row_to_renderables: Dict[int, List[Any]] = collections.defaultdict(list)
-        time_summary_row: List[str] = []
-
-        for evals_per_group in evals_per_solution:
-            evals = evals_per_group[group.name]
-            max_time = _get_evals_formatted_time(evals)
-            for i, eval in enumerate(evals):
+        evals_per_solution = collections.defaultdict(list)
+        for tc, _ in enumerate(group_skeleton.testcases):
+            row = []
+            for solution in skeleton.solutions:
+                eval = structured_evaluation[str(solution.path)][group_name][tc]
+                evals_per_solution[str(solution.path)].append(eval)
+                if eval is None:
+                    row.append('...')
+                    continue
                 verdict = _get_testcase_markup_verdict(eval)
                 time = _get_evals_formatted_time([eval])
-                if time == max_time:
-                    time = f'[underline][bold]{time}[/bold][/underline]'
-                row_to_renderables[i].append(f'{verdict} {time}')
+                row.append(f'{verdict} {time}')
+            table.add_row(*row)
 
-            time_summary_row.append('  ' + _get_evals_formatted_time(evals))
-
-        for _, verdicts in sorted(row_to_renderables.items()):
-            table.add_row(*verdicts)
-        if len(row_to_renderables) > 1:
-            # Only print footer row if there's more than one testcase.
+        if table.row_count > 0:
+            summary_row = []
+            for solution in skeleton.solutions:
+                evals = evals_per_solution[str(solution.path)]
+                non_null_evals = [eval for eval in evals if eval is not None]
+                if not non_null_evals:
+                    summary_row.append('...')
+                    continue
+                summary_row.append('  ' + _get_evals_formatted_time(non_null_evals))
             table.add_section()
-            table.add_row(*time_summary_row)
+            table.add_row(*summary_row)
+        return table
 
-        console.print(table)
+    with rich.live.Live(
+        generate_table(skeleton.empty_structured_evaluation(), group.name),
+        refresh_per_second=5,
+        console=console,
+    ) as live:
+        for _ in skeleton.solutions:
+            for _ in group_skeleton.testcases:
+                structured_evaluation = next(structured_evaluations)
+                live.update(generate_table(structured_evaluation, group.name))
+                live.refresh()
+
+
+def _print_detailed_run_report(
+    result: RunSolutionResult,
+    console: rich.console.Console,
+    structured_evaluations: Iterator[StructuredEvaluation],
+):
+    structured_evaluations = seekable(structured_evaluations)
+    for group in result.skeleton.groups:
+        console.print(f'[bold][status]{group.name}[/status][/bold]')
+
+        _render_detailed_group_table(
+            package.get_testgroup(group.name),
+            result.skeleton,
+            structured_evaluations,
+            console,
+        )
+        continue
+
+    ok = True
+    structured_evaluations.seek(-1)
+    structured_evaluation = next(structured_evaluations)
+    for solution in result.skeleton.solutions:
+        all_evals = []
+        for evals in structured_evaluation[str(solution.path)].values():
+            all_evals.extend(evals)
+        _print_solution_header(solution, console)
+        cur_ok = _print_solution_outcome(
+            solution,
+            all_evals,
+            console,
+        )
+        ok = ok and cur_ok
+        console.print()
+
     console.print()
+    return ok
 
 
 def print_run_report(
-    evals: Iterable[Tuple[int, str, Evaluation]],
+    result: RunSolutionResult,
     console: rich.console.Console,
     verification: environment.VerificationParam,
     detailed: bool = False,
 ) -> bool:
     pkg = package.find_problem_package_or_die()
-
+    structured_evaluations = _consume_and_key_evaluation_items(
+        result.items, result.skeleton
+    )
     if detailed:
-        evals = list(
-            evals
-        )  # Consume evals list to iterate over it twice (it is a generator).
-        evals_per_solution = convert_list_of_solution_evaluations_to_dict(evals)
-        assert len(pkg.solutions) == len(evals_per_solution)
-        print_detailed_run_report(evals_per_solution, console, verification)
+        return _print_detailed_run_report(result, console, structured_evaluations)
 
+    assert not result.skeleton.group_first
     # Since we're now streaming the evaluation results, the for-loop is a bit
     # confusing. We must keep state across the iteration to understand whether
     # we're seeing a new solution or a new testgroup.
@@ -339,49 +528,44 @@ def print_run_report(
         cur_ok = _print_solution_outcome(
             last_solution,
             all_evals,
-            pkg.timeLimit,
             console,
             verification=VerificationLevel(verification),
         )
         console.print()
         ok = ok and cur_ok
 
-    for s, group_name, eval in evals:
-        solution = pkg.solutions[s]
+    for item in result.items:
+        eval = item.eval
+        solution = pkg.solutions[item.solution_index]
         is_new_solution = last_solution is None or solution.path != last_solution.path
-        is_new_group = is_new_solution or last_group != group_name
+        is_new_group = is_new_solution or last_group != item.group_name
         is_closing_group = last_group is not None and is_new_group
 
         if is_closing_group:
-            if not detailed:
-                console.print(f'({_get_evals_formatted_time(group_evals)})')
+            console.print(f'({_get_evals_formatted_time(group_evals)})', end='')
+            console.print()
 
         if is_new_solution:
             print_last_solution()
             all_evals = []
             last_solution = solution
-            solution_testdir = package.get_problem_runs_dir() / f'{s}'
-            console.print(f'[item]{solution.path}[/item]', end=' ')
-            console.print(f'({solution_testdir})')
+            _print_solution_header(last_solution, console)
 
         if is_new_group:
             group_evals = []
-            last_group = group_name
+            last_group = item.group_name
             test_index = 0
-            if not detailed:
-                console.print(f'[bold][status]{group_name}[/status][/bold]', end=' ')
+            console.print(f'[bold][status]{item.group_name}[/status][/bold]', end=' ')
 
         all_evals.append(eval)
         group_evals.append(eval)
-        if not detailed:
-            console.print(f'{test_index}/', end='')
-            console.print(_get_testcase_markup_verdict(eval), end=' ')
+        console.print(f'{test_index}/', end='')
+        console.print(_get_testcase_markup_verdict(eval), end=' ')
 
         test_index += 1
 
-    if not detailed:
-        console.print(f'({_get_evals_formatted_time(group_evals)})', end=' ')
-        console.print()
+    console.print(f'({_get_evals_formatted_time(group_evals)})', end=' ')
+    console.print()
     print_last_solution()
 
     return ok

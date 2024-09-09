@@ -26,6 +26,7 @@ from robox.box.environment import VerificationLevel, get_environment_path
 from robox.box.packaging import main as packaging
 from robox.box.solutions import (
     convert_list_of_solution_evaluations_to_dict,
+    _get_report_skeleton,
     print_run_report,
     run_solutions,
 )
@@ -113,16 +114,20 @@ def run(
         tracked_solutions = None
         if solution:
             tracked_solutions = {solution}
-        evals_per_solution = run_solutions(
-            s,
+        solution_result = run_solutions(
+            progress=s,
             tracked_solutions=tracked_solutions,
             check=check,
+            group_first=detailed,
         )
 
     console.console.print()
     console.console.rule('[status]Run report[/status]', style='status')
     print_run_report(
-        evals_per_solution, console.console, verification, detailed=detailed
+        solution_result,
+        console.console,
+        verification,
+        detailed=detailed,
     )
 
 
