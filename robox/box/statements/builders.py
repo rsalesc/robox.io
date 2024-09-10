@@ -39,7 +39,7 @@ class StatementBuilderContext:
     editorial: bool
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
-        return {'languages': self.languages}
+        return {'languages': self.languages, 'is_editorial': self.editorial}
 
 
 class StatementBuilderItem(ABC):
