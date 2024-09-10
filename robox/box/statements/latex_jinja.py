@@ -5,7 +5,8 @@ with Latex.
 
 import pathlib
 import re
-from typing import Dict, Tuple
+import typing
+from typing import Dict, Tuple, Union
 
 import jinja2
 import typer
@@ -86,7 +87,7 @@ def escape_latex_str_if_str(value):
     return value
 
 
-def _process_zeroes(value: int) -> Tuple[int, int]:
+def _process_zeroes(value: int) -> Tuple[int, int, int]:
     cnt = 0
 
     acc = value
@@ -96,7 +97,11 @@ def _process_zeroes(value: int) -> Tuple[int, int]:
     return acc, cnt, value - acc * 10**cnt
 
 
-def scientific_notation(value: int, zeroes: int = 2) -> str:
+def scientific_notation(
+    value: Union[int, jinja2.Undefined], zeroes: int = 2
+) -> Union[str, jinja2.Undefined]:
+    if jinja2.is_undefined(value):
+        return typing.cast(jinja2.Undefined, value)
     assert isinstance(value, int)
     assert zeroes >= 1
     if value == 0:
@@ -129,6 +134,18 @@ def path_stem(path: pathlib.Path) -> str:
 ######################################################################
 # Declare module functions
 ######################################################################
+
+
+class JinjaDictWrapper(dict):
+    def __init__(self, *args, key='dict object', **kwargs):
+        super().__init__(*args, **kwargs)
+        self.key = key
+
+    def __getitem__(self, key):
+        try:
+            return super().__getitem__(key)
+        except KeyError:
+            return jinja2.StrictUndefined(hint=f'"{key}" was not found in "{self.key}"')
 
 
 def add_builtin_filters(j2_env: jinja2.Environment):

@@ -11,6 +11,7 @@ from robox import console
 from robox.box.schema import Package, Testcase
 from robox.box.statements.latex import MAX_PDFLATEX_RUNS, Latex, should_rerun
 from robox.box.statements.latex_jinja import (
+    JinjaDictWrapper,
     render_latex_template,
     render_latex_template_blocks,
 )
@@ -63,7 +64,7 @@ class StatementBuilderProblem(StatementBuilderItem):
             'package': self.package,
             'statement': self.statement,
             'samples': self.samples,
-            'vars': self.package.expanded_vars,
+            'vars': JinjaDictWrapper(self.package.expanded_vars, key='vars'),
             'title': self.statement.title or self.package.name,
         }
         if self.short_name is not None:
