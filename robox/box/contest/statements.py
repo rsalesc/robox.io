@@ -31,10 +31,12 @@ def build(
     ] = StatementType.PDF,
     samples: Annotated[
         bool,
-        typer.Option(
-            help='Whether to build the statement with samples or not.'
-        ),
+        typer.Option(help='Whether to build the statement with samples or not.'),
     ] = True,
+    editorial: Annotated[
+        bool,
+        typer.Option(help='Whether to add editorial blocks to the statements or not.'),
+    ] = False,
 ):
     contest = find_contest_package_or_die()
     # At most run the validators, only in samples.
@@ -62,7 +64,13 @@ def build(
             )
             raise typer.Exit(1)
 
-        build_statement(candidates_for_lang[0], contest, output_type=output, use_samples=samples)
+        build_statement(
+            candidates_for_lang[0],
+            contest,
+            output_type=output,
+            use_samples=samples,
+            is_editorial=editorial,
+        )
 
 
 @app.callback()

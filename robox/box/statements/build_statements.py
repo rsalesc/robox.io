@@ -212,6 +212,7 @@ def build_statement_bytes(
     overridden_params: Optional[Dict[ConversionType, ConversionStep]] = None,
     overridden_assets: Optional[List[Tuple[pathlib.Path, pathlib.Path]]] = None,
     use_samples: bool = True,
+    is_editorial: bool = False,
 ) -> Tuple[bytes, StatementType]:
     overridden_params = overridden_params or {}
     overridden_assets = overridden_assets or []
@@ -255,6 +256,7 @@ def build_statement_bytes(
                     languages=get_environment_languages_for_statement(),
                     params=params,
                     root=pathlib.Path(td),
+                    editorial=is_editorial,
                 ),
                 item=StatementBuilderProblem(
                     package=pkg,
@@ -271,10 +273,18 @@ def build_statement_bytes(
 
 
 def build_statement(
-    statement: Statement, pkg: Package, output_type: Optional[StatementType] = None, use_samples: bool = True,
+    statement: Statement,
+    pkg: Package,
+    output_type: Optional[StatementType] = None,
+    use_samples: bool = True,
+    is_editorial: bool = False,
 ) -> pathlib.Path:
     last_content, last_output = build_statement_bytes(
-        statement, pkg, output_type=output_type, use_samples=use_samples,
+        statement,
+        pkg,
+        output_type=output_type,
+        use_samples=use_samples,
+        is_editorial=is_editorial,
     )
     statement_path = (
         package.get_build_path()
@@ -309,10 +319,11 @@ def build(
     ] = StatementType.PDF,
     samples: Annotated[
         bool,
-        typer.Option(
-            help='Whether to build the statement with samples or not.'
-        ),
+        typer.Option(help='Whether to build the statement with samples or not.'),
     ] = True,
+    editorial: Annotated[
+        bool, typer.Option(help='Whether to add editorial blocks to the statements.')
+    ] = False,
 ):
     # At most run the validators, only in samples.
     if samples:
@@ -331,7 +342,13 @@ def build(
             )
             raise typer.Exit(1)
 
-        build_statement(candidates_for_lang[0], pkg, output_type=output, use_samples=samples)
+        build_statement(
+            candidates_for_lang[0],
+            pkg,
+            output_type=output,
+            use_samples=samples,
+            is_editorial=editorial,
+        )
 
 
 @app.callback()

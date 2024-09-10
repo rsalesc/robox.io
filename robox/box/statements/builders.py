@@ -36,6 +36,7 @@ class StatementBuilderContext:
     languages: List[StatementCodeLanguage]
     params: ConversionStep
     root: pathlib.Path
+    editorial: bool
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
         return {'languages': self.languages}
@@ -253,6 +254,11 @@ class roboxTeXBuilder(StatementBuilder):
         blocks = render_jinja_blocks(
             context.root, input, **problem.build_inner_jinja_kwargs()
         )
+
+        # Remove editorial block when not editorial.
+        if not context.editorial and 'editorial' in blocks:
+            del blocks['editorial']
+
         problem_kwargs = problem.build_jinja_kwargs()
         problem_kwargs['problem']['blocks'] = blocks
 
