@@ -18,6 +18,7 @@ from robox.box import (
     download,
     environment,
     package,
+    compile,
     presets,
     stresses,
 )
@@ -56,6 +57,9 @@ app.add_typer(
 )
 app.add_typer(
     contest.app, name='contest', cls=annotations.AliasGroup, help='Contest management.'
+)
+app.add_typer(
+    compile.app, name='compile', cls=annotations.AliasGroup, help='Compile assets.'
 )
 
 

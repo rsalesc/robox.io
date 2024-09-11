@@ -158,6 +158,17 @@ def get_generator(name: str, root: pathlib.Path = pathlib.Path()) -> Generator:
 
 
 @functools.cache
+def get_validator(root: pathlib.Path = pathlib.Path()) -> CodeItem:
+    package = find_problem_package_or_die(root)
+    if package.validator is None:
+        console.console.print(
+            '[error]Problem does not have a validator configured.[/error]'
+        )
+        raise typer.Exit(1)
+    return package.validator
+
+
+@functools.cache
 def get_checker(root: pathlib.Path = pathlib.Path()) -> CodeItem:
     package = find_problem_package_or_die(root)
 

@@ -6,6 +6,7 @@
 | ----------------------------------------------- | -------------------------------------- |
 | Show help message                               | `rbx --help`                           |
 | Create a new package in folder `package`        | `rbx create package`                   |
+| Compile a file given its path                   | `rbx compile any my/file.cpp`          |
 | Open the problem configuration in a text editor | `rbx edit`                             |
 | Generate all testcases                          | `rbx build`                            |
 | Generate all testcases and run validators       | `rbx verify`                           |
