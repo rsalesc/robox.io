@@ -1,3 +1,11 @@
 name: "default"
 problem: "problem"
 contest: "contest"
+tracking:
+  problem:
+    - path: statement/template.rbx.tex
+    - path: statement/olymp.sty
+  contest:
+    - path: statement/template.rbx.tex
+    - path: statement/olymp.sty
+    - path: statement/contest.rbx.tex
