@@ -1,5 +1,6 @@
 import dataclasses
 import pathlib
+import re
 import shutil
 import typing
 from abc import ABC, abstractmethod
@@ -47,6 +48,10 @@ class StatementBuilderItem(ABC):
     @abstractmethod
     def build_jinja_kwargs(self) -> Dict[str, Any]:
         pass
+
+
+class StatementSample(Testcase):
+    explanation: Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -104,6 +109,12 @@ class StatementBuilderContest(StatementBuilderItem):
         }
 
 
+@dataclasses.dataclass
+class StatementBlocks:
+    blocks: Dict[str, str] = dataclasses.field(default_factory=dict)
+    explanations: Dict[int, str] = dataclasses.field(default_factory=dict)
+
+
 def prepare_assets(
     assets: List[Tuple[pathlib.Path, pathlib.Path]],
     dest_dir: pathlib.Path,
@@ -136,7 +147,9 @@ def render_jinja(root: pathlib.Path, content: bytes, **kwargs) -> bytes:
     return result.encode()
 
 
-def render_jinja_blocks(root: pathlib.Path, content: bytes, **kwargs) -> Dict[str, str]:
+def render_jinja_blocks(
+    root: pathlib.Path, content: bytes, **kwargs
+) -> StatementBlocks:
     temp_file = '__input__.tex'
     temp_path = root / temp_file
     temp_path.write_bytes(content)
@@ -146,7 +159,15 @@ def render_jinja_blocks(root: pathlib.Path, content: bytes, **kwargs) -> Dict[st
         temp_file,
         kwargs,
     )
-    return result
+
+    pattern = re.compile(r'explanation_(\d+)')
+    explanation_keys = []
+    for key in result:
+        if match := pattern.match(key):
+            explanation_keys.append((key, int(match.group(1))))
+
+    explanations = {value: result[key] for key, value in explanation_keys}
+    return StatementBlocks(blocks=result, explanations=explanations)
 
 
 class StatementBuilder(ABC):
@@ -252,9 +273,10 @@ class roboxTeXBuilder(StatementBuilder):
         assert params.template is not None
         problem = typing.cast(StatementBuilderProblem, item)
 
-        blocks = render_jinja_blocks(
+        statement_blocks = render_jinja_blocks(
             context.root, input, **problem.build_inner_jinja_kwargs()
         )
+        blocks = statement_blocks.blocks
 
         # Remove editorial block when not editorial.
         if not context.editorial and 'editorial' in blocks:
@@ -262,6 +284,14 @@ class roboxTeXBuilder(StatementBuilder):
 
         problem_kwargs = problem.build_jinja_kwargs()
         problem_kwargs['problem']['blocks'] = blocks
+        if statement_blocks.explanations is not None:
+            problem_kwargs['problem']['samples'] = [
+                StatementSample(
+                    **typing.cast(Testcase, sample).model_dump(),
+                    explanation=statement_blocks.explanations.get(i),
+                )
+                for i, sample in enumerate(problem_kwargs['problem']['samples'])
+            ]
 
         return render_jinja(
             context.root,
