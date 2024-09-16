@@ -1,3 +1,7 @@
+% Copyright (c) 2005-2013 Olymp.sty Developers Group.
+% See https://github.com/GassaFM/olymp.sty/blob/master/AUTHORS
+% for the complete list of authors.
+
 %\ProvidesPackage{olymp}
 \usepackage{verbatim}
 \usepackage{xstring}
@@ -11,58 +15,52 @@
 % \makeatother
 \newcommand\FirstWord[1]{#1}
 
-
 \ProcessOptions\relax
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.8em}
 
 % contest keywords definitions
-
-\def\conProblemTutorial{Tutorial do Problema}
-\def\conProblem{Problema}
-\def\conProblemAuthor{Autor:}
-\def\conProblemDeveloper{Desenvolvedor:}
-\def\conProblemOrigin{Origem:}
-\def\conSourceFileName{Código-Fonte:}
-\def\conSourceExts{[.c|.cpp|.java|.py2|.py3]}
-\def\conInputFileName{Arquivo de entrada:}
-\def\conOutputFileName{Arquivo de saída:}
-\def\conTimeLimit{Tempo limite:}
-\def\conMemoryLimit{Limite de memória:}
+\def\conProblemTutorial{Problem Tutorial}
+\def\conProblem{Problem}
+\def\conProblemAuthor{Author:}
+\def\conProblemDeveloper{Developer:}
+\def\conProblemOrigin{Origin:}
+\def\conInputFileName{Input file:}
+\def\conOutputFileName{Output file:}
+\def\conTimeLimit{Time limit:}
+\def\conMemoryLimit{Memory limit:}
 \def\conFeedback{Feedback:}
-\def\constdin{entrada padrão (stdin)}
-\def\constdout{saída padrão (stdout)}
-\def\conInstructions{Instruções}
-\def\conSpecification{Especificação}
-\def\conInteraction{Protocolo de Interação}
-\def\conInput{Entrada}
-\def\conOutput{Saída}
-\def\conExample{Exemplo}
-\def\conExamples{Exemplos}
-\def\conExampleNotes{Notas}
-\def\conExplanation{Explicação}
-\def\conExplanations{Explicações}
-\def\conIllustration{Ilustração}
-\def\conScoring{Pontuação}
-\def\conNote{Nota}
-\def\conNotes{Notas}
-\def\conConstraints{Restrições}
-\def\conversion{versão}
-\def\conrevision{revisão}
-\def\conSubtaskOne{Subtarefa 1}
-\def\conSubtaskTwo{Subtarefa 2}
-\def\conSubtaskThree{Subtarefa 3}
-\def\conSubtaskFour{Subtarefa 4}
-\def\conSubtaskFive{Subtarefa 5}
-\def\conSubtaskSix{Subtarefa 6}
-\def\conSubtask{Subtarefa}
-\def\conEditorial{Editorial}
-\def\conpoints{pontos}
-\def\conPage{Página}
-\def\conof{de}
-\def\connotstated{não informado}
-\def\conIntentionallyBlankPage{Essa página foi intencionalmente deixada em branco}
+\def\constdin{standard input}
+\def\constdout{standard output}
+\def\conSpecification{Specification}
+\def\conInteraction{Interaction Protocol}
+\def\conInput{Input}
+\def\conOutput{Output}
+\def\conExample{Example}
+\def\conExamples{Examples}
+\def\conExampleNotes{Notes}
+\def\conExplanation{Explanation}
+\def\conExplanations{Explanations}
+\def\conIllustration{Illustration}
+\def\conScoring{Scoring}
+\def\conNote{Note}
+\def\conNotes{Notes}
+\def\conConstraints{Constraints}
+\def\conversion{version}
+\def\conrevision{revision}
+\def\conSubtaskOne{Subtask 1}
+\def\conSubtaskTwo{Subtask 2}
+\def\conSubtaskThree{Subtask 3}
+\def\conSubtaskFour{Subtask 4}
+\def\conSubtaskFive{Subtask 5}
+\def\conSubtaskSix{Subtask 6}
+\def\conSubtask{Subtask}
+\def\conpoints{points}
+\def\conPage{Page}
+\def\conof{of}
+\def\connotstated{not stated}
+\def\conIntentionallyBlankPage{This page is intentionally left blank}
 \def\conTimeSuffix{s}
 \def\conMemorySufix{mb}
 
@@ -71,12 +69,12 @@
 % font
 
 \newcommand{\afterfrontpage}{
-\vspace*{\fill}
- \begin{center}
- \problemheadfont\conIntentionallyBlankPage
- \end{center}
- \vspace*{\fill}
- \clearpage
+	\vspace*{\fill}
+	\begin{center}
+		\problemheadfont\conIntentionallyBlankPage
+	\end{center}
+	\vspace*{\fill}
+	\clearpage
 }
 \newcommand{\problemheadfont}{\LARGE}
 \newcommand{\problemsectionfont}{\Large}
@@ -84,13 +82,13 @@
 \newcommand{\beforeproblemsectioncaption}{\smallbreak\smallskip}
 \newcommand{\afterproblemsectioncaption}{\smallskip}
 \newcommand{\problemend}{
-\clearpage
-\ifintentionallyblankpages
-  \ifodd\value{page}
-  \else        
-     \afterfrontpage
-  \fi
-\fi       
+	\clearpage
+	\ifintentionallyblankpages
+		\ifodd\value{page}
+		\else
+			\afterfrontpage
+		\fi
+	\fi
 }
 \def\presectionspacing{\hspace{3mm}}
 
@@ -99,22 +97,22 @@
 \newcommand{\createsection}{\@newsection}
 
 \def\@newsection#1#2{\DeclareRobustCommand{#1}{
-{\beforeproblemsectioncaption\bf\problemsectionfont\presectionspacing{#2}}
-\nopagebreak\par\afterproblemsectioncaption}
+		{\beforeproblemsectioncaption\bf\problemsectionfont\presectionspacing{#2}}
+		\nopagebreak\par\afterproblemsectioncaption}
 }
 
 \newcommand{\createsectionpar}{\@newsectionpar}
 
 \def\@newsectionpar#1#2{\DeclareRobustCommand{#1}[1]{
-{\beforeproblemsectioncaption\bf\problemsectionfont{#2~##1}}
-\nopagebreak\par\afterproblemsectioncaption}
+		{\beforeproblemsectioncaption\bf\problemsectionfont{#2~##1}}
+		\nopagebreak\par\afterproblemsectioncaption}
 }
 
 \newcommand{\createsectionpartwo}{\@newsectionpartwo}
 
 \def\@newsectionpartwo#1#2#3{\DeclareRobustCommand{#1}[2]{
-{\beforeproblemsectioncaption\problemsectionfont{\textbf{#2}~\textbf{##1}~(##2~#3)}}
-\nopagebreak\par\afterproblemsectioncaption}
+		{\beforeproblemsectioncaption\problemsectionfont{\textbf{#2}~\textbf{##1}~(##2~#3)}}
+		\nopagebreak\par\afterproblemsectioncaption}
 }
 
 \createsection{\Instructions}{\conInstructions}
@@ -143,23 +141,23 @@
 
 % frontpage
 \newenvironment{frontpage}[3]{
-\thispagestyle{empty}
-{\centering
-\noindent\rule{18cm}{0.4pt}
+	\thispagestyle{empty}
+	{\centering
+		\noindent\rule{18cm}{0.4pt}
 
-\vspace{1cm}
-%\includegraphics[width=0.15\textwidth]{example-image-1x1}\par\vspace{1cm}
-{\LARGE #1\par}
-%\vspace{1cm}
-{\Large #2\par}
-\vspace{1cm}}
-\def\thisFrontPageDate{#3}
-\Instructions
+		\vspace{1cm}
+		%\includegraphics[width=0.15\textwidth]{example-image-1x1}\par\vspace{1cm}
+		{\LARGE #1\par}
+		%\vspace{1cm}
+		{\Large #2\par}
+		\vspace{1cm}}
+	\def\thisFrontPageDate{#3}
+	\Instructions
 }{
-\vspace*{\fill}
-\centering{\Large \thisFrontPageDate\par}
-\centering\noindent\rule{18cm}{0.4pt}
-\newpage
+	\vspace*{\fill}
+	\centering{\Large \thisFrontPageDate\par}
+	\centering\noindent\rule{18cm}{0.4pt}
+	\newpage
 }
 
 % problem
@@ -167,29 +165,29 @@
 
 \newenvironment{problem}[6][]{
 
-\def\ProblemLetter{#1}
-\stepcounter{ProblemCounter}
-\begin{center}
-\ifx\ProblemLetter\empty
-\else
-\problemtextfont\textbf{\conProblem\ \ProblemLetter} \\
-\fi
-\problemheadfont\textsf{#2} \\
-\ifx#5\empty
-\else
-\problemtextfont{\conTimeLimit\ #5} \\
-\fi
-\ifx#6\empty
-\else
-\problemtextfont{\conMemoryLimit\ #6} \\
-\fi
-%\problemtextfont{\conSourceFileName\ \ProblemLetter\ \conSourceExts} \\
-\vspace{0.3cm}
-\noindent\rule{16cm}{0.4pt}
-\end{center}
-\problemtextfont
-\newcommand{\InputFileName}{#3}
-\newcommand{\OutputFileName}{#4}
+	\def\ProblemLetter{#1}
+	\stepcounter{ProblemCounter}
+	\begin{center}
+		\ifx\ProblemLetter\empty
+		\else
+			\problemtextfont\textbf{\conProblem\ \ProblemLetter} \\
+		\fi
+		\problemheadfont\textsf{#2} \\
+		\ifx#5\empty
+		\else
+			\problemtextfont{\conTimeLimit\ #5} \\
+		\fi
+		\ifx#6\empty
+		\else
+			\problemtextfont{\conMemoryLimit\ #6} \\
+		\fi
+		%\problemtextfont{\conSourceFileName\ \ProblemLetter\ \conSourceExts} \\
+		\vspace{0.3cm}
+		\noindent\rule{16cm}{0.4pt}
+	\end{center}
+	\problemtextfont
+	\newcommand{\InputFileName}{#3}
+	\newcommand{\OutputFileName}{#4}
 }{\problemend}
 
 % examples
@@ -211,42 +209,42 @@
 \exmpthreewidnote=0.30\thelinewidth
 
 \def\s@tm@cr@s{
-    \def\widthin##1{\exmpwidinf=##1\relax}
-    \def\widthout##1{\exmpwidouf=##1\relax}
-    \def\stretchin##1{\advance\exmpwidinf by ##1\relax}
-    \def\stretchout##1{\advance\exmpwidouf by ##1\relax}
-    \@ifstar{
-        \error Star must not be used in example environment any more
-    }
+	\def\widthin##1{\exmpwidinf=##1\relax}
+	\def\widthout##1{\exmpwidouf=##1\relax}
+	\def\stretchin##1{\advance\exmpwidinf by ##1\relax}
+	\def\stretchout##1{\advance\exmpwidouf by ##1\relax}
+	\@ifstar{
+		\error Star must not be used in example environment any more
+	}
 }
 
 % This is magic, which delete space after verbatiminput
 \addto@hook{\every@verbatim}{\topsep=0pt\relax}
 
 \newenvironment{example}[1][]{
-\s@tm@cr@s#1
-\ttfamily\obeyspaces\obeylines\frenchspacing
-\newcommand{\exmp}[2]{
-\begin{minipage}[t]{\exmpwidinf}\rightskip=0pt plus 1fill\relax##1\medskip\end{minipage}&
-\begin{minipage}[t]{\exmpwidouf}\rightskip=0pt plus 1fill\relax##2\medskip\end{minipage}\\
-\hline
-}
+	\s@tm@cr@s#1
+	\ttfamily\obeyspaces\obeylines\frenchspacing
+	\newcommand{\exmp}[2]{
+		\begin{minipage}[t]{\exmpwidinf}\rightskip=0pt plus 1fill\relax##1\medskip\end{minipage}&
+		\begin{minipage}[t]{\exmpwidouf}\rightskip=0pt plus 1fill\relax##2\medskip\end{minipage}\\
+		\hline
+	}
 
-\newcommand{\exmpfile}[2]{
-\exmp{
-\verbatiminput{##1}
-}{
-\verbatiminput{##2}
-}%
-}
+	\newcommand{\exmpfile}[2]{
+		\exmp{
+			\verbatiminput{##1}
+		}{
+			\verbatiminput{##2}
+		}%
+	}
 
-\begin{center}
-\begin{tabular}{|l|l|}
-\hline
-\multicolumn{1}{|c|}{\bf\texttt{\textbf{\InputFileName}}}&
-\multicolumn{1}{|c|}{\bf\texttt{\textbf{\OutputFileName}}}\\
-\hline
-}{
-\end{tabular}
-\end{center}
+	\begin{center}
+		\begin{tabular}{|l|l|}
+			\hline
+			\multicolumn{1}{|c|}{\bf\texttt{\textbf{\InputFileName}}} &
+			\multicolumn{1}{|c|}{\bf\texttt{\textbf{\OutputFileName}}}  \\
+			\hline
+			}{
+		\end{tabular}
+	\end{center}
 }
