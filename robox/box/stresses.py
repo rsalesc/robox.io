@@ -120,6 +120,7 @@ def run_stress(
     args: Optional[str] = None,
     solution: Optional[str] = None,
     findingsLimit: int = 1,
+    check: bool = True,
     progress: Optional[StatusProgress] = None,
 ) -> StressReport:
     # TODO: show proper errors at each compilation error.
@@ -147,7 +148,7 @@ def run_stress(
             f'[error]Failed compiling generator [item]{generator.name}[/item].[/error]'
         )
         raise
-    checker_digest = checkers.compile_checker()
+    checker_digest = checkers.compile_checker() if check else None
     solutions_digest = compile_solutions(
         tracked_solutions=set(
             str(solution.path) for solution in solutions if solution is not None
@@ -217,8 +218,8 @@ def run_stress(
                 raise typer.Exit(1)
 
         expected_output_path = runs_dir / '.stress' / 'output'
-        for i, solution in enumerate(solutions):
-            if solution is None:
+        for i, sol in enumerate(solutions):
+            if sol is None:
                 continue
             output_stem = f'{i}' if i > 0 else 'main'
             output_path = input_path.with_stem(output_stem).with_suffix('.out')
@@ -228,19 +229,23 @@ def run_stress(
 
             stderr_path = output_path.with_suffix('.err')
             run_log = run_item(
-                solution,
-                DigestOrSource.create(solutions_digest[solution.path]),
+                sol,
+                DigestOrSource.create(solutions_digest[sol.path]),
                 stdin=DigestOrSource.create(input_path),
                 stdout=DigestOrDest.create(output_path),
                 # Log stderr for main solution.
                 stderr=DigestOrDest.create(stderr_path) if i == 0 else None,
             )
 
-            checker_result = checkers.check(
-                checker_digest,
-                run_log,
-                Testcase(inputPath=input_path, outputPath=expected_output_path),
-                program_output=output_path,
+            checker_result = (
+                checkers.check(
+                    checker_digest,
+                    run_log,
+                    Testcase(inputPath=input_path, outputPath=expected_output_path),
+                    program_output=output_path,
+                )
+                if checker_digest is not None
+                else checkers.check_with_no_output(run_log)
             )
 
             if checker_result.outcome == Outcome.INTERNAL_ERROR:
@@ -282,7 +287,7 @@ def run_stress(
                     generator=GeneratorCall(
                         name=generator.name, args=expanded_args_str
                     ),
-                    solution=solution.path,
+                    solution=sol.path,
                     result=checker_result,
                 )
             )

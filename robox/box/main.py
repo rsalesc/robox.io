@@ -205,6 +205,12 @@ def stress(
     findings: Annotated[
         int, typer.Option(help='How many breaking tests to look for.')
     ] = 1,
+    check: bool = typer.Option(
+        True,
+        '--nocheck',
+        flag_value=False,
+        help='Whether to not build outputs for tests and run checker.',
+    ),
 ):
     if solution and not generator_args:
         console.console.print(
@@ -220,6 +226,7 @@ def stress(
             args=generator_args,
             findingsLimit=findings,
             progress=s,
+            check=check,
         )
 
     stresses.print_stress_report(report)
