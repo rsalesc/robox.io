@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from robox import console
 from robox.box import checkers, package, validators
 from robox.box.code import compile_item, run_item
-from robox.box.schema import GeneratorCall, Testcase
+from robox.box.schema import ExpectedOutcome, GeneratorCall, Stress, Testcase
 from robox.box.solutions import compile_solutions, get_outcome_style_verdict
 from robox.grading.steps import (
     CheckerResult,
@@ -117,11 +117,21 @@ def expand_stress_args(pattern: List[StressArg]) -> List[str]:
 def run_stress(
     name: str,
     timeoutInSeconds: int,
+    args: Optional[str] = None,
+    solution: Optional[str] = None,
     findingsLimit: int = 1,
     progress: Optional[StatusProgress] = None,
 ) -> StressReport:
     # TODO: show proper errors at each compilation error.
-    stress = package.get_stress(name)
+    if args:
+        stress = Stress(
+            name=f'{name}',
+            generator=GeneratorCall(name=name, args=args),
+            solutions=[solution] if solution is not None else [],
+            outcome=ExpectedOutcome.INCORRECT,
+        )
+    else:
+        stress = package.get_stress(name)
 
     call = stress.generator
     generator = package.get_generator(call.name)

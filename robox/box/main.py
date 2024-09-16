@@ -183,6 +183,22 @@ def create(
 @app.command('stress', help='Run a stress test.')
 def stress(
     name: str,
+    solution: Annotated[
+        Optional[str],
+        typer.Option(
+            '--solution',
+            '-s',
+            help='Path to solution to run. If not specified, will run all solutions.',
+        ),
+    ] = None,
+    generator_args: Annotated[
+        Optional[str],
+        typer.Option(
+            '--generator',
+            '-g',
+            help='Run generator [name] with these args.',
+        ),
+    ] = None,
     timeout: Annotated[
         int, typer.Option(help='For how many seconds to run the stress test.')
     ] = 10,
@@ -190,8 +206,21 @@ def stress(
         int, typer.Option(help='How many breaking tests to look for.')
     ] = 1,
 ):
+    if solution and not generator_args:
+        console.console.print(
+            '[error]Options --generator/-g and --solution/-s should be specified together.'
+        )
+        raise typer.Exit(1)
+
     with utils.StatusProgress('Running stress...') as s:
-        report = stresses.run_stress(name, timeout, findingsLimit=findings, progress=s)
+        report = stresses.run_stress(
+            name,
+            timeout,
+            solution=solution,
+            args=generator_args,
+            findingsLimit=findings,
+            progress=s,
+        )
 
     stresses.print_stress_report(report)
 
