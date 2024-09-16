@@ -94,6 +94,68 @@ def get_all_built_testcases() -> Dict[str, List[Testcase]]:
     return res
 
 
+def generate_output_for_testcase(
+    main_solution_digest: str,
+    testcase: Testcase,
+    stderr_path: Optional[pathlib.Path] = None,
+):
+    assert testcase.outputPath is not None
+    pkg = package.find_problem_package_or_die()
+    main_solution = package.get_main_solution()
+    if main_solution is None:
+        return
+
+    sandbox = EnvironmentSandbox()
+    sandbox.timeLimit = pkg.timeLimit * 2
+    sandbox.wallTimeLimit = pkg.timeLimit * 2
+    sandbox.memoryLimit = pkg.memoryLimit
+    extra_config = ExecutionConfig(sandbox=sandbox)
+
+    try:
+        run_log = run_item(
+            main_solution,
+            DigestOrSource.create(main_solution_digest),
+            stdin=DigestOrSource.create(testcase.inputPath),
+            stdout=DigestOrDest.create(testcase.outputPath),
+            stderr=DigestOrDest.create(stderr_path)
+            if stderr_path is not None
+            else None,
+            extra_config=extra_config,
+        )
+    except:
+        console.console.print(
+            '[error]Failed running main solution to generate testcase.[/error]'
+        )
+        raise
+
+    if run_log is None or run_log.exitcode != 0:
+        console.console.print(
+            f'[error]Failed generating output for [item]{testcase.inputPath}[/item][/error]',
+        )
+        if run_log is not None:
+            console.console.print(
+                f'[error]Main solution exited with code [item]{-run_log.exitcode}[/item][/error]',
+            )
+            checker_result = checkers.check_with_no_output(run_log)
+            console.console.print(
+                f'[warning]Time: [item]{run_log.time:.2f}s[/item][/warning]',
+            )
+            console.console.print(
+                f'[warning]Verdict: [item]{checker_result.outcome.value}[/item][/warning]',
+            )
+            console.console.print(
+                f'[warning]Message: [info]{checker_result.message}[/info][/warning]',
+            )
+            console.console.print(
+                f'Input written at [item]{testcase.inputPath}[/item].'
+            )
+            console.console.print(
+                f'Output written at [item]{testcase.outputPath}[/item].'
+            )
+            console.console.print(f'Stderr written at [item]{stderr_path}[/item].')
+        raise typer.Exit(1)
+
+
 def generate_outputs_for_testcases(
     progress: Optional[StatusProgress] = None, groups: Optional[Set[str]] = None
 ):
@@ -116,12 +178,6 @@ def generate_outputs_for_testcases(
             console.console.print('[error]Failed compiling main solution.[/error]')
             raise
 
-    sandbox = EnvironmentSandbox()
-    sandbox.timeLimit = pkg.timeLimit * 2
-    sandbox.wallTimeLimit = pkg.timeLimit * 2
-    sandbox.memoryLimit = pkg.memoryLimit
-    extra_config = ExecutionConfig(sandbox=sandbox)
-
     gen_runs_dir = package.get_problem_runs_dir() / '.gen'
     shutil.rmtree(str(gen_runs_dir), ignore_errors=True)
     gen_runs_dir.mkdir(parents=True, exist_ok=True)
@@ -132,61 +188,16 @@ def generate_outputs_for_testcases(
         group_testcases = built_testcases[group.name]
 
         for testcase in group_testcases:
-            input_path = testcase.inputPath
-            output_path = testcase.outputPath
             stderr_path = gen_runs_dir / 'main.stderr'
 
-            assert output_path is not None
+            assert testcase.outputPath is not None
             if main_solution is None or solution_digest is None:
                 console.console.print(
                     '[error]No main solution found to generate outputs for testcases.[/error]',
                 )
                 raise typer.Exit(1)
 
-            try:
-                run_log = run_item(
-                    main_solution,
-                    DigestOrSource.create(solution_digest),
-                    stdin=DigestOrSource.create(input_path),
-                    stdout=DigestOrDest.create(output_path),
-                    stderr=DigestOrDest.create(stderr_path),
-                    extra_config=extra_config,
-                )
-            except:
-                console.console.print(
-                    '[error]Failed running main solution to generate testcase.[/error]'
-                )
-                raise
-
-            if run_log is None or run_log.exitcode != 0:
-                console.console.print(
-                    f'[error]Failed generating output for [item]{input_path}[/item][/error]',
-                )
-                if run_log is not None:
-                    console.console.print(
-                        f'[error]Main solution exited with code [item]{-run_log.exitcode}[/item][/error]',
-                    )
-                    checker_result = checkers.check_with_no_output(run_log)
-                    console.console.print(
-                        f'[warning]Time: [item]{run_log.time:.2f}s[/item][/warning]',
-                    )
-                    console.console.print(
-                        f'[warning]Verdict: [item]{checker_result.outcome.value}[/item][/warning]',
-                    )
-                    console.console.print(
-                        f'[warning]Message: [info]{checker_result.message}[/info][/warning]',
-                    )
-                    console.console.print(
-                        f'Input written at [item]{input_path}[/item].'
-                    )
-                    console.console.print(
-                        f'Output written at [item]{output_path}[/item].'
-                    )
-                    console.console.print(
-                        f'Stderr written at [item]{stderr_path}[/item].'
-                    )
-                raise typer.Exit(1)
-
+            generate_output_for_testcase(solution_digest, testcase, stderr_path)
             step()
 
 

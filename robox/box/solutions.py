@@ -1,3 +1,5 @@
+from __future__ import generators
+
 import collections
 import dataclasses
 import pathlib
@@ -15,6 +17,7 @@ from robox import console
 from robox.box import checkers, environment, package
 from robox.box.code import compile_item, run_item
 from robox.box.environment import EnvironmentSandbox, ExecutionConfig, VerificationLevel
+from robox.box.generators import generate_output_for_testcase
 from robox.box.schema import Solution, Testcase, TestcaseGroup
 from robox.box.testcases import find_built_testcases
 from robox.grading.steps import (
@@ -103,17 +106,16 @@ def compile_solutions(
     return compiled_solutions
 
 
-def _run_solution(
+def _run_solution_on_testcase(
     solution: Solution,
     compiled_digest: str,
     checker_digest: Optional[str],
-    solution_index: int,
-    group_name: str,
-    progress: Optional[StatusProgress] = None,
+    testcase: Testcase,
+    output_dir: pathlib.Path,
+    testcase_index: int = 0,
     verification: VerificationLevel = VerificationLevel.NONE,
-) -> Iterator[Evaluation]:
+) -> Evaluation:
     pkg = package.find_problem_package_or_die()
-
     actual_sandbox = package.get_singleton_sandbox()
 
     sandbox = EnvironmentSandbox()
@@ -127,58 +129,78 @@ def _run_solution(
     sandbox.memoryLimit = pkg.memoryLimit
     extra_config = ExecutionConfig(sandbox=sandbox)
 
+    output_path = output_dir / testcase.inputPath.with_suffix('.out').name
+    error_path = output_path.with_suffix('.err')
+    log_path = output_path.with_suffix('.log')
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    run_log = run_item(
+        solution,
+        DigestOrSource.create(compiled_digest),
+        stdin=DigestOrSource.create(testcase.inputPath),
+        stdout=DigestOrDest.create(output_path),
+        stderr=DigestOrDest.create(error_path),
+        extra_config=extra_config,
+    )
+
+    if checker_digest is not None:
+        checker_result = checkers.check(
+            checker_digest,
+            run_log,
+            testcase,
+            program_output=output_path,
+        )
+    else:
+        checker_result = checkers.check_with_no_output(run_log)
+
+    eval = Evaluation(
+        result=checker_result,
+        testcase=TestcaseIO(
+            index=testcase_index, input=testcase.inputPath, output=testcase.outputPath
+        ),
+        log=TestcaseLog(
+            **(run_log.model_dump() if run_log is not None else {}),
+            stdout_absolute_path=output_path.absolute(),
+            stderr_absolute_path=error_path.absolute(),
+            log_absolute_path=log_path.absolute(),
+        ),
+    )
+
+    log_path.write_text(model_to_yaml(eval))
+    return eval
+
+
+def _run_solution(
+    solution: Solution,
+    compiled_digest: str,
+    checker_digest: Optional[str],
+    solution_index: int,
+    group_name: str,
+    progress: Optional[StatusProgress] = None,
+    verification: VerificationLevel = VerificationLevel.NONE,
+) -> Iterator[Evaluation]:
     runs_dir = package.get_problem_runs_dir()
 
     group = package.get_testgroup(group_name)
     testcases = find_built_testcases(group)
     for i, testcase in enumerate(testcases):
         assert testcase.outputPath is not None
-        output_path = (
-            runs_dir / f'{solution_index}' / group.name / testcase.outputPath.name
-        )
-        error_path = output_path.with_suffix('.err')
-        log_path = output_path.with_suffix('.log')
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path = runs_dir / f'{solution_index}' / group.name
 
         if progress:
             progress.update(
                 f'Running solution [item]{solution.path}[/item] on test [item]{group.name}[/item] / [item]{i}[/item]...'
             )
-        run_log = run_item(
+
+        yield _run_solution_on_testcase(
             solution,
-            DigestOrSource.create(compiled_digest),
-            stdin=DigestOrSource.create(testcase.inputPath),
-            stdout=DigestOrDest.create(output_path),
-            stderr=DigestOrDest.create(error_path),
-            extra_config=extra_config,
+            compiled_digest,
+            checker_digest,
+            testcase,
+            output_path,
+            testcase_index=i,
+            verification=verification,
         )
-
-        if checker_digest is not None:
-            checker_result = checkers.check(
-                checker_digest,
-                run_log,
-                testcase,
-                program_output=output_path,
-            )
-        else:
-            checker_result = checkers.check_with_no_output(run_log)
-
-        eval = Evaluation(
-            result=checker_result,
-            testcase=TestcaseIO(
-                index=i, input=testcase.inputPath, output=testcase.outputPath
-            ),
-            log=TestcaseLog(
-                **(run_log.model_dump() if run_log is not None else {}),
-                stdout_absolute_path=output_path.absolute(),
-                stderr_absolute_path=error_path.absolute(),
-                log_absolute_path=log_path.absolute(),
-            ),
-        )
-
-        log_path.write_text(model_to_yaml(eval))
-
-        yield eval
 
 
 def convert_list_of_solution_evaluations_to_dict(
@@ -292,6 +314,89 @@ def run_solutions(
             group_first=group_first,
         ),
     )
+
+
+def _run_interactive_solutions(
+    tracked_solutions: Optional[Set[str]] = None,
+    verification: VerificationLevel = VerificationLevel.NONE,
+    check: bool = True,
+) -> Iterator[EvaluationItem]:
+    pkg = package.find_problem_package_or_die()
+    main_solution = package.get_main_solution()
+    check = check and main_solution is not None
+
+    checker_digest = checkers.compile_checker() if check else None
+    compiled_solutions = compile_solutions(tracked_solutions=tracked_solutions)
+
+    main_solution_digest = None
+    if check and main_solution is not None:
+        try:
+            main_solution_digest = compile_item(main_solution)
+        except:
+            console.console.print(
+                '[error]Failed compiling main solution. If you do not want to check against a main solution, run with --nocheck flag.[/error]'
+            )
+            raise
+
+    # Clear run directory and rely on cache to
+    # repopulate it.
+    runs_dir = package.get_problem_runs_dir()
+    shutil.rmtree(str(runs_dir), ignore_errors=True)
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    solutions = list(enumerate(pkg.solutions))
+    if tracked_solutions is not None:
+        solutions = [
+            (i, sol) for i, sol in solutions if str(sol.path) in tracked_solutions
+        ]
+
+    irun_dir = package.get_problem_runs_dir() / '.irun'
+    irun_dir.mkdir(parents=True, exist_ok=True)
+    input = console.multiline_prompt('Testcase input')
+    input_path = irun_dir / '000.in'
+    output_path = input_path.with_suffix('.out')
+    input_path.write_text(input)
+    testcase = Testcase(inputPath=input_path, outputPath=output_path if check else None)
+
+    if main_solution_digest is not None:
+        # TODO: Add stderr path
+        generate_output_for_testcase(main_solution_digest, testcase)
+
+    for i, solution in solutions:
+        output_dir = runs_dir / f'{i}'
+
+        yield EvaluationItem(
+            solution_index=i,
+            group_name='irun',
+            testcase_index=0,
+            eval=_run_solution_on_testcase(
+                solution,
+                compiled_solutions[solution.path],
+                checker_digest,
+                testcase,
+                output_dir,
+                verification=verification,
+            ),
+        )
+
+
+def run_and_print_interactive_solutions(
+    tracked_solutions: Optional[Set[str]] = None,
+    verification: VerificationLevel = VerificationLevel.NONE,
+    check: bool = True,
+):
+    pkg = package.find_problem_package_or_die()
+    items = _run_interactive_solutions(
+        tracked_solutions=tracked_solutions, verification=verification, check=check
+    )
+
+    for item in items:
+        sol = pkg.solutions[item.solution_index]
+        _print_solution_header(sol, console.console)
+
+        if item.eval.testcase.output is not None:
+            console.console.print(item.eval.testcase.output.read_text())
+        else:
+            console.console.print('[warning]Solution produced no output.[/warning]')
 
 
 def get_outcome_style_verdict(outcome: Outcome) -> str:

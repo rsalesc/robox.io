@@ -29,6 +29,7 @@ from robox.box.solutions import (
     convert_list_of_solution_evaluations_to_dict,
     _get_report_skeleton,
     print_run_report,
+    run_and_print_interactive_solutions,
     run_solutions,
 )
 from robox.box.statements import build_statements
@@ -132,6 +133,40 @@ def run(
         console.console,
         verification,
         detailed=detailed,
+    )
+
+
+@app.command(
+    'irun, ir', help='Build and run solution(s) by passing testcases in the CLI.'
+)
+def irun(
+    verification: environment.VerificationParam,
+    solution: Annotated[
+        Optional[str],
+        typer.Argument(
+            help='Path to solution to run. If not specified, will run all solutions.'
+        ),
+    ] = None,
+    check: bool = typer.Option(
+        True,
+        '--nocheck',
+        flag_value=False,
+        help='Whether to not build outputs for tests and run checker.',
+    ),
+):
+    main_solution = package.get_main_solution()
+    if check and main_solution is None:
+        console.console.print(
+            '[warning]No main solution found, running without checkers.[/warning]'
+        )
+        check = False
+
+    tracked_solutions = None
+    if solution:
+        tracked_solutions = {solution}
+    run_and_print_interactive_solutions(
+        tracked_solutions=tracked_solutions,
+        check=check,
     )
 
 
