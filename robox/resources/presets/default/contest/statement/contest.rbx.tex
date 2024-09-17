@@ -16,6 +16,12 @@
 \usepackage{ulem}
 \usepackage{lastpage}
 
+%- for problem in problems
+%- if problem.blocks.preamble is defined
+\VAR{problem.blocks.preamble}
+%- endif
+%- endfor
+
 \def\showSourceFileName{1}
 \newif\ifintentionallyblankpages % comment this out to add blank pages
 
@@ -48,39 +54,39 @@
 
 %- if contest is defined
 \begin{frontpage}{\newtitle}{\newauthor}{\newdate}
-\begin{itemize}
-\item Sobre a prova:
-\begin{enumerate}
-\item A prova tem duração de 5 horas;
-\end{enumerate}
-\item Sobre a entrada:
-\begin{enumerate}
-\item A entrada do seu programa deve ser lida da entrada padrão (standard input);
-\item Quando uma linha da entrada contém vários valores, estes são separados por um único espaço em branco, a menos que explicitado o contrário no enunciado do problema;
-\item Toda linha da entrada terminará com um caractere final-de-linha.
-\end{enumerate}
+	\begin{itemize}
+		\item Sobre a prova:
+		      \begin{enumerate}
+			      \item A prova tem duração de 5 horas;
+		      \end{enumerate}
+		\item Sobre a entrada:
+		      \begin{enumerate}
+			      \item A entrada do seu programa deve ser lida da entrada padrão (standard input);
+			      \item Quando uma linha da entrada contém vários valores, estes são separados por um único espaço em branco, a menos que explicitado o contrário no enunciado do problema;
+			      \item Toda linha da entrada terminará com um caractere final-de-linha.
+		      \end{enumerate}
 
-\item Sobre a saída:
-\begin{enumerate}
-\item A saída de seu programa deve ser escrita na saída padrão;
-\item Quando uma linha da saída contém vários valores, estes devem ser separados por um único espaço em branco, a menos que explicitado o contrário no enunciado do problema;
-\item Toda linha da saída deve terminar com um caractere final-de-linha.
-\end{enumerate}
+		\item Sobre a saída:
+		      \begin{enumerate}
+			      \item A saída de seu programa deve ser escrita na saída padrão;
+			      \item Quando uma linha da saída contém vários valores, estes devem ser separados por um único espaço em branco, a menos que explicitado o contrário no enunciado do problema;
+			      \item Toda linha da saída deve terminar com um caractere final-de-linha.
+		      \end{enumerate}
 
-\item Sobre as submissões:
-\begin{enumerate}
-\item Você deve submeter o código fonte das suas soluções;
-\item Os comandos utilizados para compilação serão:
-\begin{enumerate}
-%- for language in languages:
-\item \VAR{language.name | escape}: \VAR{language.command | escape}
-%- endfor
-\end{enumerate}
-\item Para linguagem Java, o nome da classe principal do arquivo deve ser \textbf{Main}. A classe deve ser pública.
-\end{enumerate}
-\centering\vspace*{\fill}\textbf{Este caderno contém \VAR{problems | length} problema(s) e \pageref{LastPage} página(s)} \\
-\vspace*{\fill}
-\end{itemize}
+		\item Sobre as submissões:
+		      \begin{enumerate}
+			      \item Você deve submeter o código fonte das suas soluções;
+			      \item Os comandos utilizados para compilação serão:
+			            \begin{enumerate}
+				            %- for language in languages:
+				            \item \VAR{language.name | escape}: \VAR{language.command | escape}
+				                  %- endfor
+			            \end{enumerate}
+			      \item Para linguagem Java, o nome da classe principal do arquivo deve ser \textbf{Main}. A classe deve ser pública.
+		      \end{enumerate}
+		      \centering\vspace*{\fill}\textbf{Este caderno contém \VAR{problems | length} problema(s) e \pageref{LastPage} página(s)} \\
+		      \vspace*{\fill}
+	\end{itemize}
 \end{frontpage}
 %- endif
 

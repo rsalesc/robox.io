@@ -16,6 +16,10 @@
 \usepackage{ulem}
 \usepackage{lastpage}
 
+%- if problem.blocks.preamble is defined
+\VAR{problem.blocks.preamble}
+%- endblock
+
 \def\showSourceFileName{1}
 \newif\ifintentionallyblankpages % comment this out to add blank pages
 
@@ -41,14 +45,14 @@
 \begin{document}
 
 \begin{problem}
-  %- if problem.short_name is defined
-    [\VAR{problem.short_name}]
-  %- endif
-    {\VAR{problem.title | escape}}
-    {stdin}
-    {stdout}
-    {\VAR{problem.package.timeLimit / 1000 | round(1, 'floor')} s}
-    {\VAR{problem.package.memoryLimit} MB}
+%- if problem.short_name is defined
+[\VAR{problem.short_name}]
+%- endif
+{\VAR{problem.title | escape}}
+{stdin}
+{stdout}
+{\VAR{problem.package.timeLimit / 1000 | round(1, 'floor')} s}
+{\VAR{problem.package.memoryLimit} MB}
 
 \VAR{problem.blocks.legend}
 
@@ -66,7 +70,7 @@
 
 %- for sample in problem.samples
 \begin{example}
-  \exmpfile{\VAR{sample.inputPath}}{\VAR{sample.outputPath if sample.outputPath is not none else ''}}%
+	\exmpfile{\VAR{sample.inputPath}}{\VAR{sample.outputPath if sample.outputPath is not none else ''}}%
 \end{example}
 %- endfor
 
