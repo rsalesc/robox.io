@@ -7,6 +7,7 @@ import git
 import rich
 import rich.prompt
 import typer
+from iso639.language import functools
 
 from robox import console, utils
 from robox.box.environment import get_environment_path
@@ -200,11 +201,21 @@ def _try_installing_from_resources(name: str) -> bool:
     return True
 
 
+@functools.cache
+def _install_from_resources_just_once(name: str) -> bool:
+    # Send all output to the void since we don't wanna be verbose here.
+    with console.console.capture():
+        return _try_installing_from_resources(name)
+
+
 def get_installed_preset_or_null(name: str) -> Optional[Preset]:
     installation_path = get_preset_installation_path(name) / 'preset.rbx.yml'
     if not installation_path.is_file():
         if not _try_installing_from_resources(name):
             return None
+    elif name == 'default':
+        _install_from_resources_just_once(name)
+
     return utils.model_from_yaml(Preset, installation_path.read_text())
 
 
@@ -237,6 +248,7 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
                 should_copy_env = False
 
         if should_copy_env:
+            shutil.rmtree(get_environment_path(preset.name), ignore_errors=True)
             shutil.copyfile(str(root / preset.env), get_environment_path(preset.name))
 
     console.console.print(f'[item]{preset.name}[/item]: Copying preset folder...')
