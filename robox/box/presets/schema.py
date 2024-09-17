@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from robox.box.presets.fetch import PresetFetchInfo, get_preset_fetch_info
+
 
 class TrackedAsset(BaseModel):
     # Path of the asset relative to the root of the problem/contest that should
@@ -21,8 +23,11 @@ class Tracking(BaseModel):
 
 
 class Preset(BaseModel):
-    # Name of the preset.
+    # Name of the preset, or a GitHub repository containing it.
     name: str
+
+    # URI of the preset to be fetched.
+    uri: Optional[str] = None
 
     # Path to the environment file that will be installed with this preset.
     # When copied to the box environment, the environment will be named `name`.
@@ -38,3 +43,11 @@ class Preset(BaseModel):
     # preset has an update. Usually useful when a common library used by the
     # package changes in the preset, or when a latex template is changed.
     tracking: Tracking = Field(default_factory=Tracking)
+
+    @property
+    def fetch_info(self) -> PresetFetchInfo:
+        if self.uri is None:
+            return PresetFetchInfo(name=self.name)
+        res = get_preset_fetch_info(self.uri)
+        assert res is not None
+        return res

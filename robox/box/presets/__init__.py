@@ -1,13 +1,16 @@
 import pathlib
 import shutil
+import tempfile
 from typing import List, Optional, Sequence, Union
 
+import git
 import rich
 import rich.prompt
 import typer
 
 from robox import console, utils
 from robox.box.environment import get_environment_path
+from robox.box.presets.fetch import PresetFetchInfo, get_preset_fetch_info
 from robox.box.presets.lock_schema import LockedAsset, PresetLock
 from robox.box.presets.schema import Preset, TrackedAsset
 from robox.config import get_default_app_path
@@ -27,7 +30,7 @@ def get_preset_yaml(root: pathlib.Path = pathlib.Path()) -> Preset:
     found = find_preset_yaml(root)
     if not found:
         console.console.print(
-            f'[error]preset.rbx.yml not found in {root.absolute()}[/error]'
+            f'[error][item]preset.rbx.yml[/item] not found in [item]{root.absolute()}[/item].[/error]'
         )
         raise typer.Exit(1)
     return utils.model_from_yaml(Preset, found.read_text())
@@ -239,12 +242,30 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
     shutil.rmtree(str(installation_path / '.box'), ignore_errors=True)
 
 
+def _install_from_remote(fetch_info: PresetFetchInfo, force: bool = False):
+    assert fetch_info.fetch_uri is not None
+    console.console.print(fetch_info)
+    with tempfile.TemporaryDirectory() as d:
+        console.console.print(f'Cloning preset from [item]{fetch_info.uri}[/item]...')
+        git.Repo.clone_from(fetch_info.fetch_uri, d)
+        pd = pathlib.Path(d)
+        if fetch_info.inner_dir:
+            pd = pd / fetch_info.inner_dir
+        preset = get_preset_yaml(pd)
+        preset.uri = fetch_info.uri
+
+        (pd / 'preset.rbx.yml').write_text(utils.model_to_yaml(preset))
+        _install(pd, force=force)
+
+
 def _lock(preset_name: str):
-    get_installed_preset(preset_name)  # Just to check if the preset is installed.
+    preset = get_installed_preset(preset_name)
 
     tracked_assets = _get_preset_tracked_assets(preset_name, is_contest=_is_contest())
     preset_lock = PresetLock(
-        preset_name=preset_name, assets=_build_package_locked_assets(tracked_assets)
+        name=preset.name,
+        uri=preset.uri,
+        assets=_build_package_locked_assets(tracked_assets),
     )
 
     pathlib.Path('.preset-lock.yml').write_text(utils.model_to_yaml(preset_lock))
@@ -273,9 +294,25 @@ def _update():
     _lock(preset_lock.preset_name)
 
 
-@app.command('install', help='Install preset from current directory.')
-def install():
-    _install()
+@app.command(
+    'install', help='Install preset from current directory or from the given URI.'
+)
+def install(
+    uri: Optional[str] = typer.Argument(
+        None, help='GitHub URI for the preset to install.'
+    ),
+):
+    if uri is None:
+        _install()
+        return
+
+    fetch_info = get_preset_fetch_info(uri)
+    if fetch_info is None:
+        console.console.print(f'[error] Preset with URI {uri} not found.[/error]')
+        raise typer.Exit(1)
+    if fetch_info.fetch_uri is None:
+        console.console.print(f'[error]URI {uri} is invalid.[/error]')
+    _install_from_remote(fetch_info)
 
 
 @app.command('update', help='Update preset of this package.')

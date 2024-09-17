@@ -24,6 +24,7 @@ latexbuild = "^0.2.2"
 pydantic-xml = {extras = ["lxml"], version = "^2.11.0"}
 python-iso639 = "^2024.4.27"
 more-itertools = "^10.5.0"
+gitpython = "^3.1.43"
 
 [tool.poetry.scripts]
 rbc = "robox.main:app"

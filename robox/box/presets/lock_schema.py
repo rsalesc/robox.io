@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -10,6 +10,11 @@ class LockedAsset(TrackedAsset):
 
 
 class PresetLock(BaseModel):
-    preset_name: str
+    name: str
+    uri: Optional[str] = None
+
+    @property
+    def preset_name(self) -> str:
+        return self.name
 
     assets: List[LockedAsset] = []
