@@ -16,6 +16,7 @@ from robox.box.contest.contest_package import (
 )
 from robox.box.contest.schema import ContestProblem
 from robox.box.packaging import contest_main as packaging
+from robox.box.presets.fetch import get_preset_fetch_info
 from robox.box.schema import Package
 from robox.config import open_editor
 
@@ -38,12 +39,24 @@ app.add_typer(
 def create(
     name: str,
     preset: Annotated[
-        Optional[str], typer.Option(help='Preset to use when creating the contest.')
-    ] = None,
+        str,
+        typer.Option(
+            help='Which preset to use to create this package. Can be a named of an already installed preset, or an URI, in which case the preset will be downloaded.'
+        ),
+    ] = 'default',
 ):
     console.console.print(f'Creating new contest [item]{name}[/item]...')
 
-    preset = preset or 'default'
+    fetch_info = get_preset_fetch_info(preset)
+    if fetch_info is None:
+        console.console.print(
+            f'[error]Invalid preset name/URI [item]{preset}[/item].[/error]'
+        )
+        raise typer.Exit(1)
+
+    if fetch_info.fetch_uri is not None:
+        preset = presets.install_from_remote(fetch_info)
+
     preset_cfg = presets.get_installed_preset(preset)
 
     contest_path = (

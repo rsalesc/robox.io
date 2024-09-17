@@ -255,7 +255,7 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
     shutil.rmtree(str(installation_path / '.box'), ignore_errors=True)
 
 
-def _install_from_remote(fetch_info: PresetFetchInfo, force: bool = False):
+def install_from_remote(fetch_info: PresetFetchInfo, force: bool = False) -> str:
     assert fetch_info.fetch_uri is not None
     with tempfile.TemporaryDirectory() as d:
         console.console.print(
@@ -273,6 +273,7 @@ def _install_from_remote(fetch_info: PresetFetchInfo, force: bool = False):
 
         (pd / 'preset.rbx.yml').write_text(utils.model_to_yaml(preset))
         _install(pd, force=force)
+        return preset.name
 
 
 def _lock(preset_name: str):
@@ -341,7 +342,7 @@ def install(
         raise typer.Exit(1)
     if fetch_info.fetch_uri is None:
         console.console.print(f'[error]URI {uri} is invalid.[/error]')
-    _install_from_remote(fetch_info)
+    install_from_remote(fetch_info)
 
 
 @app.command('update', help='Update installed remote presets')
@@ -367,7 +368,7 @@ def update(
                 f'Skipping preset [item]{preset_name}[/item], not remote.'
             )
             continue
-        _install_from_remote(preset.fetch_info, force=True)
+        install_from_remote(preset.fetch_info, force=True)
 
 
 @app.command(
