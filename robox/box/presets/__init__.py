@@ -1,7 +1,7 @@
 import pathlib
 import shutil
 import tempfile
-from typing import List, Optional, Sequence, Union
+from typing import Annotated, List, Optional, Sequence, Union
 
 import git
 import rich
@@ -244,7 +244,6 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
 
 def _install_from_remote(fetch_info: PresetFetchInfo, force: bool = False):
     assert fetch_info.fetch_uri is not None
-    console.console.print(fetch_info)
     with tempfile.TemporaryDirectory() as d:
         console.console.print(f'Cloning preset from [item]{fetch_info.uri}[/item]...')
         git.Repo.clone_from(fetch_info.fetch_uri, d)
@@ -274,20 +273,29 @@ def _lock(preset_name: str):
     )
 
 
-def _update():
+def _sync(update: bool = False):
     preset_lock = get_preset_lock()
     if preset_lock is None:
         console.console.print(
-            '[error]Package does not have a [item].preset.lock.yml[/item] file and thus cannot be updated.[/error]'
+            '[error]Package does not have a [item].preset.lock.yml[/item] file and thus cannot be synced.[/error]'
+        )
+        console.console.print(
+            '[error]Ensure this package was created through a preset, or manually associate one with [item]rbx presets lock [PRESET][/item].[/error]'
         )
         raise typer.Exit(1)
 
+    should_update = update and preset_lock.uri is not None
     installed_preset = get_installed_preset_or_null(preset_lock.preset_name)
     if installed_preset is None:
-        console.console.print(
-            f'[error]Preset [item]{preset_lock.preset_name}[/item] is not installed. Install it before trying to update.'
-        )
-        raise typer.Exit(1)
+        if not update or preset_lock.uri is None:
+            console.console.print(
+                f'[error]Preset [item]{preset_lock.preset_name}[/item] is not installed. Install it before trying to update.'
+            )
+            raise typer.Exit(1)
+        should_update = True
+
+    if should_update:
+        install(uri=preset_lock.uri)
 
     _copy_updated_assets(
         preset_lock.preset_name,
@@ -318,20 +326,34 @@ def install(
     _install_from_remote(fetch_info)
 
 
-@app.command('update', help='Update preset of this package.')
-def update():
+@app.command(
+    'sync',
+    help='Sync current package assets with those provided by the installed preset.',
+)
+def sync(
+    update: Annotated[
+        bool,
+        typer.Option(
+            '--update',
+            '-u',
+            help='Whether to fetch an up-to-date version of the installed preset from remote, if available.',
+        ),
+    ] = False,
+):
     _check_is_valid_package()
-    _update()
+    _sync(update=update)
 
 
 @app.command(
-    'lock', help='Generate a lock for this package, based on a existing preset'
+    'lock', help='Generate a lock for this package, based on a existing preset.'
 )
 def lock(
-    preset: Optional[str] = typer.Argument(
-        None,
-        help='Preset to generate a lock for. If unset, will default to the one in the existing .preset-lock.yml.',
-    ),
+    preset: Annotated[
+        Optional[str],
+        typer.Argument(
+            help='Preset to generate a lock for. If unset, will default to the one in the existing .preset-lock.yml.',
+        ),
+    ] = None,
 ):
     _check_is_valid_package()
     if preset is None:
