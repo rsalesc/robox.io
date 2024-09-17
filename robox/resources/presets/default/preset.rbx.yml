@@ -1,4 +1,5 @@
 name: "default"
+uri: rsalesc/robox.io/robox/resources/presets/default
 problem: "problem"
 contest: "contest"
 tracking:
