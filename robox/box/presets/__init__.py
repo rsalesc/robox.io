@@ -54,6 +54,15 @@ def get_preset_installation_path(name: str) -> pathlib.Path:
     return utils.get_app_path() / 'presets' / name
 
 
+def _find_installed_presets() -> List[str]:
+    folder = utils.get_app_path() / 'presets'
+
+    res = []
+    for yml in folder.glob('*/preset.rbx.yml'):
+        res.append(yml.parent.name)
+    return res
+
+
 def _is_contest(root: pathlib.Path = pathlib.Path()) -> bool:
     return (root / 'contest.rbx.yml').is_file()
 
@@ -215,7 +224,9 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
     console.console.print(f'Installing preset [item]{preset.name}[/item]...')
 
     if preset.env is not None:
-        console.console.print('Copying environment file...')
+        console.console.print(
+            f'[item]{preset.name}[/item]: Copying environment file...'
+        )
         should_copy_env = True
         if get_environment_path(preset.name).exists():
             res = force or rich.prompt.Confirm.ask(
@@ -228,7 +239,7 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
         if should_copy_env:
             shutil.copyfile(str(root / preset.env), get_environment_path(preset.name))
 
-    console.console.print('Copying preset folder...')
+    console.console.print(f'[item]{preset.name}[/item]: Copying preset folder...')
     installation_path = get_preset_installation_path(preset.name)
     installation_path.parent.mkdir(parents=True, exist_ok=True)
     if installation_path.exists():
@@ -247,11 +258,16 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
 def _install_from_remote(fetch_info: PresetFetchInfo, force: bool = False):
     assert fetch_info.fetch_uri is not None
     with tempfile.TemporaryDirectory() as d:
-        console.console.print(f'Cloning preset from [item]{fetch_info.uri}[/item]...')
+        console.console.print(
+            f'Cloning preset from [item]{fetch_info.fetch_uri}[/item]...'
+        )
         git.Repo.clone_from(fetch_info.fetch_uri, d)
         pd = pathlib.Path(d)
         if fetch_info.inner_dir:
             pd = pd / fetch_info.inner_dir
+            console.console.print(
+                f'Installing preset from [item]{fetch_info.inner_dir}[/item].'
+            )
         preset = get_preset_yaml(pd)
         preset.uri = fetch_info.uri
 
@@ -326,6 +342,32 @@ def install(
     if fetch_info.fetch_uri is None:
         console.console.print(f'[error]URI {uri} is invalid.[/error]')
     _install_from_remote(fetch_info)
+
+
+@app.command('update', help='Update installed remote presets')
+def update(
+    name: Annotated[
+        Optional[str], typer.Argument(help='If set, update only this preset.')
+    ] = None,
+):
+    if not name:
+        presets = _find_installed_presets()
+    else:
+        presets = [name]
+
+    for preset_name in presets:
+        preset = get_installed_preset_or_null(preset_name)
+        if preset is None:
+            console.console.print(
+                f'[error]Preset [item]{preset_name}[/item] is not installed.'
+            )
+            continue
+        if preset.uri is None:
+            console.console.print(
+                f'Skipping preset [item]{preset_name}[/item], not remote.'
+            )
+            continue
+        _install_from_remote(preset.fetch_info, force=True)
 
 
 @app.command(
