@@ -6,6 +6,12 @@ from pydantic import BaseModel, Field
 from robox.box.presets.fetch import PresetFetchInfo, get_preset_fetch_info
 
 
+def NameField(**kwargs):
+    return Field(
+        pattern=r'^[a-zA-Z0-9][a-zA-Z0-9\-]*$', min_length=3, max_length=32, **kwargs
+    )
+
+
 class TrackedAsset(BaseModel):
     # Path of the asset relative to the root of the problem/contest that should
     # be tracked.
@@ -24,7 +30,7 @@ class Tracking(BaseModel):
 
 class Preset(BaseModel):
     # Name of the preset, or a GitHub repository containing it.
-    name: str
+    name: str = NameField()
 
     # URI of the preset to be fetched.
     uri: Optional[str] = None
