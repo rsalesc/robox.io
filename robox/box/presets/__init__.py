@@ -276,17 +276,29 @@ def install_from_remote(fetch_info: PresetFetchInfo, force: bool = False) -> str
         return preset.name
 
 
-def _lock(preset_name: str):
+def generate_lock(
+    preset_name: Optional[str] = None, root: pathlib.Path = pathlib.Path()
+):
+    if preset_name is None:
+        preset_lock = get_preset_lock(root)
+        if preset_lock is None:
+            console.console.print(
+                '[error][item].preset-lock.yml[/item] not found. '
+                'Specify a preset argument to this function to create a lock from scratch.[/error]'
+            )
+            raise typer.Exit(1)
+        preset_name = preset_lock.preset_name
+
     preset = get_installed_preset(preset_name)
 
     tracked_assets = _get_preset_tracked_assets(preset_name, is_contest=_is_contest())
     preset_lock = PresetLock(
         name=preset.name,
         uri=preset.uri,
-        assets=_build_package_locked_assets(tracked_assets),
+        assets=_build_package_locked_assets(tracked_assets, root),
     )
 
-    pathlib.Path('.preset-lock.yml').write_text(utils.model_to_yaml(preset_lock))
+    (root / '.preset-lock.yml').write_text(utils.model_to_yaml(preset_lock))
     console.console.print(
         '[success][item].preset-lock.yml[/item] was created.[/success]'
     )
@@ -321,7 +333,7 @@ def _sync(update: bool = False):
         preset_lock,
         is_contest=_is_contest(),
     )
-    _lock(preset_lock.preset_name)
+    generate_lock(preset_lock.preset_name)
 
 
 @app.command(
@@ -401,16 +413,7 @@ def lock(
     ] = None,
 ):
     _check_is_valid_package()
-    if preset is None:
-        preset_lock = get_preset_lock()
-        if preset_lock is None:
-            console.console.print(
-                '[error][item].preset-lock.yml[/item] not found. '
-                'Specify a preset argument to this function to create a lock from scratch.[/error]'
-            )
-            raise typer.Exit(1)
-        preset = preset_lock.preset_name
-    _lock(preset)
+    generate_lock(preset)
 
 
 @app.callback()

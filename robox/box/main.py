@@ -178,7 +178,10 @@ def create(
         Optional[str], typer.Option(help='Preset to use when creating the problem.')
     ] = None,
 ):
-    creation.create(name, preset=preset)
+    if preset is not None:
+        creation.create(name, preset=preset)
+        return
+    creation.create(name)
 
 
 @app.command('stress', help='Run a stress test.')

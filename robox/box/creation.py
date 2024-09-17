@@ -61,3 +61,5 @@ def create(
     shutil.copytree(str(problem_path), str(dest_path))
     shutil.rmtree(str(dest_path / 'build'), ignore_errors=True)
     shutil.rmtree(str(dest_path / '.box'), ignore_errors=True)
+
+    presets.generate_lock(preset, root=dest_path)

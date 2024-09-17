@@ -81,6 +81,8 @@ def create(
 
     shutil.copytree(str(contest_path), str(dest_path))
 
+    presets.generate_lock(preset, root=dest_path)
+
 
 @app.command('edit, e', help='Open contest.rbx.yml in your default editor.')
 def edit():
