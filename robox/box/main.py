@@ -1,4 +1,5 @@
 # flake8: noqa
+from os import environ
 from gevent import monkey
 
 monkey.patch_all()
@@ -290,6 +291,34 @@ def environment_command(env: Annotated[Optional[str], typer.Argument()] = None):
 
     # Also clear cache when changing environments.
     clear()
+
+
+@app.command(
+    'activate',
+    help='Activate the environment of the current preset used by the package.',
+)
+def activate():
+    preset_lock = presets.get_preset_lock()
+    if preset_lock is None:
+        console.console.print(
+            '[warning]No configured preset to be activated for this package.[/warning]'
+        )
+        raise typer.Exit(1)
+
+    preset = presets.get_installed_preset_or_null(preset_lock.preset_name)
+    if preset is None:
+        if preset_lock.uri is None:
+            console.console.print(
+                '[error]Preset is not installed. Install it manually, or specify a URI in [item].preset-lock.yml[/item].[/error]'
+            )
+            raise
+        presets.install(preset_lock.uri)
+
+    preset = presets.get_installed_preset(preset_lock.preset_name)
+    if preset.env is not None:
+        environment_command(preset.name)
+
+    console.console.print(f'[success]Preset [item]{preset.name}[/item] is activated.')
 
 
 @app.command('clear, clean', help='Clears cache and build directories.')

@@ -216,15 +216,17 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
 
     if preset.env is not None:
         console.console.print('Copying environment file...')
+        should_copy_env = True
         if get_environment_path(preset.name).exists():
             res = force or rich.prompt.Confirm.ask(
                 f'Environment [item]{preset.name}[/item] already exists. Overwrite?',
                 console=console.console,
             )
             if not res:
-                raise typer.Exit(1)
+                should_copy_env = False
 
-        shutil.copyfile(str(root / preset.env), get_environment_path(preset.name))
+        if should_copy_env:
+            shutil.copyfile(str(root / preset.env), get_environment_path(preset.name))
 
     console.console.print('Copying preset folder...')
     installation_path = get_preset_installation_path(preset.name)

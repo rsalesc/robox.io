@@ -6,7 +6,7 @@ import typer
 
 from robox import console, utils
 from robox.box.contest.schema import Contest
-from robox.box.package import find_problem_package_or_die
+from robox.box.package import find_problem_package_or_die, warn_preset_deactivated
 from robox.box.schema import Package
 
 YAML_NAME = 'contest.rbx.yml'
@@ -20,6 +20,7 @@ def find_contest_yaml(root: pathlib.Path = pathlib.Path()) -> Optional[pathlib.P
         contest_yaml_path = root / YAML_NAME
     if not contest_yaml_path.is_file():
         return None
+    warn_preset_deactivated(root)
     return contest_yaml_path
 
 

@@ -5,7 +5,9 @@ from typing import List, Optional, Tuple
 import typer
 
 from robox import console, utils
+from robox.box import environment
 from robox.box.environment import get_sandbox_type
+from robox.box.presets import get_installed_preset_or_null, get_preset_lock
 from robox.box.schema import (
     CodeItem,
     ExpectedOutcome,
@@ -26,6 +28,32 @@ _DEFAULT_CHECKER = 'wcmp.cpp'
 TEMP_DIR = None
 
 
+def warn_preset_deactivated(root: pathlib.Path = pathlib.Path()):
+    preset_lock = get_preset_lock(root)
+    if preset_lock is None:
+        return
+
+    preset = get_installed_preset_or_null(preset_lock.preset_name)
+    if preset is None:
+        console.console.print(
+            f'[warning]WARNING: [item]{preset_lock.preset_name}[/item] is not installed. '
+            'Run [item]rbx presets sync && rbx activate[/item] to install and activate this preset.'
+        )
+        console.console.print()
+        return
+
+    if (
+        preset.env is not None
+        and not environment.get_environment_path(preset.name).is_file()
+    ):
+        console.console.print(
+            '[warning]WARNING: This package uses a preset that configures a custom environment. '
+            'Run [item]rbx activate[/item] to use it.'
+        )
+        console.console.print()
+        return
+
+
 @functools.cache
 def find_problem_yaml(root: pathlib.Path = pathlib.Path()) -> Optional[pathlib.Path]:
     problem_yaml_path = root / YAML_NAME
@@ -34,6 +62,7 @@ def find_problem_yaml(root: pathlib.Path = pathlib.Path()) -> Optional[pathlib.P
         problem_yaml_path = root / YAML_NAME
     if not problem_yaml_path.is_file():
         return None
+    warn_preset_deactivated(root)
     return problem_yaml_path
 
 
