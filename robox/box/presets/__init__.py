@@ -269,6 +269,9 @@ def _lock(preset_name: str):
     )
 
     pathlib.Path('.preset-lock.yml').write_text(utils.model_to_yaml(preset_lock))
+    console.console.print(
+        '[success][item].preset-lock.yml[/item] was created.[/success]'
+    )
 
 
 def _update():
@@ -324,8 +327,22 @@ def update():
 @app.command(
     'lock', help='Generate a lock for this package, based on a existing preset'
 )
-def lock(preset: str):
+def lock(
+    preset: Optional[str] = typer.Argument(
+        None,
+        help='Preset to generate a lock for. If unset, will default to the one in the existing .preset-lock.yml.',
+    ),
+):
     _check_is_valid_package()
+    if preset is None:
+        preset_lock = get_preset_lock()
+        if preset_lock is None:
+            console.console.print(
+                '[error][item].preset-lock.yml[/item] not found. '
+                'Specify a preset argument to this function to create a lock from scratch.[/error]'
+            )
+            raise typer.Exit(1)
+        preset = preset_lock.preset_name
     _lock(preset)
 
 
