@@ -27,13 +27,12 @@ from robox.box.contest import main as contest
 from robox.box.environment import VerificationLevel, get_environment_path
 from robox.box.packaging import main as packaging
 from robox.box.solutions import (
-    convert_list_of_solution_evaluations_to_dict,
-    _get_report_skeleton,
     print_run_report,
     run_and_print_interactive_solutions,
     run_solutions,
 )
 from robox.box.statements import build_statements
+from robox.box.ui import main as ui_pkg
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 app.add_typer(
@@ -63,6 +62,11 @@ app.add_typer(
 app.add_typer(
     compile.app, name='compile', cls=annotations.AliasGroup, help='Compile assets.'
 )
+
+
+@app.command('ui')
+def ui():
+    ui_pkg.start()
 
 
 @app.command('edit, e', help='Open problem.rbx.yml in your default editor.')

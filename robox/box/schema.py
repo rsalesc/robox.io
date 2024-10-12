@@ -74,6 +74,21 @@ class ExpectedOutcome(AutoEnum):
     
     Especially useful for environments where TLE and RTE are indistinguishable."""
 
+    def style(self) -> str:
+        if self == ExpectedOutcome.ACCEPTED:
+            return 'green'
+        if self == ExpectedOutcome.WRONG_ANSWER:
+            return 'red'
+        if self == ExpectedOutcome.INCORRECT:
+            return 'red'
+        if self.match(Outcome.TIME_LIMIT_EXCEEDED):
+            return 'yellow'
+        if self.match(Outcome.RUNTIME_ERROR):
+            return 'lnumber'
+        if self.match(Outcome.MEMORY_LIMIT_EXCEEDED):
+            return 'cyan'
+        return 'magenta'
+
     def match(self, outcome: Outcome) -> bool:
         if self == ExpectedOutcome.ACCEPTED:
             return outcome == Outcome.ACCEPTED

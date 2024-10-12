@@ -413,7 +413,7 @@ def get_outcome_style_verdict(outcome: Outcome) -> str:
     return 'magenta'
 
 
-def _get_testcase_markup_verdict(eval: Evaluation) -> str:
+def get_testcase_markup_verdict(eval: Evaluation) -> str:
     res = '✓'
     if eval.result.outcome != Outcome.ACCEPTED:
         res = '✗'
@@ -434,7 +434,7 @@ def _get_evals_time_in_ms(evals: List[Evaluation]) -> int:
     return max(int((eval.log.time or 0.0) * 1000) for eval in evals)
 
 
-def _get_evals_formatted_time(evals: List[Evaluation]) -> str:
+def get_evals_formatted_time(evals: List[Evaluation]) -> str:
     max_time = _get_evals_time_in_ms(evals)
     return f'{max_time} ms'
 
@@ -479,7 +479,7 @@ def _print_solution_outcome(
         console.print(
             '[yellow]WARNING[/yellow] The solution still passed in double TL.'
         )
-    console.print(f'Time: {_get_evals_formatted_time(evals)}')
+    console.print(f'Time: {get_evals_formatted_time(evals)}')
     return len(unmatched_bad_verdicts) == 0
 
 
@@ -535,8 +535,8 @@ def _render_detailed_group_table(
                 if eval is None:
                     row.append('...')
                     continue
-                verdict = _get_testcase_markup_verdict(eval)
-                time = _get_evals_formatted_time([eval])
+                verdict = get_testcase_markup_verdict(eval)
+                time = get_evals_formatted_time([eval])
                 row.append(f'{verdict} {time}')
             table.add_row(*row)
 
@@ -548,7 +548,7 @@ def _render_detailed_group_table(
                 if not non_null_evals:
                     summary_row.append('...')
                     continue
-                summary_row.append('  ' + _get_evals_formatted_time(non_null_evals))
+                summary_row.append('  ' + get_evals_formatted_time(non_null_evals))
             table.add_section()
             table.add_row(*summary_row)
         return table
@@ -647,7 +647,7 @@ def print_run_report(
         is_closing_group = last_group is not None and is_new_group
 
         if is_closing_group:
-            console.print(f'({_get_evals_formatted_time(group_evals)})', end='')
+            console.print(f'({get_evals_formatted_time(group_evals)})', end='')
             console.print()
 
         if is_new_solution:
@@ -665,11 +665,11 @@ def print_run_report(
         all_evals.append(eval)
         group_evals.append(eval)
         console.print(f'{test_index}/', end='')
-        console.print(_get_testcase_markup_verdict(eval), end=' ')
+        console.print(get_testcase_markup_verdict(eval), end=' ')
 
         test_index += 1
 
-    console.print(f'({_get_evals_formatted_time(group_evals)})', end=' ')
+    console.print(f'({get_evals_formatted_time(group_evals)})', end=' ')
     console.print()
     print_last_solution()
 
