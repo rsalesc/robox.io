@@ -1,19 +1,17 @@
 from __future__ import annotations
 
+import importlib
+import importlib.resources
 import logging
 import os
 import pathlib
-import resource
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 from functools import partial
-from sys import platform
-from time import monotonic
-from typing import IO, List, Optional, Union
-
-import gevent
+from typing import IO, Dict, List, Optional, Union
 
 from robox.grading.judge import sandbox
 from robox.grading.judge.cacher import FileCacher
@@ -37,8 +35,7 @@ class StupidSandbox(SandboxBase):
 
     exec_num: int
     popen: Optional[subprocess.Popen]
-    popen_time: Optional[float]
-    exec_time: Optional[float]
+    log: Optional[Dict[str, str]]
 
     def __init__(
         self,
@@ -64,8 +61,7 @@ class StupidSandbox(SandboxBase):
 
         self.exec_num = -1
         self.popen = None
-        self.popen_time = None
-        self.exec_time = None
+        self.log = None
 
         logger.debug("Sandbox in `%s' created, using stupid box.", self._path)
 
@@ -74,6 +70,30 @@ class StupidSandbox(SandboxBase):
 
     def initialize(self):
         self._path.mkdir(parents=True, exist_ok=True)
+
+    def get_timeit_executable(self) -> pathlib.Path:
+        with importlib.resources.as_file(
+            importlib.resources.files('robox')
+            / 'grading'
+            / 'judge'
+            / 'sandboxes'
+            / 'timeit.py'
+        ) as file:
+            return file
+
+    def get_timeit_args(self) -> List[str]:
+        args = []
+        if self.params.timeout:
+            timeout_in_s = self.params.timeout / 1000
+            if self.params.extra_timeout:
+                timeout_in_s += self.params.extra_timeout / 1000
+            args.append(f'-t{timeout_in_s:.3f}')
+        if self.params.wallclock_timeout:
+            walltimeout_in_s = self.params.wallclock_timeout / 1000
+            args.append(f'-w{walltimeout_in_s:.3f}')
+        if self.params.address_space:
+            args.append(f'-m{self.params.address_space}')
+        return args
 
     def get_root_path(self) -> pathlib.Path:
         """Return the toplevel path of the sandbox.
@@ -91,7 +111,9 @@ class StupidSandbox(SandboxBase):
         return (float): time spent in the sandbox.
 
         """
-        return self.get_execution_wall_clock_time()
+        if self.log is None:
+            return None
+        return float(self.log['time'])
 
     # TODO - It returns the best known approximation of wall clock
     # time; unfortunately I have no way to compute wall clock time
@@ -104,27 +126,22 @@ class StupidSandbox(SandboxBase):
         return (float): total time the sandbox was alive.
 
         """
-        if self.exec_time:
-            return self.exec_time
-        if self.popen_time:
-            self.exec_time = monotonic() - self.popen_time
-            return self.exec_time
-        return None
+        if self.log is None:
+            return None
+        return float(self.log['time-wall'])
 
     def use_soft_timeout(self) -> bool:
-        if platform == 'darwin':
-            return False
         return True
 
-    # TODO - It always returns None, since I have no way to check
-    # memory usage (libev doesn't have wait4() support)
     def get_memory_used(self) -> Optional[int]:
         """Return the memory used by the sandbox.
 
         return (int): memory used by the sandbox (in bytes).
 
         """
-        return None
+        if self.log is None:
+            return None
+        return int(self.log['mem']) * 1024
 
     def get_killing_signal(self) -> int:
         """Return the signal that killed the sandboxed process.
@@ -132,10 +149,22 @@ class StupidSandbox(SandboxBase):
         return (int): offending signal, or 0.
 
         """
-        assert self.popen is not None
-        if self.popen.returncode < 0:
-            return -self.popen.returncode
-        return 0
+        assert self.log is not None
+        if 'exit-sig' not in self.log:
+            return 0
+        return int(self.log['exit-sig'])
+
+    def get_status_list(self) -> List[str]:
+        """Reads the sandbox log file, and set and return the status
+        of the sandbox.
+
+        return (list): list of statuses of the sandbox.
+
+        """
+        assert self.log is not None
+        if 'status' in self.log:
+            return self.log['status'].split(',')
+        return []
 
     # This sandbox only discriminates between processes terminating
     # properly or being killed with a signal; all other exceptional
@@ -148,12 +177,20 @@ class StupidSandbox(SandboxBase):
 
         """
         assert self.popen
-        if self.popen.returncode >= 0:
-            return self.EXIT_OK
-        else:
-            if -self.popen.returncode == 24:
-                return self.EXIT_TIMEOUT
+        if self.popen.returncode != 0:
+            return self.EXIT_SANDBOX_ERROR
+        status_list = self.get_status_list()
+        if 'WT' in status_list:
+            return self.EXIT_TIMEOUT_WALL
+        if 'TO' in status_list:
+            return self.EXIT_TIMEOUT
+        if 'ML' in status_list:
+            return self.EXIT_MEMORY_LIMIT_EXCEEDED
+        if 'SG' in status_list:
             return self.EXIT_SIGNAL
+        if 'RE' in status_list:
+            return self.EXIT_NONZERO_RETURN
+        return self.EXIT_OK
 
     def get_exit_code(self) -> int:
         """Return the exit code of the sandboxed process.
@@ -161,8 +198,8 @@ class StupidSandbox(SandboxBase):
         return (float): exitcode, or 0.
 
         """
-        assert self.popen
-        return self.popen.returncode
+        assert self.log is not None
+        return int(self.log['exit-code'])
 
     def get_human_exit_description(self) -> str:
         """Get the status of the sandbox and return a human-readable
@@ -178,12 +215,30 @@ class StupidSandbox(SandboxBase):
                 'Execution successfully finished (with exit code %d)'
                 % self.get_exit_code()
             )
+        elif status == self.EXIT_SANDBOX_ERROR:
+            return 'Execution failed because of sandbox error'
+        elif status == self.EXIT_TIMEOUT:
+            return 'Execution timed out'
+        elif status == self.EXIT_TIMEOUT_WALL:
+            return 'Execution timed out (wall clock limit exceeded)'
         elif status == self.EXIT_SIGNAL:
             return 'Execution killed with signal %s' % self.get_killing_signal()
+        elif status == self.EXIT_NONZERO_RETURN:
+            return 'Execution failed because the return code was nonzero'
         return ''
 
+    def get_current_log_name(self) -> pathlib.Path:
+        return pathlib.Path(f'logs.{self.exec_num}')
+
     def hydrate_logs(self):
-        return
+        self.log = {}
+        raw_log = self.get_file_to_string(self.get_current_log_name(), maxlen=None)
+        for line in raw_log.splitlines():
+            items = line.split(':', 1)
+            if len(items) != 2:
+                continue
+            key, value = items
+            self.log[key] = value.strip()
 
     def _popen(
         self,
@@ -210,7 +265,6 @@ class StupidSandbox(SandboxBase):
         return (object): popen object.
 
         """
-        self.exec_time = None
         self.exec_num += 1
 
         logger.debug(
@@ -220,9 +274,19 @@ class StupidSandbox(SandboxBase):
             self.relative_path(self.cmd_file), 'at', encoding='utf-8'
         ) as commands:
             commands.write('%s\n' % command)
+
+        real_command = (
+            [
+                sys.executable,
+                str(self.get_timeit_executable().resolve()),
+                str(self.relative_path(self.get_current_log_name()).resolve()),
+            ]
+            + self.get_timeit_args()
+            + command
+        )
         try:
             p = subprocess.Popen(
-                command,
+                real_command,
                 stdin=stdin,
                 stdout=stdout,
                 stderr=stderr,
@@ -262,32 +326,6 @@ class StupidSandbox(SandboxBase):
             if self.chdir:
                 os.chdir(self.chdir)
 
-            if platform == 'darwin':
-                # These RLimits do not work properly on macOS.
-                return
-
-            # TODO - We're not checking that setrlimit() returns
-            # successfully (they may try to set to higher limits than
-            # allowed to); anyway, this is just for testing
-            # environment, not for real contests, so who cares.
-            if self.params.timeout:
-                rlimit_cpu = self.params.timeout
-                if self.params.extra_timeout:
-                    rlimit_cpu += self.params.extra_timeout
-                rlimit_cpu = int((rlimit_cpu + 999) // 1000)
-                resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
-
-            if self.params.address_space:
-                rlimit_data = self.params.address_space * 1024 * 1024
-                resource.setrlimit(resource.RLIMIT_DATA, (rlimit_data, rlimit_data))
-
-            if self.params.stack_space:
-                rlimit_stack = self.params.stack_space * 1024 * 1024
-                resource.setrlimit(resource.RLIMIT_STACK, (rlimit_stack, rlimit_stack))
-
-            # TODO - Doesn't work as expected
-            # resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
-
         # Setup std*** redirection
         if self.params.stdin_file:
             stdin_fd = os.open(
@@ -315,9 +353,6 @@ class StupidSandbox(SandboxBase):
         else:
             stderr_fd = subprocess.PIPE
 
-        # Note down execution time
-        self.popen_time = monotonic()
-
         # Actually call the Popen
         self.popen = self._popen(
             command,
@@ -336,25 +371,6 @@ class StupidSandbox(SandboxBase):
         if self.params.stderr_file and self.params.stderr_file != sandbox.MERGE_STDERR:
             os.close(stderr_fd)
 
-        if self.params.wallclock_timeout:
-            # Kill the process after the wall clock time passed
-            def timed_killer(timeout, popen):
-                gevent.sleep(timeout)
-                # TODO - Here we risk to kill some other process that gets
-                # the same PID in the meantime; I don't know how to
-                # properly solve this problem
-                try:
-                    popen.kill()
-                except OSError:
-                    # The process had died by itself
-                    pass
-
-            # Setup the killer
-            full_wallclock_timeout = self.params.wallclock_timeout
-            if self.params.extra_timeout:
-                full_wallclock_timeout += self.params.extra_timeout
-            gevent.spawn(timed_killer, full_wallclock_timeout / 1000, self.popen)
-
         # If the caller wants us to wait for completion, we also avoid
         # std*** to interfere with command. Otherwise we let the
         # caller handle these issues.
@@ -362,8 +378,8 @@ class StupidSandbox(SandboxBase):
             with self.popen as p:
                 # Ensure popen fds are closed.
                 res = self.translate_box_exitcode(wait_without_std([p])[0])
-                # Ensure exec time is computed.
-                self.get_execution_wall_clock_time()
+                # Ensure logs are hydrated.
+                self.hydrate_logs()
                 return res
         else:
             return self.popen
