@@ -3,17 +3,13 @@ from __future__ import annotations
 import importlib
 import importlib.resources
 import logging
-import os
 import pathlib
 import shutil
-import stat
 import subprocess
 import sys
 import tempfile
-from functools import partial
 from typing import IO, Dict, List, Optional, Union
 
-from robox.grading.judge import sandbox
 from robox.grading.judge.cacher import FileCacher
 from robox.grading.judge.sandbox import (
     SandboxBase,
@@ -93,6 +89,14 @@ class StupidSandbox(SandboxBase):
             args.append(f'-w{walltimeout_in_s:.3f}')
         if self.params.address_space:
             args.append(f'-m{self.params.address_space}')
+        if self.params.stdin_file:
+            args.append(f'-i{self.params.stdin_file}')
+        if self.params.stdout_file:
+            args.append(f'-o{self.params.stdout_file}')
+        if self.params.stderr_file:
+            args.append(f'-e{self.params.stderr_file}')
+        if self.chdir:
+            args.append(f'-c{self.chdir}')
         return args
 
     def get_root_path(self) -> pathlib.Path:
@@ -247,7 +251,6 @@ class StupidSandbox(SandboxBase):
         stdout: Optional[IO[bytes] | int] = None,
         stderr: Optional[IO[bytes] | int] = None,
         preexec_fn=None,
-        close_fds: bool = True,
     ) -> subprocess.Popen:
         """Execute the given command in the sandbox using
         subprocess.Popen, assigning the corresponding standard file
@@ -291,7 +294,6 @@ class StupidSandbox(SandboxBase):
                 stdout=stdout,
                 stderr=stderr,
                 preexec_fn=preexec_fn,
-                close_fds=close_fds,
             )
         except OSError:
             logger.critical(
@@ -321,55 +323,13 @@ class StupidSandbox(SandboxBase):
 
         """
 
-        def preexec_fn(self: 'StupidSandbox'):
-            """Set limits for the child process."""
-            if self.chdir:
-                os.chdir(self.chdir)
-
-        # Setup std*** redirection
-        if self.params.stdin_file:
-            stdin_fd = os.open(
-                os.path.join(self._path, self.params.stdin_file), os.O_RDONLY
-            )
-        else:
-            stdin_fd = subprocess.PIPE
-        if self.params.stdout_file:
-            stdout_fd = os.open(
-                os.path.join(self._path, self.params.stdout_file),
-                os.O_WRONLY | os.O_TRUNC | os.O_CREAT,
-                stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR,
-            )
-        else:
-            stdout_fd = subprocess.PIPE
-        if self.params.stderr_file:
-            if self.params.stderr_file == sandbox.MERGE_STDERR:
-                stderr_fd = subprocess.STDOUT
-            else:
-                stderr_fd = os.open(
-                    os.path.join(self._path, self.params.stderr_file),
-                    os.O_WRONLY | os.O_TRUNC | os.O_CREAT,
-                    stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR,
-                )
-        else:
-            stderr_fd = subprocess.PIPE
-
         # Actually call the Popen
         self.popen = self._popen(
             command,
-            stdin=stdin_fd,
-            stdout=stdout_fd,
-            stderr=stderr_fd,
-            preexec_fn=partial(preexec_fn, self),
-            close_fds=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
-
-        # Close file descriptors passed to the child
-        if self.params.stdin_file:
-            os.close(stdin_fd)
-        if self.params.stdout_file:
-            os.close(stdout_fd)
-        if self.params.stderr_file and self.params.stderr_file != sandbox.MERGE_STDERR:
-            os.close(stderr_fd)
 
         # If the caller wants us to wait for completion, we also avoid
         # std*** to interfere with command. Otherwise we let the

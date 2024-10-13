@@ -3,6 +3,7 @@ import os
 import pathlib
 import resource
 import signal
+import stat
 import sys
 from math import ceil
 from time import monotonic
@@ -13,6 +14,10 @@ from typing import List, Optional
 class Options:
     output_file: str
     argv: List[str]
+    chdir: Optional[str] = None
+    stdin_file: Optional[str] = None
+    stdout_file: Optional[str] = None
+    stderr_file: Optional[str] = None
     time_limit: Optional[float] = None
     wall_time_limit: Optional[float] = None
     memory_limit: Optional[int] = None
@@ -34,6 +39,14 @@ def parse_opts() -> Options:
             options.wall_time_limit = float(opt[2:])
         elif opt.startswith('-m'):
             options.memory_limit = int(opt[2:]) * 1024
+        elif opt.startswith('-i'):
+            options.stdin_file = opt[2:]
+        elif opt.startswith('-o'):
+            options.stdout_file = opt[2:]
+        elif opt.startswith('-e'):
+            options.stderr_file = opt[2:]
+        elif opt.startswith('-c'):
+            options.chdir = opt[2:]
         else:
             raise Exception(f'Invalid option {opt}')
         num_opts += 1
@@ -55,6 +68,27 @@ def set_rlimits(options: Options):
         time_limit_in_ms = int(options.time_limit * 1000)
         rlimit_cpu = int((time_limit_in_ms + 999) // 1000)
         resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
+
+
+def redirect_fds(options: Options):
+    files = [options.stdin_file, options.stdout_file, options.stderr_file]
+
+    for i, file in enumerate(files):
+        if file is None:
+            continue
+        open_args = [
+            os.O_WRONLY | os.O_TRUNC | os.O_CREAT,
+            stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IWUSR,
+        ]
+        if i == 0:
+            # stdin
+            open_args = [os.O_RDONLY]
+        fd = os.open(
+            file,
+            *open_args,
+        )
+        os.dup2(fd, i)
+        os.close(fd)
 
 
 def wait_and_finish(pid: int, options: Options, start_time: float):
@@ -102,7 +136,10 @@ def main():
     start_time = monotonic()
     sub_pid = os.fork()
     if sub_pid == 0:
-        # set_rlimits(options)
+        if options.chdir is not None:
+            os.chdir(options.chdir)
+        set_rlimits(options)
+        redirect_fds(options)
         os.execvp(options.argv[0], options.argv)
 
     def handle_alarm(*args, **kwargs):
