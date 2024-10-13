@@ -168,14 +168,16 @@ def _process_input_artifacts(artifacts: GradingArtifacts, sandbox: SandboxBase):
                 input_artifact.digest.value,
                 override=True,
                 executable=input_artifact.executable,
+                try_symlink=True,
             )
             continue
         assert input_artifact.src is not None
-        sandbox.create_file_from_bytes(
+        sandbox.create_file_from_other_file(
             input_artifact.dest,
-            (artifacts.root / input_artifact.src).read_bytes(),
+            artifacts.root / input_artifact.src,
             executable=input_artifact.executable,
             override=True,
+            try_symlink=True,
         )
 
 

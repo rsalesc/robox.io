@@ -138,6 +138,10 @@ class Storage(ABC):
         """
         pass
 
+    @abstractmethod
+    def path_for_symlink(self, filename: str) -> Optional[pathlib.Path]:
+        pass
+
 
 class NullStorage(Storage):
     """This backend is always empty, it just drops each file that
@@ -170,6 +174,9 @@ class NullStorage(Storage):
 
     def list(self) -> List[FileWithDescription]:
         return list()
+
+    def path_for_symlink(self, digest: str) -> Optional[pathlib.Path]:
+        return None
 
 
 class FilesystemStorage(Storage):
@@ -269,3 +276,9 @@ class FilesystemStorage(Storage):
                     )
                 )
         return res
+
+    def path_for_symlink(self, filename: str) -> Optional[pathlib.Path]:
+        file_path = self.path / filename
+        if not file_path.is_file():
+            raise KeyError('File not found.')
+        return file_path

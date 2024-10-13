@@ -118,7 +118,7 @@ class StupidSandbox(SandboxBase):
         """
         if self.log is None:
             return None
-        return float(self.log['time-wall'])
+        return float(self.log['time'])
 
     # TODO - It returns the best known approximation of wall clock
     # time; unfortunately I have no way to compute wall clock time

@@ -380,12 +380,25 @@ class SandboxBase(abc.ABC):
         os.chmod(str(real_path), mod)
         return file_
 
+    def create_symlink(
+        self, path: pathlib.Path, from_path: pathlib.Path, override: bool = False
+    ) -> Optional[pathlib.Path]:
+        real_path = self.relative_path(path)
+        if override:
+            real_path.unlink(missing_ok=True)
+        try:
+            real_path.symlink_to(from_path.resolve())
+        except NotImplementedError:
+            return None
+        return real_path
+
     def create_file_from_storage(
         self,
         path: pathlib.Path,
         digest: str,
         executable: bool = False,
         override: bool = False,
+        try_symlink: bool = False,
     ):
         """Write a file taken from FS in the sandbox.
 
@@ -394,6 +407,17 @@ class SandboxBase(abc.ABC):
         executable (bool): to set permissions.
 
         """
+        if try_symlink and executable:
+            symlink_path = self.file_cacher.path_for_symlink(digest)
+            if symlink_path is not None:
+                created = self.create_symlink(
+                    path,
+                    from_path=symlink_path,
+                    override=override,
+                )
+                if created is not None:
+                    created.chmod(0o755)
+                    return
         with self.create_file(path, executable, override=override) as dest_fobj:
             self.file_cacher.get_file_to_fobj(digest, dest_fobj)
 
@@ -413,6 +437,34 @@ class SandboxBase(abc.ABC):
         """
         with self.create_file(path, executable, override=override) as dest_fobj:
             dest_fobj.write(content)
+
+    def create_file_from_other_file(
+        self,
+        path: pathlib.Path,
+        from_path: pathlib.Path,
+        executable: bool = False,
+        override: bool = False,
+        try_symlink: bool = False,
+    ):
+        """Write a file taken from FS in the sandbox.
+
+        path (Path): relative path of the file inside the sandbox.
+        digest (string): digest of the file in FS.
+        executable (bool): to set permissions.
+
+        """
+        if try_symlink and executable:
+            created = self.create_symlink(
+                path,
+                from_path,
+                override=override,
+            )
+            if created is not None:
+                created.chmod(0o755)
+                return
+        with self.create_file(path, executable, override=override) as dest_fobj:
+            with from_path.open('rb') as src_fobj:
+                storage.copyfileobj(src_fobj, dest_fobj)
 
     def create_file_from_string(
         self,

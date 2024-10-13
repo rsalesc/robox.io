@@ -217,6 +217,13 @@ class FileCacher:
 
         return typing.cast(IO[bytes], self._load(digest, False))
 
+    def path_for_symlink(self, digest: str) -> Optional[pathlib.Path]:
+        if digest == storage.TOMBSTONE:
+            raise TombstoneError()
+
+        logger.debug('Getting symlink file path %s.', digest)
+        return self.backend.path_for_symlink(digest)
+
     def get_file_content(self, digest: str) -> bytes:
         """Retrieve a file from the storage.
 
