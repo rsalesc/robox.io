@@ -64,7 +64,7 @@ app.add_typer(
 )
 
 
-@app.command('ui')
+@app.command('ui', hidden=True)
 def ui():
     ui_pkg.start()
 
