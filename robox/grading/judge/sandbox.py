@@ -9,7 +9,7 @@ import stat
 import subprocess
 import sys
 import typing
-from typing import IO, Any, Dict, List, Optional, Union
+from typing import IO, Any, Dict, List, Optional
 
 import pydantic
 
@@ -552,8 +552,9 @@ class SandboxBase(abc.ABC):
 
     @abc.abstractmethod
     def execute_without_std(
-        self, command: List[str], wait: bool = False
-    ) -> Union[bool, subprocess.Popen]:
+        self,
+        command: List[str],
+    ) -> bool:
         """Execute the given command in the sandbox using
         subprocess.Popen and discarding standard input, output and
         error. More specifically, the standard input gets closed just
@@ -582,8 +583,7 @@ class SandboxBase(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
-    def translate_box_exitcode(self, _: int) -> bool:
+    def translate_box_exitcode(self, exitcode: int) -> bool:
         """Translate the sandbox exit code to a boolean sandbox success.
 
         _ (int): the exit code of the sandbox.
@@ -593,7 +593,7 @@ class SandboxBase(abc.ABC):
             did).
 
         """
-        pass
+        return exitcode == 0
 
     @abc.abstractmethod
     def initialize(self):

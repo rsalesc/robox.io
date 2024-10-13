@@ -7,7 +7,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
-from typing import IO, Any, Dict, List, Optional, Union
+from typing import IO, Any, Dict, List, Optional
 
 from robox.config import get_app_path
 from robox.grading.judge.cacher import FileCacher
@@ -574,8 +574,9 @@ class IsolateSandbox(SandboxBase):
             f.write('cg-mem:0\n')
 
     def execute_without_std(
-        self, command: List[str], wait: bool = False
-    ) -> Union[bool, subprocess.Popen]:
+        self,
+        command: List[str],
+    ) -> bool:
         """Execute the given command in the sandbox using
         subprocess.Popen and discarding standard input, output and
         error. More specifically, the standard input gets closed just
@@ -585,13 +586,9 @@ class IsolateSandbox(SandboxBase):
 
         command ([string]): executable filename and arguments of the
             command.
-        wait (bool): True if this call is blocking, False otherwise
 
-        return (bool|Popen): if the call is blocking, then return True
-            if the sandbox didn't report errors (caused by the sandbox
-            itself), False otherwise; if the call is not blocking,
-            return the Popen object from subprocess.
-
+        return (bool|Popen): return True if the sandbox didn't report
+            errors (caused by the sandbox itself), False otherwise.
         """
         popen = self._popen(
             command,
@@ -604,15 +601,12 @@ class IsolateSandbox(SandboxBase):
         # If the caller wants us to wait for completion, we also avoid
         # std*** to interfere with command. Otherwise we let the
         # caller handle these issues.
-        if wait:
-            with popen as p:
-                exitcode = self.translate_box_exitcode(
-                    wait_without_std([p], actually_pipe_to_stdout=self.debug)[0]
-                )
-            self.hydrate_logs()
-            return exitcode
-        else:
-            return popen
+        with popen as p:
+            exitcode = self.translate_box_exitcode(
+                wait_without_std([p], actually_pipe_to_stdout=self.debug)[0]
+            )
+        self.hydrate_logs()
+        return exitcode
 
     def translate_box_exitcode(self, exitcode: int) -> bool:
         """Translate the sandbox exit code to a boolean sandbox success.

@@ -35,7 +35,7 @@ int main() {
     sandbox.params.stderr_file = pathlib.PosixPath('run.err')
 
     sandbox.execute_without_std(
-        ['/usr/bin/g++', '-std=c++17', '-o', 'executable', 'run.cpp'], wait=True
+        ['/usr/bin/g++', '-std=c++17', '-o', 'executable', 'run.cpp'],
     )
     try:
         sandbox.hydrate_logs()

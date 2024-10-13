@@ -8,13 +8,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import IO, Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from robox.grading.judge.cacher import FileCacher
 from robox.grading.judge.sandbox import (
     SandboxBase,
     SandboxParams,
-    wait_without_std,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,6 +30,7 @@ class StupidSandbox(SandboxBase):
 
     exec_num: int
     popen: Optional[subprocess.Popen]
+    returncode: Optional[int]
     log: Optional[Dict[str, str]]
 
     def __init__(
@@ -58,6 +58,7 @@ class StupidSandbox(SandboxBase):
         self.exec_num = -1
         self.popen = None
         self.log = None
+        self.returncode = None
 
         logger.debug("Sandbox in `%s' created, using stupid box.", self._path)
 
@@ -117,7 +118,7 @@ class StupidSandbox(SandboxBase):
         """
         if self.log is None:
             return None
-        return float(self.log['time'])
+        return float(self.log['time-wall'])
 
     # TODO - It returns the best known approximation of wall clock
     # time; unfortunately I have no way to compute wall clock time
@@ -180,8 +181,7 @@ class StupidSandbox(SandboxBase):
         return (string): the main reason why the sandbox terminated.
 
         """
-        assert self.popen
-        if self.popen.returncode != 0:
+        if self.returncode != 0:
             return self.EXIT_SANDBOX_ERROR
         status_list = self.get_status_list()
         if 'WT' in status_list:
@@ -244,30 +244,25 @@ class StupidSandbox(SandboxBase):
             key, value = items
             self.log[key] = value.strip()
 
-    def _popen(
+    def execute_without_std(
         self,
         command: List[str],
-        stdin: Optional[IO[bytes] | int] = None,
-        stdout: Optional[IO[bytes] | int] = None,
-        stderr: Optional[IO[bytes] | int] = None,
-        preexec_fn=None,
-    ) -> subprocess.Popen:
+    ) -> bool:
         """Execute the given command in the sandbox using
-        subprocess.Popen, assigning the corresponding standard file
-        descriptors.
+        subprocess.Popen and discarding standard input, output and
+        error. More specifically, the standard input gets closed just
+        after the execution has started; standard output and error are
+        read until the end, in a way that prevents the execution from
+        being blocked because of insufficient buffering.
 
         command ([string]): executable filename and arguments of the
             command.
-        stdin (file|None): a file descriptor/object or None.
-        stdout (file|None): a file descriptor/object or None.
-        stderr (file|None): a file descriptor/object or None.
-        preexec_fn (function|None): to be called just before execve()
-            or None.
-        close_fds (bool): close all file descriptor before executing.
 
-        return (object): popen object.
+        return (bool): True if the sandbox didn't report errors
+            (caused by the sandbox itself), False otherwise
 
         """
+
         self.exec_num += 1
 
         logger.debug(
@@ -287,70 +282,14 @@ class StupidSandbox(SandboxBase):
             + self.get_timeit_args()
             + command
         )
-        try:
-            p = subprocess.Popen(
-                real_command,
-                stdin=stdin,
-                stdout=stdout,
-                stderr=stderr,
-                preexec_fn=preexec_fn,
-            )
-        except OSError:
-            logger.critical(
-                'Failed to execute program in sandbox ' "with command: `%s'.",
-                ' '.join(command),
-                exc_info=True,
-            )
-            raise
-
-        return p
-
-    def execute_without_std(
-        self, command: List[str], wait: bool = False
-    ) -> Union[bool, subprocess.Popen]:
-        """Execute the given command in the sandbox using
-        subprocess.Popen and discarding standard input, output and
-        error. More specifically, the standard input gets closed just
-        after the execution has started; standard output and error are
-        read until the end, in a way that prevents the execution from
-        being blocked because of insufficient buffering.
-
-        command ([string]): executable filename and arguments of the
-            command.
-
-        return (bool): True if the sandbox didn't report errors
-            (caused by the sandbox itself), False otherwise
-
-        """
-
-        # Actually call the Popen
-        self.popen = self._popen(
-            command,
+        self.returncode = subprocess.call(
+            real_command,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-
-        # If the caller wants us to wait for completion, we also avoid
-        # std*** to interfere with command. Otherwise we let the
-        # caller handle these issues.
-        if wait:
-            with self.popen as p:
-                # Ensure popen fds are closed.
-                res = self.translate_box_exitcode(wait_without_std([p])[0])
-                # Ensure logs are hydrated.
-                self.hydrate_logs()
-                return res
-        else:
-            return self.popen
-
-    def translate_box_exitcode(self, _):
-        """Translate the sandbox exit code to a boolean sandbox success.
-
-        This sandbox never fails.
-
-        """
-        return True
+        self.hydrate_logs()
+        return self.translate_box_exitcode(self.returncode)
 
     def cleanup(self, delete=False):
         """See Sandbox.cleanup()."""

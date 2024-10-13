@@ -288,7 +288,7 @@ def compile(
             # Include from sandbox directory to import bits/stdc++.h.
             cmd.append('-I.')
 
-        if not sandbox.execute_without_std(cmd, wait=True):
+        if not sandbox.execute_without_std(cmd):
             console.print(
                 '[error]Sandbox crashed while processing command:[/error]',
                 utils.highlight_json_obj(cmd),
@@ -336,7 +336,7 @@ def run(
     cmd = shlex.split(command)
     sandbox.set_params(params)
 
-    if not sandbox.execute_without_std(cmd, wait=True):
+    if not sandbox.execute_without_std(cmd):
         console.print(
             '[error]Sandbox crashed while processing command:[/error]',
             utils.highlight_json_obj(cmd),
@@ -413,7 +413,7 @@ def _check(
     )
 
     if not sandbox.execute_without_std(
-        ['./checker', 'input.txt', 'output.txt', 'expected.txt'], wait=True
+        ['./checker', 'input.txt', 'output.txt', 'expected.txt'],
     ):
         console.print(
             '[error]Sandbox crashed while running checker.[/error]',

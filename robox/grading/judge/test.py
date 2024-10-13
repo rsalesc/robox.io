@@ -21,7 +21,7 @@ def main():
 
     sandbox.params.stdout_file = pathlib.PosixPath('run.out')
 
-    sandbox.execute_without_std(['python3', 'run.py'], wait=True)
+    sandbox.execute_without_std(['ls'])
     try:
         sandbox.hydrate_logs()
     except Exception:
@@ -29,6 +29,7 @@ def main():
 
     print(sandbox.get_human_exit_description())
     print(sandbox.get_stats())
+    print(sandbox.log)
 
     print(sandbox.get_file_to_string(pathlib.PosixPath('run.out')))
 
