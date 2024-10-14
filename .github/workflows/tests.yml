@@ -11,8 +11,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.9.x', '3.10.x', '3.11.x', '3.12.x']
-        runs-on: [ubuntu-latest]
-    name: Python ${{ matrix.python-version }}
+        runs-on: [ubuntu-latest, macos-latest]
+    name: ${{matrix.runs-on }} - Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure Git Credentials
@@ -51,11 +51,10 @@ jobs:
       #----------------------------------------------
       - name: Install project
         run: poetry install --no-interaction
-      - name: Set up GCC
-        uses: egor-tensin/setup-gcc@v1
+      - name: Setup GCC
+        uses: Dup4/actions-setup-gcc@v1
         with:
           version: latest
-          platform: x64
       - run: |
           source .venv/bin/activate
           pytest
