@@ -294,6 +294,8 @@ def compile(
             console.print(
                 '[error]Sandbox crashed while processing command:[/error]',
                 utils.highlight_json_obj(cmd),
+                '[error]and logs[/error]',
+                sandbox.debug_message(),
             )
             return False
 
@@ -342,6 +344,8 @@ def run(
         console.print(
             '[error]Sandbox crashed while processing command:[/error]',
             utils.highlight_json_obj(cmd),
+            '[error]and logs[/error]',
+            sandbox.debug_message(),
         )
         return None
 
@@ -419,6 +423,8 @@ def _check(
     ):
         console.print(
             '[error]Sandbox crashed while running checker.[/error]',
+            '[error]and logs[/error]',
+            sandbox.debug_message(),
         )
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
 

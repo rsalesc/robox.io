@@ -669,6 +669,9 @@ class SandboxBase(abc.ABC):
         """
         pass
 
+    def debug_message(self) -> Any:
+        return 'N/A'
+
 
 class Truncator(io.RawIOBase):
     """Wrap a file-like object to simulate truncation.

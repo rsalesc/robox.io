@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from robox.grading.judge.cacher import FileCacher
 from robox.grading.judge.sandbox import (
@@ -290,6 +290,9 @@ class StupidSandbox(SandboxBase):
         )
         self.hydrate_logs()
         return self.translate_box_exitcode(self.returncode)
+
+    def debug_message(self) -> Any:
+        return self.log
 
     def cleanup(self, delete=False):
         """See Sandbox.cleanup()."""
