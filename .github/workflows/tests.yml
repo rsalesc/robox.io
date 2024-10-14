@@ -51,11 +51,11 @@ jobs:
       #----------------------------------------------
       - name: Install project
         run: poetry install --no-interaction
-      - name: Install GCC
-        run: |
-         sudo apt update
-         sudo apt install gcc-10 g++-10
-        shell: bash
+      - name: Set up GCC
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: latest
+          platform: x64
       - run: |
           source .venv/bin/activate
           pytest
