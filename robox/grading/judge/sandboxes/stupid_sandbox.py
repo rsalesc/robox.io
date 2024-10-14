@@ -236,7 +236,7 @@ class StupidSandbox(SandboxBase):
 
     def hydrate_logs(self):
         self.log = None
-        if not self.get_current_log_name().is_file():
+        if not self.relative_path(self.get_current_log_name()).is_file():
             return
         self.log = {}
         raw_log = self.get_file_to_string(self.get_current_log_name(), maxlen=None)
