@@ -295,7 +295,7 @@ class StupidSandbox(SandboxBase):
         return self.translate_box_exitcode(self.returncode)
 
     def debug_message(self) -> Any:
-        return f'{self.returncode} {self.log}'
+        return f'returncode = {self.returncode}\nlogs = {self.log}\ntimeit_args = {self.get_timeit_args()}'
 
     def cleanup(self, delete=False):
         """See Sandbox.cleanup()."""
