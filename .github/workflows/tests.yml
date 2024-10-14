@@ -6,11 +6,13 @@ on:
       - main
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.9.x', '3.10.x', '3.11.x', '3.12.x']
-    name: Python ${{ matrix.python-version }} pytest
+        runs-on: [ubuntu-latest, macos-latest]
+    name: Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure Git Credentials
