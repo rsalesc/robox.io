@@ -448,9 +448,12 @@ def _print_solution_outcome(
     pkg = package.find_problem_package_or_die()
 
     bad_verdicts = set()
+    no_tle_verdicts = set()
     for eval in evals:
         if eval.result.outcome != Outcome.ACCEPTED:
             bad_verdicts.add(eval.result.outcome)
+        if eval.result.no_tle_outcome is not None and eval.result.no_tle_outcome != Outcome.ACCEPTED:
+            no_tle_verdicts.add(eval.result.no_tle_outcome)
 
     unmatched_bad_verdicts = set(
         v for v in bad_verdicts if not solution.outcome.match(v)
@@ -471,7 +474,7 @@ def _print_solution_outcome(
     console.print()
     evals_time = _get_evals_time_in_ms(evals)
     if (
-        not (matched_bad_verdicts - {Outcome.TIME_LIMIT_EXCEEDED})
+        not ((bad_verdicts | no_tle_verdicts) - {Outcome.TIME_LIMIT_EXCEEDED})
         and verification.value >= VerificationLevel.FULL.value
         and evals_time > pkg.timeLimit
         and evals_time < pkg.timeLimit * 2
