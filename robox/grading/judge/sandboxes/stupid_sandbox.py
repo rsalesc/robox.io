@@ -287,7 +287,7 @@ class StupidSandbox(SandboxBase):
         )
         self.returncode = subprocess.call(
             real_command,
-            stdin=subprocess.DEVNULL,
+            stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )

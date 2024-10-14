@@ -91,7 +91,12 @@ def redirect_fds(options: Options):
         os.close(fd)
 
 
-def wait_and_finish(pid: int, options: Options, start_time: float):
+def wait_and_finish(
+    pid: int,
+    options: Options,
+    start_time: float,
+    alarm_msg: Optional[List[Optional[str]]] = None,
+):
     _, exitstatus, ru = os.wait4(pid, 0)
     wall_time = monotonic() - start_time
     cpu_time = get_cpu_time(ru)
@@ -125,6 +130,11 @@ def wait_and_finish(pid: int, options: Options, start_time: float):
         status_str = ','.join(status)
         entries.append(f'status: {status_str}')
 
+    if alarm_msg:
+        alarm_str = ','.join(msg for msg in alarm_msg if msg is not None)
+        if alarm_str:
+            entries.append(f'alarm-msg: {alarm_str}')
+
     output_file = pathlib.Path(sys.argv[1])
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_text('\n'.join(entries) + '\n')
@@ -142,20 +152,26 @@ def main():
         redirect_fds(options)
         os.execvp(options.argv[0], options.argv)
 
+    alarm_msg: List[Optional[str]] = [None]
+
     def handle_alarm(*args, **kwargs):
+        nonlocal alarm_msg
         wall_time = monotonic() - start_time
         if options.wall_time_limit is not None and wall_time > options.wall_time_limit:
+            alarm_msg[0] = 'wall timelimit'
             os.kill(sub_pid, 9)
             return
         ru = resource.getrusage(resource.RUSAGE_CHILDREN)
         if options.time_limit is not None:
             cpu_time = get_cpu_time(ru)
             if cpu_time > options.time_limit:
+                alarm_msg[0] = 'timelimit'
                 os.kill(sub_pid, 9)
                 return
         if options.memory_limit is not None:
             memory_used = get_memory_usage(ru)
             if memory_used > options.memory_limit:
+                alarm_msg[0] = 'memorylimit'
                 os.kill(sub_pid, 9)
                 return
 
@@ -163,7 +179,7 @@ def main():
 
     signal.alarm(1)
     signal.signal(signal.SIGALRM, handle_alarm)
-    wait_and_finish(sub_pid, options, start_time)
+    wait_and_finish(sub_pid, options, start_time, alarm_msg=alarm_msg)
 
 
 if __name__ == '__main__':
