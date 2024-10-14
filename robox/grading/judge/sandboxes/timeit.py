@@ -148,7 +148,7 @@ def main():
     if sub_pid == 0:
         if options.chdir is not None:
             os.chdir(options.chdir)
-        set_rlimits(options)
+        # set_rlimits(options)
         redirect_fds(options)
         os.execvp(options.argv[0], options.argv)
 
