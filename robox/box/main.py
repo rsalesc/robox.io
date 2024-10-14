@@ -129,6 +129,7 @@ def run(
             tracked_solutions=tracked_solutions,
             check=check,
             group_first=detailed,
+            verification=VerificationLevel(verification),
         )
 
     console.console.print()

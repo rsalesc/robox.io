@@ -33,4 +33,4 @@ solutions:
   - path: "tle-and-incorrect.sol.cpp"
     outcome: "tle"
   - path: "hard-tle.sol.cpp"
-    outcome: "tle+rte" # Will RTE in Stupid, TLE in isolate
+    outcome: "tle"

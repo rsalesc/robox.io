@@ -33,7 +33,5 @@ def test_solutions(pkg_from_testdata: pathlib.Path):
     # no TLE outcome should be WA (soft TLE)
     assert res[4]['gen1'][4].result.no_tle_outcome == Outcome.WRONG_ANSWER
     # hard TLE
-    assert res[5]['gen1'][4].result.outcome in [
-        Outcome.RUNTIME_ERROR,
-        Outcome.TIME_LIMIT_EXCEEDED,
-    ]
+    assert res[5]['gen1'][4].result.outcome == Outcome.TIME_LIMIT_EXCEEDED
+    assert res[5]['gen1'][4].result.no_tle_outcome is None

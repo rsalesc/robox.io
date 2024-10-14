@@ -49,11 +49,14 @@ def _check_pre_output(run_log: Optional[RunLog]) -> CheckerResult:
 
 
 def _convert_tle(result: CheckerResult, run_log: Optional[RunLog]) -> CheckerResult:
+    if result.outcome == Outcome.TIME_LIMIT_EXCEEDED:
+        # This already is a TLE outcome.
+        return result
     pkg = package.find_problem_package_or_die()
     if (
         run_log is not None
         and run_log.time is not None
-        and run_log.time * 1000 > pkg.timeLimit
+        and run_log.time * 1000 >= pkg.timeLimit
     ):
         # Soft TLE.
         result.no_tle_outcome = result.outcome
