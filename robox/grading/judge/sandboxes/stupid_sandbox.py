@@ -6,6 +6,7 @@ import logging
 import pathlib
 import shutil
 import subprocess
+import signal
 import sys
 import tempfile
 from typing import Any, Dict, List, Optional
@@ -293,6 +294,10 @@ class StupidSandbox(SandboxBase):
         )
         self.hydrate_logs()
         return self.translate_box_exitcode(self.returncode)
+
+    def translate_box_exitcode(self, exitcode: int) -> bool:
+        # SIGALRM can be safely ignored, just in case it leaks away.
+        return super().translate_box_exitcode(exitcode) or -exitcode == signal.SIGALRM
 
     def debug_message(self) -> Any:
         return f'returncode = {self.returncode}\nlogs = {self.log}\ntimeit_args = {self.get_timeit_args()}'

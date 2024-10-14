@@ -181,6 +181,12 @@ def main():
     signal.signal(signal.SIGALRM, handle_alarm)
     wait_and_finish(sub_pid, options, start_time, alarm_msg=alarm_msg)
 
+    # Cancel alarm before exiting to avoid surprises.
+    signal.alarm(0)
+
+    # Exit gracefully.
+    sys.exit()
+
 
 if __name__ == '__main__':
     main()
