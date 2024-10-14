@@ -285,8 +285,8 @@ class StupidSandbox(SandboxBase):
         self.returncode = subprocess.call(
             real_command,
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         self.hydrate_logs()
         return self.translate_box_exitcode(self.returncode)
