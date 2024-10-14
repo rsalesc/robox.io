@@ -235,6 +235,9 @@ class StupidSandbox(SandboxBase):
         return pathlib.Path(f'logs.{self.exec_num}')
 
     def hydrate_logs(self):
+        self.log = None
+        if not self.get_current_log_name().is_file():
+            return
         self.log = {}
         raw_log = self.get_file_to_string(self.get_current_log_name(), maxlen=None)
         for line in raw_log.splitlines():
@@ -282,7 +285,6 @@ class StupidSandbox(SandboxBase):
             + self.get_timeit_args()
             + command
         )
-        self.log = None
         self.returncode = subprocess.call(
             real_command,
             stdin=subprocess.DEVNULL,
