@@ -67,7 +67,7 @@ def set_rlimits(options: Options):
     if options.time_limit is not None:
         time_limit_in_ms = int(options.time_limit * 1000)
         rlimit_cpu = int((time_limit_in_ms + 999) // 1000)
-        resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu))
+        resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu + 1))
 
 
 def redirect_fds(options: Options):
@@ -148,7 +148,7 @@ def main():
     if sub_pid == 0:
         if options.chdir is not None:
             os.chdir(options.chdir)
-        # set_rlimits(options)
+        set_rlimits(options)
         redirect_fds(options)
         os.execvp(options.argv[0], options.argv)
 
