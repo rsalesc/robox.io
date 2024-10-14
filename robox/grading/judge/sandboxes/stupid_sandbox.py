@@ -282,6 +282,7 @@ class StupidSandbox(SandboxBase):
             + self.get_timeit_args()
             + command
         )
+        self.log = None
         self.returncode = subprocess.call(
             real_command,
             stdin=subprocess.DEVNULL,
@@ -292,7 +293,7 @@ class StupidSandbox(SandboxBase):
         return self.translate_box_exitcode(self.returncode)
 
     def debug_message(self) -> Any:
-        return self.log
+        return f'{self.returncode} {self.log}'
 
     def cleanup(self, delete=False):
         """See Sandbox.cleanup()."""
