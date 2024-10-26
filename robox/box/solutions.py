@@ -510,6 +510,36 @@ def _print_solution_header(solution: Solution, console: rich.console.Console):
     console.print(f'({solution_testdir})')
 
 
+def _print_timing(
+    console: rich.console.Console,
+    skeleton: SolutionReportSkeleton,
+    structured_evaluation: StructuredEvaluation,
+):
+    slowest_good = None
+    fastest_bad = None
+    for solution in skeleton.solutions:
+        evals_per_group = structured_evaluation[str(solution.path)]
+        all_evals = []
+        for evals in evals_per_group.values():
+            all_evals.extend([eval for eval in evals if eval is not None])
+        solution_time = _get_evals_time_in_ms(all_evals)
+        if solution.outcome.match(Outcome.ACCEPTED):
+            if slowest_good is None or solution_time > slowest_good:
+                slowest_good = solution_time
+        if solution.outcome.match(Outcome.TIME_LIMIT_EXCEEDED):
+            if fastest_bad is None or solution_time < fastest_bad:
+                fastest_bad = solution_time
+
+    if slowest_good is None and fastest_bad is None:
+        return
+
+    console.print('[status]Timing summary:[/status]')
+    if slowest_good is not None:
+        console.print(f'Slowest [success]OK[/success] solution: {slowest_good} ms')
+    if fastest_bad is not None:
+        console.print(f'Fastest [error]slow[/error] solution: {fastest_bad} ms')
+
+
 def _render_detailed_group_table(
     group: TestcaseGroup,
     skeleton: SolutionReportSkeleton,
@@ -569,6 +599,7 @@ def _print_detailed_run_report(
     result: RunSolutionResult,
     console: rich.console.Console,
     structured_evaluations: Iterator[StructuredEvaluation],
+    timing: bool = True,
 ):
     structured_evaluations = seekable(structured_evaluations)
     for group in result.skeleton.groups:
@@ -599,6 +630,9 @@ def _print_detailed_run_report(
         console.print()
 
     console.print()
+
+    if timing:
+        _print_timing(console, result.skeleton, structured_evaluation)
     return ok
 
 
@@ -607,13 +641,15 @@ def print_run_report(
     console: rich.console.Console,
     verification: environment.VerificationParam,
     detailed: bool = False,
+    timing: bool = True,
 ) -> bool:
     pkg = package.find_problem_package_or_die()
-    structured_evaluations = _consume_and_key_evaluation_items(
-        result.items, result.skeleton
-    )
+    items = seekable(result.items)
+    structured_evaluations = _consume_and_key_evaluation_items(items, result.skeleton)
     if detailed:
-        return _print_detailed_run_report(result, console, structured_evaluations)
+        return _print_detailed_run_report(
+            result, console, structured_evaluations, timing=timing
+        )
 
     assert not result.skeleton.group_first
     # Since we're now streaming the evaluation results, the for-loop is a bit
@@ -639,7 +675,7 @@ def print_run_report(
         console.print()
         ok = ok and cur_ok
 
-    for item in result.items:
+    for item in items:
         eval = item.eval
         solution = pkg.solutions[item.solution_index]
         is_new_solution = last_solution is None or solution.path != last_solution.path
@@ -672,5 +708,8 @@ def print_run_report(
     console.print(f'({get_evals_formatted_time(group_evals)})', end=' ')
     console.print()
     print_last_solution()
+
+    items.seek(0)
+    _print_timing(console, result.skeleton, list(structured_evaluations)[-1])
 
     return ok
