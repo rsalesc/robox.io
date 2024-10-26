@@ -104,9 +104,6 @@ def wait_and_finish(
 
     entries = []
     exitcode = os.waitstatus_to_exitcode(exitstatus)
-    entries.append(f'time: {cpu_time:.3f}')
-    entries.append(f'time-wall: {wall_time:.3f}')
-    entries.append(f'mem: {memory_used}')
     entries.append(f'exit-code: {exitcode}')
     if exitcode < 0:
         entries.append(f'exit-sig: {-exitcode}')
@@ -120,6 +117,7 @@ def wait_and_finish(
         cpu_time > options.time_limit or -exitcode == 24
     ):
         status.add('TO')
+        cpu_time = max(cpu_time, options.time_limit)
     if options.wall_time_limit is not None and wall_time > options.wall_time_limit:
         status.add('WT')
         status.add('TO')
@@ -134,6 +132,10 @@ def wait_and_finish(
         alarm_str = ','.join(msg for msg in alarm_msg if msg is not None)
         if alarm_str:
             entries.append(f'alarm-msg: {alarm_str}')
+
+    entries.append(f'time: {cpu_time:.3f}')
+    entries.append(f'time-wall: {wall_time:.3f}')
+    entries.append(f'mem: {memory_used}')
 
     output_file = pathlib.Path(sys.argv[1])
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -180,6 +182,12 @@ def main():
     signal.alarm(1)
     signal.signal(signal.SIGALRM, handle_alarm)
     wait_and_finish(sub_pid, options, start_time, alarm_msg=alarm_msg)
+
+    # Cancel alarm before exiting to avoid surprises.
+    signal.alarm(0)
+
+    # Exit gracefully.
+    sys.exit()
 
 
 if __name__ == '__main__':

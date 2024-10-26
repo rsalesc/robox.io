@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Dict, List, Optional, Self, Union
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticCustomError
@@ -194,7 +194,7 @@ A generator script to call to generate testcases for this group.
     )
 
     @model_validator(mode='after')
-    def check_oneof(self) -> Self:
+    def check_oneof(self) -> 'TestcaseSubgroup':
         _check_oneof(
             self,
             [
