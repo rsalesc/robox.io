@@ -448,19 +448,23 @@ def _print_solution_outcome(
     pkg = package.find_problem_package_or_die()
 
     bad_verdicts = set()
-    no_tle_verdicts = set()
+    no_tle_bad_verdicts = set()
     for eval in evals:
         if eval.result.outcome != Outcome.ACCEPTED:
             bad_verdicts.add(eval.result.outcome)
-        if eval.result.no_tle_outcome is not None and eval.result.no_tle_outcome != Outcome.ACCEPTED:
-            no_tle_verdicts.add(eval.result.no_tle_outcome)
+        if (
+            eval.result.no_tle_outcome is not None
+            and eval.result.no_tle_outcome != Outcome.ACCEPTED
+        ):
+            no_tle_bad_verdicts.add(eval.result.no_tle_outcome)
 
     unmatched_bad_verdicts = set(
         v for v in bad_verdicts if not solution.outcome.match(v)
     )
     matched_bad_verdicts = bad_verdicts - unmatched_bad_verdicts
+    expected_outcome_is_bad = not solution.outcome.match(Outcome.ACCEPTED)
 
-    if unmatched_bad_verdicts:
+    if unmatched_bad_verdicts or (expected_outcome_is_bad and not matched_bad_verdicts):
         console.print('[error]FAILED[/error]', end=' ')
     else:
         console.print('[success]OK[/success]', end=' ')
@@ -470,13 +474,22 @@ def _print_solution_outcome(
     if unmatched_bad_verdicts:
         unmatched_bad_verdicts_names = set(v.name for v in unmatched_bad_verdicts)
         console.print(f', got: {" ".join(unmatched_bad_verdicts_names)}', end='')
+    elif expected_outcome_is_bad and not matched_bad_verdicts:
+        console.print(f', got: {Outcome.ACCEPTED.name}', end='')
 
     console.print()
     evals_time = _get_evals_time_in_ms(evals)
+    expected_outcome_is_tle = solution.outcome.match(Outcome.TIME_LIMIT_EXCEEDED)
     if (
-        not ((bad_verdicts | no_tle_verdicts) - {Outcome.TIME_LIMIT_EXCEEDED})
-        and verification.value >= VerificationLevel.FULL.value
-        and evals_time > pkg.timeLimit
+        # Running verification with double TL.
+        verification.value >= VerificationLevel.FULL.value
+        # Solution expects a TLE.
+        and expected_outcome_is_tle
+        # A TLE (or similar) has happened.
+        and matched_bad_verdicts
+        # The solution has no other bad verdicts except for TLEs in double TL.
+        and not ((bad_verdicts | no_tle_bad_verdicts) - {Outcome.TIME_LIMIT_EXCEEDED})
+        # The solution passes in double TL.
         and evals_time < pkg.timeLimit * 2
     ):
         console.print(
