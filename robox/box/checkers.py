@@ -1,6 +1,8 @@
 import pathlib
 from typing import Optional
 
+import typer
+
 from robox import console
 from robox.box import package
 from robox.box.code import compile_item, run_item
@@ -22,9 +24,9 @@ def compile_checker() -> str:
 
     try:
         digest = compile_item(checker)
-    except:
+    except Exception as e:
         console.console.print('[error]Failed compiling checker.[/error]')
-        raise
+        raise typer.Exit(1) from e
     return digest
 
 
@@ -74,10 +76,12 @@ def check(
     run_log: Optional[RunLog],
     testcase: Testcase,
     program_output: pathlib.Path,
+    skip_run_log: bool = False,
 ) -> CheckerResult:
-    result = _check_pre_output(run_log)
-    if result.outcome != Outcome.ACCEPTED:
-        return _convert_tle(result, run_log)
+    if not skip_run_log:
+        result = _check_pre_output(run_log)
+        if result.outcome != Outcome.ACCEPTED:
+            return _convert_tle(result, run_log)
 
     error = DigestHolder()
     inputs = [
@@ -101,7 +105,6 @@ def check(
         inputs=inputs,
         extra_args='input.txt output.txt expected.txt',
     )
-
     message = package.get_digest_as_string(error.value or '') or ''
 
     if checker_run_log is None or checker_run_log.exitcode not in [0, 1, 2, 3]:
@@ -114,4 +117,6 @@ def check(
     if checker_run_log.exitcode == 3:
         result = CheckerResult(outcome=Outcome.JUDGE_FAILED, message=message)
 
+    if skip_run_log:
+        return result
     return _convert_tle(result, run_log)

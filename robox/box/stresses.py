@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from robox import console
 from robox.box import checkers, package, validators
 from robox.box.code import compile_item, run_item
-from robox.box.schema import ExpectedOutcome, GeneratorCall, Stress, Testcase
+from robox.box.schema import CodeItem, ExpectedOutcome, GeneratorCall, Stress, Testcase
 from robox.box.solutions import compile_solutions, get_outcome_style_verdict
 from robox.grading.steps import (
     CheckerResult,
@@ -114,11 +114,46 @@ def expand_stress_args(pattern: List[StressArg]) -> List[str]:
     return [_expand_single_arg(arg) for arg in pattern]
 
 
+def _compile_finder(finder: CodeItem) -> str:
+    try:
+        digest = compile_item(finder)
+    except Exception as e:
+        console.console.print(
+            f'[error]Failed compiling finder [item]{finder.path}[/item].[/error]'
+        )
+        raise typer.Exit(1) from e
+    return digest
+
+
+def _run_finder(
+    finder: CodeItem,
+    finder_digest: str,
+    testcase: Testcase,
+    program_output: pathlib.Path,
+) -> bool:
+    finder_result = checkers.check(
+        finder_digest,
+        run_log=None,
+        testcase=testcase,
+        program_output=program_output,
+        skip_run_log=True,
+    )
+    if finder_result.outcome == Outcome.INTERNAL_ERROR:
+        console.console.print(
+            f'[error]Finder [item]{finder.path}[/item] failed during stress test.[/error]'
+        )
+        console.console.print('[error]Message:[/error]')
+        console.console.print(finder_result.message)
+        raise typer.Exit(1)
+    return finder_result.outcome != Outcome.ACCEPTED
+
+
 def run_stress(
     name: str,
     timeoutInSeconds: int,
     args: Optional[str] = None,
     solution: Optional[str] = None,
+    finders: Optional[List[pathlib.Path]] = None,
     findingsLimit: int = 1,
     check: bool = True,
     progress: Optional[StatusProgress] = None,
@@ -130,6 +165,12 @@ def run_stress(
             generator=GeneratorCall(name=name, args=args),
             solutions=[solution] if solution is not None else [],
             outcome=ExpectedOutcome.INCORRECT,
+            finders=[
+                CodeItem(path=finder, language=None, compilationFiles=[])
+                for finder in finders
+            ]
+            if finders is not None
+            else [],
         )
     else:
         stress = package.get_stress(name)
@@ -154,6 +195,9 @@ def run_stress(
             str(solution.path) for solution in solutions if solution is not None
         )
     )
+    if progress:
+        progress.update('Compiling finders...')
+    finders_digest = {finder.path: _compile_finder(finder) for finder in stress.finders}
 
     validator = validators.compile_main_validator()
 
@@ -275,6 +319,20 @@ def run_stress(
                 raise typer.Exit(1)
 
             if not stress.outcome.match(checker_result.outcome):
+                continue
+
+            finder_ok = True
+            for finder in stress.finders:
+                if finder.path not in finders_digest:
+                    continue
+                finder_ok = finder_ok and _run_finder(
+                    finder,
+                    finders_digest[finder.path],
+                    Testcase(inputPath=input_path, outputPath=expected_output_path),
+                    program_output=output_path,
+                )
+
+            if not finder_ok:
                 continue
 
             if progress:

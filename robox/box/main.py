@@ -6,7 +6,7 @@ monkey.patch_all()
 
 import pathlib
 import shutil
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 
 import rich
 import rich.prompt
@@ -208,6 +208,14 @@ def stress(
             help='Run generator [name] with these args.',
         ),
     ] = None,
+    finders: Annotated[
+        List[pathlib.Path],
+        typer.Option(
+            '--finder',
+            '-f',
+            help='Run a stress with these finders.',
+        ),
+    ] = [],
     timeout: Annotated[
         int, typer.Option(help='For how many seconds to run the stress test.')
     ] = 10,
@@ -233,6 +241,7 @@ def stress(
             timeout,
             solution=solution,
             args=generator_args,
+            finders=finders,
             findingsLimit=findings,
             progress=s,
             check=check,

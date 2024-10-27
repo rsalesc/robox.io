@@ -267,6 +267,13 @@ If empty, will stress-test only the main solution for
 non-WA verdicts.""",
     )
 
+    finders: List[CodeItem] = Field(
+        [],
+        description="""
+Finders to be used to filter in/out testcases.
+        """,
+    )
+
     outcome: ExpectedOutcome = Field(
         ExpectedOutcome.INCORRECT,
         description="""
