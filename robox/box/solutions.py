@@ -220,9 +220,14 @@ def convert_list_of_solution_evaluations_to_dict(
 def _get_report_skeleton(
     tracked_solutions: Optional[Set[str]] = None,
     group_first: bool = False,
+    verification: VerificationLevel = VerificationLevel.NONE,
 ) -> SolutionReportSkeleton:
     pkg = package.find_problem_package_or_die()
-    solutions = pkg.solutions
+    solutions = [
+        sol
+        for sol in pkg.solutions
+        if verification.value >= VerificationLevel.FULL.value or is_fast(sol)
+    ]
     if tracked_solutions is not None:
         solutions = [
             solution
@@ -258,7 +263,11 @@ def _produce_solution_items(
     runs_dir = package.get_problem_runs_dir()
     shutil.rmtree(str(runs_dir), ignore_errors=True)
     runs_dir.mkdir(parents=True, exist_ok=True)
-    solutions = list(enumerate(pkg.solutions))
+    solutions = list(
+        (i, sol)
+        for i, sol in enumerate(pkg.solutions)
+        if verification.value >= VerificationLevel.FULL.value or is_fast(sol)
+    )
     if tracked_solutions is not None:
         solutions = [
             (i, sol) for i, sol in solutions if str(sol.path) in tracked_solutions
@@ -305,7 +314,9 @@ def run_solutions(
     group_first: bool = False,
 ) -> RunSolutionResult:
     return RunSolutionResult(
-        skeleton=_get_report_skeleton(tracked_solutions, group_first),
+        skeleton=_get_report_skeleton(
+            tracked_solutions, group_first, verification=verification
+        ),
         items=_produce_solution_items(
             progress=progress,
             tracked_solutions=tracked_solutions,
