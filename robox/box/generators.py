@@ -249,7 +249,8 @@ def _extract_script_lines(script: str):
         line = line.strip()
         if not line:
             continue
-
+        if line.startswith('#'):
+            continue
         yield shlex.split(line)[0], shlex.join(shlex.split(line)[1:])
 
 
