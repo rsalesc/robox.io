@@ -226,7 +226,7 @@ def _get_report_skeleton(
     solutions = [
         sol
         for sol in pkg.solutions
-        if verification.value >= VerificationLevel.FULL.value or is_fast(sol)
+        if verification.value >= VerificationLevel.ALL_SOLUTIONS.value or is_fast(sol)
     ]
     if tracked_solutions is not None:
         solutions = [
@@ -266,7 +266,7 @@ def _produce_solution_items(
     solutions = list(
         (i, sol)
         for i, sol in enumerate(pkg.solutions)
-        if verification.value >= VerificationLevel.FULL.value or is_fast(sol)
+        if verification.value >= VerificationLevel.ALL_SOLUTIONS.value or is_fast(sol)
     )
     if tracked_solutions is not None:
         solutions = [
