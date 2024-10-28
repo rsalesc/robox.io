@@ -228,6 +228,12 @@ def stress(
         flag_value=False,
         help='Whether to not build outputs for tests and run checker.',
     ),
+    verbose: bool = typer.Option(
+        False,
+        '-v',
+        '--verbose',
+        help='Whether to print verbose output for checkers and finders.',
+    ),
 ):
     if solution and not generator_args:
         console.console.print(
@@ -245,6 +251,7 @@ def stress(
             findingsLimit=findings,
             progress=s,
             check=check,
+            verbose=verbose,
         )
 
     stresses.print_stress_report(report)

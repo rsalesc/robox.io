@@ -130,6 +130,7 @@ def _run_finder(
     finder_digest: str,
     testcase: Testcase,
     program_output: pathlib.Path,
+    verbose: bool = False,
 ) -> bool:
     finder_result = checkers.check(
         finder_digest,
@@ -145,6 +146,9 @@ def _run_finder(
         console.console.print('[error]Message:[/error]')
         console.console.print(finder_result.message)
         raise typer.Exit(1)
+    console.console.log(
+        f'[status]Finder [item]{finder.path}[/item] result:[/status] {finder_result}'
+    )
     return finder_result.outcome != Outcome.ACCEPTED
 
 
@@ -156,6 +160,7 @@ def run_stress(
     finders: Optional[List[pathlib.Path]] = None,
     findingsLimit: int = 1,
     check: bool = True,
+    verbose: bool = False,
     progress: Optional[StatusProgress] = None,
 ) -> StressReport:
     # TODO: show proper errors at each compilation error.
@@ -318,6 +323,11 @@ def run_stress(
                 )
                 raise typer.Exit(1)
 
+            if verbose:
+                console.console.log(
+                    f'[status]Checker result[/status]: {checker_result}'
+                )
+
             if not stress.outcome.match(checker_result.outcome):
                 continue
 
@@ -330,6 +340,7 @@ def run_stress(
                     finders_digest[finder.path],
                     Testcase(inputPath=input_path, outputPath=expected_output_path),
                     program_output=output_path,
+                    verbose=verbose,
                 )
 
             if not finder_ok:
