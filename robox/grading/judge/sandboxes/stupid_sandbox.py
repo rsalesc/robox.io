@@ -5,8 +5,8 @@ import importlib.resources
 import logging
 import pathlib
 import shutil
-import subprocess
 import signal
+import subprocess
 import sys
 import tempfile
 from typing import Any, Dict, List, Optional
@@ -109,8 +109,6 @@ class StupidSandbox(SandboxBase):
         """
         return self._path
 
-    # TODO - It returns wall clock time, because I have no way to
-    # check CPU time (libev doesn't have wait4() support)
     def get_execution_time(self) -> Optional[float]:
         """Return the time spent in the sandbox.
 
@@ -121,10 +119,6 @@ class StupidSandbox(SandboxBase):
             return None
         return float(self.log['time'])
 
-    # TODO - It returns the best known approximation of wall clock
-    # time; unfortunately I have no way to compute wall clock time
-    # just after the child terminates, because I have no guarantee
-    # about how the control will come back to this class
     def get_execution_wall_clock_time(self) -> Optional[float]:
         """Return the total time from the start of the sandbox to the
         conclusion of the task.

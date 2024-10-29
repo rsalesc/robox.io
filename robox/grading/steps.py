@@ -352,6 +352,13 @@ def run(
     if not _process_output_artifacts(artifacts, sandbox):
         return None
 
+    execution_time = sandbox.get_execution_time()
+    if execution_time is not None and (
+        sandbox.get_exit_status() == SandboxBase.EXIT_TIMEOUT
+        or sandbox.get_exit_status() == SandboxBase.EXIT_TIMEOUT_WALL
+    ):
+        execution_time = max(execution_time, (params.timeout or 0.0) / 1000)
+
     run_log = RunLog(
         exitcode=sandbox.get_exit_code(),
         exitstatus=sandbox.get_exit_status(),
