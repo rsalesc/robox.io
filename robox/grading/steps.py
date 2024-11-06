@@ -139,6 +139,7 @@ class RunLog(BaseModel):
     exitcode: int = 0
     exitstatus: str = SandboxBase.EXIT_SANDBOX_ERROR
     time: Optional[float] = 0.0
+    memory: Optional[int] = 0
 
 
 class TestcaseLog(RunLog):
@@ -363,6 +364,7 @@ def run(
         exitcode=sandbox.get_exit_code(),
         exitstatus=sandbox.get_exit_status(),
         time=sandbox.get_execution_time(),
+        memory=sandbox.get_memory_used(),
     )
     if artifacts.logs is not None:
         artifacts.logs.run = run_log.model_copy()

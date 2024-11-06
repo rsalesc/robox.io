@@ -445,9 +445,18 @@ def _get_evals_time_in_ms(evals: List[Evaluation]) -> int:
     return max(int((eval.log.time or 0.0) * 1000) for eval in evals)
 
 
+def _get_evals_memory_in_mb(evals: List[Evaluation]) -> int:
+    return max(int(eval.log.memory or 0) // (1024 * 1024) for eval in evals)
+
+
 def get_evals_formatted_time(evals: List[Evaluation]) -> str:
     max_time = _get_evals_time_in_ms(evals)
     return f'{max_time} ms'
+
+
+def get_evals_formatted_memory(evals: List[Evaluation]) -> str:
+    max_memory = _get_evals_memory_in_mb(evals)
+    return f'{max_memory} MiB'
 
 
 def _print_solution_outcome(
@@ -507,6 +516,7 @@ def _print_solution_outcome(
             '[yellow]WARNING[/yellow] The solution still passed in double TL.'
         )
     console.print(f'Time: {get_evals_formatted_time(evals)}')
+    console.print(f'Memory: {get_evals_formatted_memory(evals)}')
     return len(unmatched_bad_verdicts) == 0
 
 
@@ -732,7 +742,10 @@ def print_run_report(
 
         test_index += 1
 
-    console.print(f'({get_evals_formatted_time(group_evals)})', end=' ')
+    console.print(
+        f'({get_evals_formatted_time(group_evals)}, {get_evals_formatted_memory(group_evals)})',
+        end=' ',
+    )
     console.print()
     print_last_solution()
 
