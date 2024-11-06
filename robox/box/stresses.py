@@ -146,9 +146,10 @@ def _run_finder(
         console.console.print('[error]Message:[/error]')
         console.console.print(finder_result.message)
         raise typer.Exit(1)
-    console.console.log(
-        f'[status]Finder [item]{finder.path}[/item] result:[/status] {finder_result}'
-    )
+    if verbose:
+        console.console.log(
+            f'[status]Finder [item]{finder.path}[/item] result:[/status] {finder_result}'
+        )
     return finder_result.outcome != Outcome.ACCEPTED
 
 
