@@ -1,9 +1,7 @@
 import pathlib
-import random
-import shlex
 import time
 from shutil import rmtree
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import typer
 from pydantic import BaseModel
@@ -13,6 +11,7 @@ from robox.box import checkers, package, validators
 from robox.box.code import compile_item, run_item
 from robox.box.schema import CodeItem, ExpectedOutcome, GeneratorCall, Stress, Testcase
 from robox.box.solutions import compile_solutions, get_outcome_style_verdict
+from robox.box.stressing import generator_parser
 from robox.grading.steps import (
     CheckerResult,
     DigestHolder,
@@ -21,8 +20,6 @@ from robox.grading.steps import (
     Outcome,
 )
 from robox.utils import StatusProgress
-
-StressArg = Union[str, 'RandomInt', 'RandomHex', List['StressArg']]
 
 
 class StressFinding(BaseModel):
@@ -34,84 +31,6 @@ class StressFinding(BaseModel):
 class StressReport(BaseModel):
     findings: List[StressFinding] = []
     executed: int = 0
-
-
-class RandomInt:
-    def __init__(self, min: int, max: int):
-        self.min = min
-        self.max = max
-
-    def get(self) -> int:
-        return random.randint(self.min, self.max)
-
-
-class RandomHex:
-    len: int
-
-    def __init__(self, len: int):
-        self.len = len
-
-    def get(self) -> str:
-        return ''.join(random.choice('0123456789abcdef') for _ in range(self.len))
-
-
-def _parse_random_choice(pattern: str) -> List[StressArg]:
-    # TODO: Add escaping for |
-    return [_parse_single_pattern(choice) for choice in pattern.split('|')]
-
-
-def _parse_var(name: str) -> str:
-    pkg = package.find_problem_package_or_die()
-
-    if name not in pkg.vars:
-        console.console.print(f'[error]Variable [item]{name}[/item] not found.[/error]')
-        raise typer.Exit(1)
-    return f'{pkg.expanded_vars[name]}'
-
-
-def _parse_int(pattern: str) -> int:
-    if pattern.startswith('<') and pattern.endswith('>'):
-        return int(_parse_var(pattern[1:-1]))
-    return int(pattern)
-
-
-def _parse_random_int(pattern: str) -> RandomInt:
-    min, max = pattern.split('..')
-    return RandomInt(_parse_int(min), _parse_int(max))
-
-
-def _parse_single_pattern(pattern: str) -> StressArg:
-    if pattern.startswith('\\'):
-        # Escape
-        return pattern[1:]
-    if pattern.startswith('<') and pattern.endswith('>'):
-        return _parse_var(pattern[1:-1])
-    if pattern.startswith('[') and pattern.endswith(']'):
-        # Random range
-        return _parse_random_int(pattern[1:-1])
-    if pattern.startswith('(') and pattern.endswith(')'):
-        return _parse_random_choice(pattern[1:-1])
-    if pattern == '@':
-        return RandomHex(len=8)
-    return pattern
-
-
-def parse_generator_pattern(args: str) -> List[StressArg]:
-    return [_parse_single_pattern(arg) for arg in shlex.split(args)]
-
-
-def _expand_single_arg(arg: StressArg) -> str:
-    if isinstance(arg, RandomInt):
-        return str(arg.get())
-    if isinstance(arg, RandomHex):
-        return arg.get()
-    if isinstance(arg, list):
-        return _expand_single_arg(random.choice(arg))
-    return str(arg)
-
-
-def expand_stress_args(pattern: List[StressArg]) -> List[str]:
-    return [_expand_single_arg(arg) for arg in pattern]
 
 
 def _compile_finder(finder: CodeItem) -> str:
@@ -214,7 +133,9 @@ def run_stress(
     stress_dir.mkdir(parents=True, exist_ok=True)
 
     startTime = time.monotonic()
-    parsed_args = parse_generator_pattern(call.args or '')
+    parsed_args = generator_parser.parse(call.args or '')
+    vars = package.find_problem_package_or_die().expanded_vars
+    generator_for_args = generator_parser.Generator(vars)
 
     executed = 0
     findings = []
@@ -231,8 +152,7 @@ def run_stress(
                 f'[item]{seconds}[/item] second(s) remaining...'
             )
 
-        expanded_args = expand_stress_args(parsed_args)
-        expanded_args_str = ' '.join(expanded_args)
+        expanded_args_str = generator_for_args.generate(parsed_args)
 
         input_path = runs_dir / '.stress' / 'input'
         input_path.parent.mkdir(parents=True, exist_ok=True)
@@ -247,7 +167,7 @@ def run_stress(
         )
         if not generation_log or generation_log.exitcode != 0:
             console.console.print(
-                f'[error]Failed generating test for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args}[/info].[/error]',
+                f'[error]Failed generating test for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args_str}[/info].[/error]',
             )
             if generation_stderr.value is not None:
                 console.console.print('[error]Stderr:[/error]')
@@ -261,7 +181,7 @@ def run_stress(
             ok, message, *_ = validators.validate_test(input_path, *validator)
             if not ok:
                 console.console.print(
-                    f'[error]Failed validating testcase for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args}[/info].[/error]'
+                    f'[error]Failed validating testcase for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args_str}[/info].[/error]'
                 )
                 console.console.print(f'[error]Message:[/error] {message}')
                 console.console.print(f'Testcase written at [item]{input_path}[/item]')
@@ -300,7 +220,7 @@ def run_stress(
 
             if checker_result.outcome == Outcome.INTERNAL_ERROR:
                 console.console.print(
-                    f'[error]Checker failed during stress test [item]{name}[/item] with args [info]{call.name} {expanded_args}[/info].[/error]'
+                    f'[error]Checker failed during stress test [item]{name}[/item] with args [info]{call.name} {expanded_args_str}[/info].[/error]'
                 )
                 console.console.print('[error]Message:[/error]')
                 console.console.print(checker_result.message)
