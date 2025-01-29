@@ -27,6 +27,7 @@ more-itertools = "^10.5.0"
 gitpython = "^3.1.43"
 textual = "^0.79.1"
 pyte = "^0.8.2"
+questionary = "^2.1.0"
 
 [tool.poetry.scripts]
 rbc = "robox.main:app"

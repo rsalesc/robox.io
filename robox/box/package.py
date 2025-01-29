@@ -1,6 +1,6 @@
 import functools
 import pathlib
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import typer
 
@@ -16,6 +16,7 @@ from robox.box.schema import (
     Solution,
     Stress,
     TestcaseGroup,
+    TestcaseSubgroup,
 )
 from robox.config import get_builtin_checker
 from robox.grading.caching import DependencyCache
@@ -247,6 +248,21 @@ def get_testgroup(name: str, root: pathlib.Path = pathlib.Path()) -> TestcaseGro
             return testgroup
     console.console.print(f'[error]Test group [item]{name}[/item] not found[/error]')
     raise typer.Exit(1)
+
+
+@functools.cache
+def get_test_groups_by_name(
+    root: pathlib.Path = pathlib.Path(),
+) -> Dict[str, TestcaseSubgroup]:
+    pkg = find_problem_package_or_die(root)
+    res = {}
+
+    for testgroup in pkg.testcases:
+        res[testgroup.name] = testgroup
+        for subgroup in testgroup.subgroups:
+            res[f'{testgroup.name}.{subgroup.name}'] = subgroup
+
+    return res
 
 
 # Return each compilation file and to where it should be moved inside

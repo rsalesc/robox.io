@@ -1,8 +1,14 @@
 # flake8: noqa
-from os import environ
 from gevent import monkey
 
 monkey.patch_all()
+
+import shlex
+import sys
+import typing
+
+from robox.box.schema import CodeItem
+
 
 import pathlib
 import shutil
@@ -11,6 +17,7 @@ from typing import Annotated, List, Optional
 import rich
 import rich.prompt
 import typer
+import questionary
 
 from robox import annotations, config, console, utils
 from robox.box import (
@@ -268,21 +275,39 @@ def stress(
         return
     testgroup = None
     while testgroup is None or testgroup:
-        testgroup = rich.prompt.Prompt.ask(
-            'Enter the name of the test group, or empty to cancel',
-            console=console.console,
-        )
-        if not testgroup:
+        groups_by_name = {
+            name: group
+            for name, group in package.get_test_groups_by_name().items()
+            if group.generatorScript is not None
+            and group.generatorScript.path.suffix == '.txt'
+        }
+
+        testgroup = questionary.select(
+            'Choose the testgroup to add the tests to.\nOnly test groups that have a .txt generatorScript are shown below: ',
+            choices=list(groups_by_name) + ['(skip)'],
+        ).ask()
+
+        if testgroup not in groups_by_name:
             break
         try:
-            testgroup = package.get_testgroup(testgroup)
-            # Reassign mutable object before saving.
-            testgroup.generators = testgroup.generators + [
-                f.generator for f in report.findings
-            ]
-            package.save_package()
+            subgroup = groups_by_name[testgroup]
+            assert subgroup.generatorScript is not None
+            generator_script = pathlib.Path(subgroup.generatorScript.path)
+
+            finding_lines = []
+            for finding in report.findings:
+                line = finding.generator.name
+                if finding.generator.args is not None:
+                    line = f'{line} {finding.generator.args}'
+                finding_lines.append(line)
+
+            with generator_script.open('a') as f:
+                stress_text = f'# Obtained by running `rbx {shlex.join(sys.argv[1:])}`'
+                finding_text = '\n'.join(finding_lines)
+                f.write(f'\n{stress_text}\n{finding_text}\n')
+
             console.console.print(
-                f'Added [item]{len(report.findings)}[/item] tests to test group [item]{testgroup.name}[/item].'
+                f"Added [item]{len(report.findings)}[/item] tests to test group [item]{testgroup}[/item]'s generatorScript at [item]{subgroup.generatorScript.path}[/item]."
             )
         except typer.Exit:
             continue
