@@ -89,6 +89,9 @@ class ExpectedOutcome(AutoEnum):
             return 'cyan'
         return 'magenta'
 
+    def is_slow(self) -> bool:
+        return self in [ExpectedOutcome.TIME_LIMIT_EXCEEDED, ExpectedOutcome.TLE_OR_RTE]
+
     def match(self, outcome: Outcome) -> bool:
         if self == ExpectedOutcome.ACCEPTED:
             return outcome == Outcome.ACCEPTED

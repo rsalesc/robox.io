@@ -553,7 +553,7 @@ def _print_timing(
     structured_evaluation: StructuredEvaluation,
 ):
     slowest_good = None
-    fastest_bad = None
+    fastest_slow = None
     for solution in skeleton.solutions:
         evals_per_group = structured_evaluation[str(solution.path)]
         all_evals = []
@@ -563,18 +563,18 @@ def _print_timing(
         if solution.outcome.match(Outcome.ACCEPTED):
             if slowest_good is None or solution_time > slowest_good:
                 slowest_good = solution_time
-        if solution.outcome.match(Outcome.TIME_LIMIT_EXCEEDED):
-            if fastest_bad is None or solution_time < fastest_bad:
-                fastest_bad = solution_time
+        if solution.outcome.is_slow():
+            if fastest_slow is None or solution_time < fastest_slow:
+                fastest_slow = solution_time
 
-    if slowest_good is None and fastest_bad is None:
+    if slowest_good is None and fastest_slow is None:
         return
 
     console.print('[status]Timing summary:[/status]')
     if slowest_good is not None:
         console.print(f'Slowest [success]OK[/success] solution: {slowest_good} ms')
-    if fastest_bad is not None:
-        console.print(f'Fastest [error]slow[/error] solution: {fastest_bad} ms')
+    if fastest_slow is not None:
+        console.print(f'Fastest [error]slow[/error] solution: {fastest_slow} ms')
 
 
 def _render_detailed_group_table(
