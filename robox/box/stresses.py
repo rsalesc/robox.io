@@ -1,4 +1,5 @@
-import pathlib
+import dataclasses
+import functools
 import time
 from shutil import rmtree
 from typing import List, Optional
@@ -9,11 +10,10 @@ from pydantic import BaseModel
 from robox import console
 from robox.box import checkers, package, validators
 from robox.box.code import compile_item, run_item
-from robox.box.schema import CodeItem, ExpectedOutcome, GeneratorCall, Stress, Testcase
+from robox.box.schema import CodeItem, GeneratorCall, Stress, Testcase
 from robox.box.solutions import compile_solutions, get_outcome_style_verdict
-from robox.box.stressing import generator_parser
+from robox.box.stressing import finder_parser, generator_parser
 from robox.grading.steps import (
-    CheckerResult,
     DigestHolder,
     DigestOrDest,
     DigestOrSource,
@@ -24,8 +24,6 @@ from robox.utils import StatusProgress
 
 class StressFinding(BaseModel):
     generator: GeneratorCall
-    solution: pathlib.Path
-    result: CheckerResult
 
 
 class StressReport(BaseModel):
@@ -38,74 +36,32 @@ def _compile_finder(finder: CodeItem) -> str:
         digest = compile_item(finder)
     except Exception as e:
         console.console.print(
-            f'[error]Failed compiling finder [item]{finder.path}[/item].[/error]'
+            f'[error]Failed compiling checker [item]{finder.path}[/item].[/error]'
         )
         raise typer.Exit(1) from e
     return digest
 
 
-def _run_finder(
-    finder: CodeItem,
-    finder_digest: str,
-    testcase: Testcase,
-    program_output: pathlib.Path,
-    verbose: bool = False,
-) -> bool:
-    finder_result = checkers.check(
-        finder_digest,
-        run_log=None,
-        testcase=testcase,
-        program_output=program_output,
-        skip_run_log=True,
-    )
-    if finder_result.outcome == Outcome.INTERNAL_ERROR:
-        console.console.print(
-            f'[error]Finder [item]{finder.path}[/item] failed during stress test.[/error]'
-        )
-        console.console.print('[error]Message:[/error]')
-        console.console.print(finder_result.message)
-        raise typer.Exit(1)
-    if verbose:
-        console.console.log(
-            f'[status]Finder [item]{finder.path}[/item] result:[/status] {finder_result}'
-        )
-    return finder_result.outcome != Outcome.ACCEPTED
-
-
 def run_stress(
     name: str,
     timeoutInSeconds: int,
+    finder: Optional[str] = None,
     args: Optional[str] = None,
-    solution: Optional[str] = None,
-    finders: Optional[List[pathlib.Path]] = None,
     findingsLimit: int = 1,
-    check: bool = True,
     verbose: bool = False,
     progress: Optional[StatusProgress] = None,
 ) -> StressReport:
-    # TODO: show proper errors at each compilation error.
-    if args:
+    if finder:
         stress = Stress(
             name=f'{name}',
-            generator=GeneratorCall(name=name, args=args),
-            solutions=[solution] if solution is not None else [],
-            outcome=ExpectedOutcome.INCORRECT,
-            finders=[
-                CodeItem(path=finder, language=None, compilationFiles=[])
-                for finder in finders
-            ]
-            if finders is not None
-            else [],
+            generator=GeneratorCall(name=name, args=args or ''),
+            finder=finder,
         )
     else:
         stress = package.get_stress(name)
 
     call = stress.generator
     generator = package.get_generator(call.name)
-    main_solution = package.get_main_solution()
-    solutions = [package.get_solution(solutions) for solutions in stress.solutions]
-    solutions = [main_solution] + solutions
-    is_main_stress = not stress.solutions
 
     try:
         generator_digest = compile_item(generator)
@@ -114,15 +70,21 @@ def run_stress(
             f'[error]Failed compiling generator [item]{generator.name}[/item].[/error]'
         )
         raise
-    checker_digest = checkers.compile_checker() if check else None
+
+    # Finder expression parser
+    parsed_finder = finder_parser.parse(stress.finder)
+
+    solutions = finder_parser.get_all_solution_items(parsed_finder)
+    finders = finder_parser.get_all_checker_items(parsed_finder)
+    needs_expected_output = finder_parser.needs_expected_output(parsed_finder)
+
+    solution_indices = {str(solution.path): i for i, solution in enumerate(solutions)}
     solutions_digest = compile_solutions(
-        tracked_solutions=set(
-            str(solution.path) for solution in solutions if solution is not None
-        )
+        tracked_solutions=set(str(solution.path) for solution in solutions)
     )
     if progress:
         progress.update('Compiling finders...')
-    finders_digest = {finder.path: _compile_finder(finder) for finder in stress.finders}
+    finders_digest = {str(finder.path): _compile_finder(finder) for finder in finders}
 
     validator = validators.compile_main_validator()
 
@@ -131,8 +93,12 @@ def run_stress(
     stress_dir = runs_dir / '.stress'
     rmtree(str(stress_dir), ignore_errors=True)
     stress_dir.mkdir(parents=True, exist_ok=True)
+    empty_path = runs_dir / '.stress' / '.empty'
+    empty_path.write_text('')
 
     startTime = time.monotonic()
+
+    # Generator args parser
     parsed_args = generator_parser.parse(call.args or '')
     vars = package.find_problem_package_or_die().expanded_vars
     generator_for_args = generator_parser.Generator(vars)
@@ -152,6 +118,7 @@ def run_stress(
                 f'[item]{seconds}[/item] second(s) remaining...'
             )
 
+        # Build generator args based on generator parse tree.
         expanded_args_str = generator_for_args.generate(parsed_args)
 
         input_path = runs_dir / '.stress' / 'input'
@@ -177,6 +144,7 @@ def run_stress(
 
             raise typer.Exit(1)
 
+        # Run validator, if it is available.
         if validator is not None:
             ok, message, *_ = validators.validate_test(input_path, *validator)
             if not ok:
@@ -187,100 +155,138 @@ def run_stress(
                 console.console.print(f'Testcase written at [item]{input_path}[/item]')
                 raise typer.Exit(1)
 
-        expected_output_path = runs_dir / '.stress' / 'output'
-        for i, sol in enumerate(solutions):
-            if sol is None:
-                continue
-            output_stem = f'{i}' if i > 0 else 'main'
-            output_path = input_path.with_stem(output_stem).with_suffix('.out')
-            if i == 0:
-                # This is the main solution.
-                expected_output_path = output_path
-
+        @functools.cache
+        def run_solution_fn(
+            solution: str,
+            input_path=input_path,
+        ) -> finder_parser.FinderSolutionResult:
+            index = solution_indices[solution]
+            sol = solutions[index]
+            output_path = input_path.with_stem(f'{index}').with_suffix('.out')
             stderr_path = output_path.with_suffix('.err')
+
             run_log = run_item(
                 sol,
                 DigestOrSource.create(solutions_digest[sol.path]),
                 stdin=DigestOrSource.create(input_path),
                 stdout=DigestOrDest.create(output_path),
-                # Log stderr for main solution.
-                stderr=DigestOrDest.create(stderr_path) if i == 0 else None,
+                stderr=DigestOrDest.create(stderr_path),
             )
 
-            checker_result = (
-                checkers.check(
-                    checker_digest,
-                    run_log,
-                    Testcase(inputPath=input_path, outputPath=expected_output_path),
-                    program_output=output_path,
-                )
-                if checker_digest is not None
-                else checkers.check_with_no_output(run_log)
+            return finder_parser.FinderSolutionResult(
+                output_path=output_path,
+                stderr_path=stderr_path,
+                run_log=run_log,
             )
 
-            if checker_result.outcome == Outcome.INTERNAL_ERROR:
-                console.console.print(
-                    f'[error]Checker failed during stress test [item]{name}[/item] with args [info]{call.name} {expanded_args_str}[/info].[/error]'
-                )
-                console.console.print('[error]Message:[/error]')
-                console.console.print(checker_result.message)
-                raise typer.Exit(1)
-
-            if (
-                i == 0
-                and not is_main_stress
-                and checker_result.outcome != Outcome.ACCEPTED
-            ):
+        # Get main solution output.
+        expected_output_path = empty_path
+        if needs_expected_output:
+            main_result = run_solution_fn(str(solutions[0].path))
+            main_checker_result = checkers.check_with_no_output(main_result.run_log)
+            if main_checker_result.outcome != Outcome.ACCEPTED:
                 console.console.print(
                     '[error]Error while generating main solution output.[/error]'
                 )
                 console.console.print(f'Input written at [item]{input_path}[/item].')
-                console.console.print(f'Output written at [item]{output_path}[/item].')
-                console.console.print(f'Stderr written at [item]{stderr_path}[/item].')
+                console.console.print(
+                    f'Output written at [item]{main_result.output_path}[/item].'
+                )
+                console.console.print(
+                    f'Stderr written at [item]{main_result.stderr_path}[/item].'
+                )
                 console.console.print()
                 console.console.print(
-                    '[warning]If you intended to stress test the main solution, '
-                    're-run this stress test with the [item]stress.solutions[/item] unset.[/warning]'
+                    "[warning]If you don't want reference outputs to be generated for the tests, you should "
+                    "use the two-way modifier in your finder expression (':2')."
                 )
                 raise typer.Exit(1)
+            expected_output_path = main_result.output_path
 
-            if verbose:
-                console.console.log(
-                    f'[status]Checker result[/status]: {checker_result}'
-                )
+        @functools.cache
+        def run_solution_and_checker_fn(
+            solution: str,
+            checker: Optional[finder_parser.FinderChecker],
+            input_path=input_path,
+            expected_output_path=expected_output_path,
+        ) -> finder_parser.FinderResult:
+            solution_result = run_solution_fn(solution)
 
-            if not stress.outcome.match(checker_result.outcome):
-                continue
-
-            finder_ok = True
-            for finder in stress.finders:
-                if finder.path not in finders_digest:
-                    continue
-                finder_ok = finder_ok and _run_finder(
-                    finder,
-                    finders_digest[finder.path],
+            if checker is None:
+                checker_result = checkers.check_with_no_output(solution_result.run_log)
+            else:
+                checker_digest = finders_digest[checker.path]
+                checker_result = checkers.check(
+                    checker_digest,
+                    solution_result.run_log,
                     Testcase(inputPath=input_path, outputPath=expected_output_path),
-                    program_output=output_path,
-                    verbose=verbose,
+                    program_output=solution_result.output_path,
                 )
-
-            if not finder_ok:
-                continue
-
-            if progress:
-                console.console.print(
-                    f'[error]FINDING[/error] Generator args are "[status]{generator.name} {expanded_args_str}[/status]"'
-                )
-
-            findings.append(
-                StressFinding(
-                    generator=GeneratorCall(
-                        name=generator.name, args=expanded_args_str
-                    ),
-                    solution=sol.path,
-                    result=checker_result,
-                )
+            return finder_parser.FinderResult(
+                solution=solution,
+                outcome=checker_result.outcome,
+                checker=checker,
+                truth_value=True,
+                solution_result=solution_result,
+                checker_result=checker_result,
             )
+
+        def run_fn(
+            call: finder_parser.FinderCall,
+        ) -> finder_parser.FinderResult:
+            finder_result = run_solution_and_checker_fn(call.solution, call.checker)
+            truth_value = call.expected_outcome.match(finder_result.outcome)
+            return dataclasses.replace(finder_result, truth_value=truth_value)
+
+        runner = finder_parser.FinderTreeRunner(runner=run_fn)
+        finder_outcome: finder_parser.FinderOutcome = runner.transform(parsed_finder)
+
+        internal_error_results = [
+            result
+            for result in finder_outcome.results
+            if result.outcome == Outcome.INTERNAL_ERROR
+        ]
+
+        if internal_error_results:
+            console.console.print(
+                f'[error]Checkers failed during stress test [item]{name}[/item] with args [info]{call.name} {expanded_args_str}[/info].[/error]'
+            )
+            for internal_error_result in internal_error_results:
+                assert internal_error_result.checker is not None
+                assert internal_error_result.checker_result is not None
+                internal_error_checker_name = internal_error_result.checker.path
+                console.console.print(
+                    f'[warning]Checker [item]{internal_error_checker_name}[/item] failed with message:'
+                )
+                console.console.print(internal_error_result.checker_result.message)
+            raise typer.Exit(1)
+
+        if not finder_outcome.truth_value:
+            continue
+
+        if progress:
+            console.console.print(
+                f'[error]FINDING[/error] Generator args are "[status]{generator.name} {expanded_args_str}[/status]"'
+            )
+            seen_finder_results = set()
+            for finder_result in finder_outcome.results:
+                style = get_outcome_style_verdict(finder_result.outcome)
+                finder_result_key = (finder_result.solution, finder_result.checker)
+                if finder_result_key in seen_finder_results:
+                    continue
+                seen_finder_results.add(finder_result_key)
+                finder_result_report_line = f'{finder_result.solution} = [{style}]{finder_result.outcome.name}[/{style}]'
+                if finder_result.checker is not None:
+                    finder_result_report_line += (
+                        f' [item]ON[/item] {finder_result.checker.path}'
+                    )
+                console.console.print(finder_result_report_line)
+
+        findings.append(
+            StressFinding(
+                generator=GeneratorCall(name=generator.name, args=expanded_args_str),
+            )
+        )
 
         # Be cooperative.
         executed += 1
@@ -303,10 +309,4 @@ def print_stress_report(report: StressReport):
         console.console.print(
             f'Generator: [status]{finding.generator.name} {finding.generator.args}[/status]'
         )
-        console.console.print(f'Solution: [item]{finding.solution}[/item]')
-        style = get_outcome_style_verdict(finding.result.outcome)
-        console.console.print(
-            f'Outcome: [{style}]{finding.result.outcome.name}[/{style}]'
-        )
-        console.console.print(f'Message: [status]{finding.result.message}[/status]')
         console.console.print()

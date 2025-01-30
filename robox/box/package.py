@@ -231,6 +231,16 @@ def get_solution(name: str, root: pathlib.Path = pathlib.Path()) -> Solution:
 
 
 @functools.cache
+def get_solution_or_nil(
+    name: str, root: pathlib.Path = pathlib.Path()
+) -> Optional[Solution]:
+    for solution in get_solutions(root):
+        if str(solution.path) == name:
+            return solution
+    return None
+
+
+@functools.cache
 def get_stress(name: str, root: pathlib.Path = pathlib.Path()) -> Stress:
     pkg = find_problem_package_or_die(root)
     for stress in pkg.stresses:

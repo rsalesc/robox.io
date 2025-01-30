@@ -180,6 +180,7 @@ def irun(
     run_and_print_interactive_solutions(
         tracked_solutions=tracked_solutions,
         check=check,
+        verification=VerificationLevel(verification),
     )
 
 
@@ -199,14 +200,6 @@ def create(
 @app.command('stress', help='Run a stress test.')
 def stress(
     name: str,
-    solution: Annotated[
-        Optional[str],
-        typer.Option(
-            '--solution',
-            '-s',
-            help='Path to solution to run. If not specified, will run all solutions.',
-        ),
-    ] = None,
     generator_args: Annotated[
         Optional[str],
         typer.Option(
@@ -215,26 +208,20 @@ def stress(
             help='Run generator [name] with these args.',
         ),
     ] = None,
-    finders: Annotated[
-        List[pathlib.Path],
+    finder: Annotated[
+        Optional[str],
         typer.Option(
             '--finder',
             '-f',
-            help='Run a stress with these finders.',
+            help='Run a stress with this finder expression.',
         ),
-    ] = [],
+    ] = None,
     timeout: Annotated[
         int, typer.Option(help='For how many seconds to run the stress test.')
     ] = 10,
     findings: Annotated[
         int, typer.Option(help='How many breaking tests to look for.')
     ] = 1,
-    check: bool = typer.Option(
-        True,
-        '--nocheck',
-        flag_value=False,
-        help='Whether to not build outputs for tests and run checker.',
-    ),
     verbose: bool = typer.Option(
         False,
         '-v',
@@ -242,9 +229,9 @@ def stress(
         help='Whether to print verbose output for checkers and finders.',
     ),
 ):
-    if solution and not generator_args:
+    if finder and not generator_args or generator_args and not finder:
         console.console.print(
-            '[error]Options --generator/-g and --solution/-s should be specified together.'
+            '[error]Options --generator/-g and --finder/-f should be specified together.'
         )
         raise typer.Exit(1)
 
@@ -252,12 +239,10 @@ def stress(
         report = stresses.run_stress(
             name,
             timeout,
-            solution=solution,
             args=generator_args,
-            finders=finders,
+            finder=finder,
             findingsLimit=findings,
             progress=s,
-            check=check,
             verbose=verbose,
         )
 

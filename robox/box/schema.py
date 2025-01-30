@@ -261,27 +261,8 @@ class Stress(BaseModel):
         description='Generator pattern to call during stress-test.'
     )
 
-    solutions: List[str] = Field(
-        [],
-        description="""
-Path of the solutions to be stress-tested.
-
-If empty, will stress-test only the main solution for
-non-WA verdicts.""",
-    )
-
-    finders: List[CodeItem] = Field(
-        [],
-        description="""
-Finders to be used to filter in/out testcases.
-        """,
-    )
-
-    outcome: ExpectedOutcome = Field(
-        ExpectedOutcome.INCORRECT,
-        description="""
-What verdict to look for while stress-testing.
-                                     """,
+    finder: str = Field(
+        description='Finder expression to be used to match against generated tests.'
     )
 
 
