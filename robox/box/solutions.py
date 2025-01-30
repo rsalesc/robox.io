@@ -118,15 +118,17 @@ def _run_solution_on_testcase(
     pkg = package.find_problem_package_or_die()
     actual_sandbox = package.get_singleton_sandbox()
 
+    timelimit = pkg.timelimit_for_language(solution.language)
+
     sandbox = EnvironmentSandbox()
-    sandbox.timeLimit = pkg.timeLimit
+    sandbox.timeLimit = timelimit
     if verification.value >= VerificationLevel.FULL.value:
         # Use double TL.
         sandbox.timeLimit = sandbox.timeLimit * 2
     sandbox.wallTimeLimit = (
-        pkg.timeLimit * 2 if actual_sandbox.use_soft_timeout() else sandbox.timeLimit
+        timelimit * 2 if actual_sandbox.use_soft_timeout() else sandbox.timeLimit
     )
-    sandbox.memoryLimit = pkg.memoryLimit
+    sandbox.memoryLimit = pkg.memorylimit_for_language(solution.language)
     extra_config = ExecutionConfig(sandbox=sandbox)
 
     output_path = output_dir / testcase.inputPath.with_suffix('.out').name
@@ -510,7 +512,7 @@ def _print_solution_outcome(
         # The solution has no other bad verdicts except for TLEs in double TL.
         and not ((bad_verdicts | no_tle_bad_verdicts) - {Outcome.TIME_LIMIT_EXCEEDED})
         # The solution passes in double TL.
-        and evals_time < pkg.timeLimit * 2
+        and evals_time < pkg.timelimit_for_language(solution.language) * 2
     ):
         console.print(
             '[yellow]WARNING[/yellow] The solution still passed in double TL.'

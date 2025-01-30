@@ -105,10 +105,11 @@ def generate_output_for_testcase(
     if main_solution is None:
         return
 
+    timelimit = pkg.timelimit_for_language(main_solution.language)
     sandbox = EnvironmentSandbox()
-    sandbox.timeLimit = pkg.timeLimit * 2
-    sandbox.wallTimeLimit = pkg.timeLimit * 2
-    sandbox.memoryLimit = pkg.memoryLimit
+    sandbox.timeLimit = timelimit * 2
+    sandbox.wallTimeLimit = timelimit * 2
+    sandbox.memoryLimit = pkg.memorylimit_for_language(main_solution.language)
     extra_config = ExecutionConfig(sandbox=sandbox)
 
     try:

@@ -76,6 +76,14 @@ class PolygonPackager(BasePackager):
     def _get_single_testset(self) -> polygon_schema.Testset:
         pkg = package.find_problem_package_or_die()
 
+        if pkg.modifiers:
+            console.console.print(
+                f'[warning]Your package specify custom limit modifiers for languages {list(pkg.modifiers)}.[/warning]'
+            )
+            console.console.print(
+                '[warning]Polygon packages do not support language-based limit modifiers, so they will not be applied to the supplied limits.[/warning]'
+            )
+
         testcases = self.get_flattened_built_testcases()
 
         return polygon_schema.Testset(

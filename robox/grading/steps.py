@@ -135,11 +135,21 @@ class PreprocessLog(BaseModel):
     log: str
 
 
+class RunLogMetadata(BaseModel):
+    language: Optional[str] = None
+
+
 class RunLog(BaseModel):
     exitcode: int = 0
     exitstatus: str = SandboxBase.EXIT_SANDBOX_ERROR
     time: Optional[float] = 0.0
     memory: Optional[int] = 0
+    metadata: Optional[RunLogMetadata] = None
+
+    def get_run_language(self) -> Optional[str]:
+        if self.metadata is None:
+            return None
+        return self.metadata.language
 
 
 class TestcaseLog(RunLog):
@@ -336,6 +346,7 @@ def run(
     params: SandboxParams,
     sandbox: SandboxBase,
     artifacts: GradingArtifacts,
+    metadata: Optional[RunLogMetadata] = None,
 ) -> Optional[RunLog]:
     _process_input_artifacts(artifacts, sandbox)
     cmd = shlex.split(command)
@@ -365,6 +376,7 @@ def run(
         exitstatus=sandbox.get_exit_status(),
         time=sandbox.get_execution_time(),
         memory=sandbox.get_memory_used(),
+        metadata=metadata,
     )
     if artifacts.logs is not None:
         artifacts.logs.run = run_log.model_copy()

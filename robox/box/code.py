@@ -30,6 +30,7 @@ from robox.grading.steps import (
     GradingFileInput,
     GradingFileOutput,
     RunLog,
+    RunLogMetadata,
 )
 
 
@@ -184,4 +185,5 @@ def run_item(
         sandbox=sandbox,
         artifacts=artifacts,
         dependency_cache=dependency_cache,
+        metadata=RunLogMetadata(language=code.language),
     )

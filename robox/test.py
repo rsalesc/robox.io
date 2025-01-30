@@ -49,6 +49,7 @@ def get_testcases_io(
 def _run_testcases(
     problem: Problem,
     lang: Language,
+    lang_name: Optional[str],
     sandbox: SandboxBase,
     testcases: List[steps.TestcaseIO],
     persist_root: pathlib.Path = pathlib.Path(),
@@ -77,6 +78,7 @@ def _run_testcases(
                 params,
                 sandbox,
                 artifacts,
+                metadata=steps.RunLogMetadata(language=lang_name),
             )
             if not run_log:
                 logs[testcase.index] = None
@@ -320,7 +322,9 @@ def main(
             )
             return
 
-    testcase_logs = _run_testcases(dumped_problem, lang, box, testcases, persist_root)
+    testcase_logs = _run_testcases(
+        dumped_problem, lang, language, box, testcases, persist_root
+    )
 
     if not testcase_logs:
         console.print(

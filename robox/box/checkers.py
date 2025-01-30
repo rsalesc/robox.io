@@ -36,7 +36,8 @@ def _check_pre_output(run_log: Optional[RunLog]) -> CheckerResult:
     if run_log is None:
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
 
-    if run_log.time is not None and run_log.time * 1000 > pkg.timeLimit * 2:
+    timelimit = pkg.timelimit_for_language(run_log.get_run_language())
+    if run_log.time is not None and run_log.time * 1000 > timelimit * 2:
         return CheckerResult(outcome=Outcome.TIME_LIMIT_EXCEEDED)
 
     if run_log.exitstatus in [SandboxBase.EXIT_SIGNAL, SandboxBase.EXIT_NONZERO_RETURN]:
@@ -58,7 +59,8 @@ def _convert_tle(result: CheckerResult, run_log: Optional[RunLog]) -> CheckerRes
     if (
         run_log is not None
         and run_log.time is not None
-        and run_log.time * 1000 >= pkg.timeLimit
+        and run_log.time * 1000
+        >= pkg.timelimit_for_language(run_log.get_run_language())
     ):
         # Soft TLE.
         result.no_tle_outcome = result.outcome

@@ -3,7 +3,12 @@ from typing import List, Optional
 from robox.grading import steps
 from robox.grading.caching import DependencyCache, NoCacheException
 from robox.grading.judge.sandbox import SandboxBase, SandboxParams
-from robox.grading.steps import GradingArtifacts, GradingLogsHolder, RunLog
+from robox.grading.steps import (
+    GradingArtifacts,
+    GradingLogsHolder,
+    RunLog,
+    RunLogMetadata,
+)
 
 
 def compile(
@@ -35,6 +40,7 @@ def run(
     sandbox: SandboxBase,
     artifacts: GradingArtifacts,
     dependency_cache: DependencyCache,
+    metadata: Optional[RunLogMetadata] = None,
 ) -> Optional[RunLog]:
     artifacts.logs = GradingLogsHolder()
 
@@ -43,7 +49,11 @@ def run(
     ) as is_cached:
         if not is_cached:
             steps.run(
-                command=command, params=params, artifacts=artifacts, sandbox=sandbox
+                command=command,
+                params=params,
+                artifacts=artifacts,
+                sandbox=sandbox,
+                metadata=metadata,
             )
 
     return artifacts.logs.run

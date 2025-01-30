@@ -69,10 +69,19 @@ class BocaPackager(BasePackager):
             f'descfile={self._get_problem_name()}.pdf\n'
         )
 
-    def _get_number_of_runs(self):
+    def _get_pkg_timelimit(self, language: BocaLanguage) -> int:
+        pkg = package.find_problem_package_or_die()
+        return pkg.timelimit_for_language(language)
+
+    def _get_pkg_memorylimit(self, language: BocaLanguage) -> int:
+        pkg = package.find_problem_package_or_die()
+        return pkg.memorylimit_for_language(language)
+
+    def _get_number_of_runs(self, language: BocaLanguage) -> int:
         pkg = package.find_problem_package_or_die()
         extension = get_extension_or_default('boca', BocaExtension)
-        time = pkg.timeLimit / 1000  # convert to seconds
+        pkg_timelimit = self._get_pkg_timelimit(language)
+        time = pkg_timelimit / 1000  # convert to seconds
 
         if time >= _MAX_REP_TIME:
             return 1
@@ -89,31 +98,31 @@ class BocaPackager(BasePackager):
         for i in range(1, _MAX_REPS + 1):
             if error_percentage(time, i) <= extension.maximumTimeError:
                 console.console.print(
-                    f'[warning]Using {i} run(s) to define integer TL for BOCA (original TL is {pkg.timeLimit}ms, '
-                    f'new TL is {test_time(time * i) * 1000}ms).[/warning]'
+                    f'[warning]Using {i} run(s) to define integer TL for BOCA when using language [item]{language}[/item] '
+                    f'(original TL is {pkg_timelimit}ms, new TL is {test_time(time * i) * 1000}ms).[/warning]'
                 )
                 return i
 
         percent_str = f'{round(extension.maximumTimeError * 100)}%'
         console.console.print(
-            f'[error]Error while defining limits for problem [item]{pkg.name}[/item].[/error]'
+            f'[error]Error while defining limits for problem [item]{pkg.name}[/item], language [item]{language}[/item].[/error]'
         )
         console.console.print(
             f'[error]Introducing an error of less than {percent_str} in the TL in less than '
             f'{_MAX_REPS} runs is not possible.[/error]'
         )
         console.console.print(
-            f'[error]Original TL is {pkg.timeLimit}ms, please review it.[/error]'
+            f'[error]Original TL for [item]{language}[/item] is {pkg_timelimit}ms, please review it.[/error]'
         )
         raise typer.Exit(1)
 
-    def _get_limits(self, no_of_runs: int) -> str:
-        pkg = package.find_problem_package_or_die()
+    def _get_limits(self, language: BocaLanguage) -> str:
+        no_of_runs = self._get_number_of_runs(language)
         return (
             '#!/bin/bash\n'
-            f'echo {test_time(pkg.timeLimit / 1000 * no_of_runs)}\n'
+            f'echo {test_time(self._get_pkg_timelimit(language) / 1000 * no_of_runs)}\n'
             f'echo {no_of_runs}\n'
-            f'echo {pkg.memoryLimit}\n'
+            f'echo {self._get_pkg_memorylimit(language)}\n'
             f'echo 4096\n'
             f'exit 0\n'
         )
@@ -176,13 +185,12 @@ class BocaPackager(BasePackager):
         built_statements: List[BuiltStatement],
     ) -> pathlib.Path:
         extension = get_extension_or_default('boca', BocaExtension)
-        no_of_runs = self._get_number_of_runs()
 
         # Prepare limits
         limits_path = into_path / 'limits'
         limits_path.mkdir(parents=True, exist_ok=True)
         for language in extension.languages:
-            (limits_path / language).write_text(self._get_limits(no_of_runs))
+            (limits_path / language).write_text(self._get_limits(language))
 
         # Prepare compare
         compare_path = into_path / 'compare'

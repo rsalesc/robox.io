@@ -11,6 +11,7 @@ from robox.grading.steps import (
     GradingArtifacts,
     GradingFileInput,
     GradingFileOutput,
+    RunLogMetadata,
 )
 
 
@@ -34,11 +35,13 @@ def test_run_from_digest(
         sandbox=sandbox,
         artifacts=artifacts,
         dependency_cache=dependency_cache,
+        metadata=RunLogMetadata(),
     )
 
     assert (cleandir / 'out.txt').read_text().strip() == '5'
     assert artifacts.logs is not None
     assert artifacts.logs.run is not None
+    assert artifacts.logs.run.metadata is not None
     assert not artifacts.logs.cached
 
 
