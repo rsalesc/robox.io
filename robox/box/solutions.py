@@ -17,8 +17,14 @@ from robox import console
 from robox.box import checkers, environment, package
 from robox.box.code import compile_item, run_item
 from robox.box.environment import EnvironmentSandbox, ExecutionConfig, VerificationLevel
-from robox.box.generators import generate_output_for_testcase
-from robox.box.schema import ExpectedOutcome, Solution, Testcase, TestcaseGroup
+from robox.box.generators import generate_output_for_testcase, generate_standalone
+from robox.box.schema import (
+    ExpectedOutcome,
+    GeneratorCall,
+    Solution,
+    Testcase,
+    TestcaseGroup,
+)
 from robox.box.testcases import find_built_testcases
 from robox.grading.steps import (
     DigestOrDest,
@@ -342,6 +348,7 @@ def run_solutions(
 def _run_interactive_solutions(
     tracked_solutions: Optional[Set[str]] = None,
     verification: VerificationLevel = VerificationLevel.NONE,
+    generator: Optional[GeneratorCall] = None,
     check: bool = True,
 ) -> Iterator[EvaluationItem]:
     pkg = package.find_problem_package_or_die()
@@ -361,11 +368,6 @@ def _run_interactive_solutions(
             )
             raise
 
-    # Clear run directory and rely on cache to
-    # repopulate it.
-    runs_dir = package.get_problem_runs_dir()
-    shutil.rmtree(str(runs_dir), ignore_errors=True)
-    runs_dir.mkdir(parents=True, exist_ok=True)
     solutions = list(enumerate(pkg.solutions))
     if tracked_solutions is not None:
         solutions = [
@@ -373,11 +375,20 @@ def _run_interactive_solutions(
         ]
 
     irun_dir = package.get_problem_runs_dir() / '.irun'
+    shutil.rmtree(str(irun_dir), ignore_errors=True)
     irun_dir.mkdir(parents=True, exist_ok=True)
-    input = console.multiline_prompt('Testcase input')
-    input_path = irun_dir / '000.in'
+    inputs_dir = irun_dir / 'inputs'
+    input_path = inputs_dir / '000.in'
     output_path = input_path.with_suffix('.out')
-    input_path.write_text(input)
+
+    if generator is not None:
+        expanded_call = generate_standalone(generator, input_path)
+        console.console.print(
+            f'Using input from generator call [item]{expanded_call.name} {expanded_call.args}[/item].'
+        )
+    else:
+        input = console.multiline_prompt('Testcase input')
+        input_path.write_text(input)
     testcase = Testcase(inputPath=input_path, outputPath=output_path if check else None)
 
     if main_solution_digest is not None:
@@ -385,7 +396,7 @@ def _run_interactive_solutions(
         generate_output_for_testcase(main_solution_digest, testcase)
 
     for i, solution in solutions:
-        output_dir = runs_dir / f'{i}'
+        output_dir = irun_dir / f'{i}'
 
         yield EvaluationItem(
             solution_index=i,
@@ -405,21 +416,35 @@ def _run_interactive_solutions(
 def run_and_print_interactive_solutions(
     tracked_solutions: Optional[Set[str]] = None,
     verification: VerificationLevel = VerificationLevel.NONE,
+    generator: Optional[GeneratorCall] = None,
     check: bool = True,
+    print: bool = False,
 ):
     pkg = package.find_problem_package_or_die()
     items = _run_interactive_solutions(
-        tracked_solutions=tracked_solutions, verification=verification, check=check
+        tracked_solutions=tracked_solutions,
+        verification=verification,
+        check=check,
+        generator=generator,
     )
 
     for item in items:
         sol = pkg.solutions[item.solution_index]
         _print_solution_header(sol, console.console)
 
-        if item.eval.testcase.output is not None:
-            console.console.print(item.eval.testcase.output.read_text())
-        else:
-            console.console.print('[warning]Solution produced no output.[/warning]')
+        stdout_path = item.eval.log.stdout_absolute_path
+        if print:
+            if (
+                item.eval.testcase.output is not None
+                and stdout_path is not None
+                and stdout_path.is_file()
+            ):
+                console.console.print(stdout_path.read_text())
+            else:
+                console.console.print('[warning]Solution produced no output.[/warning]')
+        elif stdout_path is not None:
+            console.console.print(f'Output: {stdout_path}.')
+            console.console.print()
 
 
 def get_outcome_style_verdict(outcome: Outcome) -> str:

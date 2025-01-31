@@ -25,6 +25,7 @@ from robox.box import (
     creation,
     download,
     environment,
+    generators,
     package,
     compile,
     presets,
@@ -184,7 +185,20 @@ def irun(
         flag_value=False,
         help='Whether to not build outputs for tests and run checker.',
     ),
+    generator: Optional[str] = typer.Option(
+        None,
+        '--generator',
+        '-g',
+        help='Generator call to use to generate a single test for execution.',
+    ),
+    print: bool = typer.Option(
+        False, '--print', '-p', help='Whether to print outputs to terminal.'
+    ),
 ):
+    if not print:
+        console.console.print(
+            '[warning]Outputs will be written to files. If you wish to print them to the terminal, use the "-p" parameter.'
+        )
     main_solution = package.get_main_solution()
     if check and main_solution is None:
         console.console.print(
@@ -204,6 +218,10 @@ def irun(
         tracked_solutions=tracked_solutions,
         check=check,
         verification=VerificationLevel(verification),
+        generator=generators.get_call_from_string(generator)
+        if generator is not None
+        else None,
+        print=print,
     )
 
 

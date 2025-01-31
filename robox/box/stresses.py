@@ -10,11 +10,11 @@ from pydantic import BaseModel
 from robox import console
 from robox.box import checkers, package, validators
 from robox.box.code import compile_item, run_item
+from robox.box.generators import generate_standalone
 from robox.box.schema import CodeItem, GeneratorCall, Stress, Testcase
 from robox.box.solutions import compile_solutions, get_outcome_style_verdict
-from robox.box.stressing import finder_parser, generator_parser
+from robox.box.stressing import finder_parser
 from robox.grading.steps import (
-    DigestHolder,
     DigestOrDest,
     DigestOrSource,
     Outcome,
@@ -86,7 +86,7 @@ def run_stress(
         progress.update('Compiling finders...')
     finders_digest = {str(finder.path): _compile_finder(finder) for finder in finders}
 
-    validator = validators.compile_main_validator()
+    compiled_validator = validators.compile_main_validator()
 
     # Erase old stress directory
     runs_dir = package.get_problem_runs_dir()
@@ -97,11 +97,6 @@ def run_stress(
     empty_path.write_text('')
 
     startTime = time.monotonic()
-
-    # Generator args parser
-    parsed_args = generator_parser.parse(call.args or '')
-    vars = package.find_problem_package_or_die().expanded_vars
-    generator_for_args = generator_parser.Generator(vars)
 
     executed = 0
     findings = []
@@ -118,42 +113,17 @@ def run_stress(
                 f'[item]{seconds}[/item] second(s) remaining...'
             )
 
-        # Build generator args based on generator parse tree.
-        expanded_args_str = generator_for_args.generate(parsed_args)
-
         input_path = runs_dir / '.stress' / 'input'
         input_path.parent.mkdir(parents=True, exist_ok=True)
-        generation_stderr = DigestHolder()
 
-        generation_log = run_item(
-            generator,
-            DigestOrSource.create(generator_digest),
-            stdout=DigestOrDest.create(input_path),
-            stderr=DigestOrDest.create(generation_stderr),
-            extra_args=expanded_args_str or None,
+        expanded_generator_call = generate_standalone(
+            stress.generator,
+            input_path,
+            generator_digest=generator_digest,
+            validator_digest=compiled_validator[1]
+            if compiled_validator is not None
+            else None,
         )
-        if not generation_log or generation_log.exitcode != 0:
-            console.console.print(
-                f'[error]Failed generating test for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args_str}[/info].[/error]',
-            )
-            if generation_stderr.value is not None:
-                console.console.print('[error]Stderr:[/error]')
-                console.console.print(
-                    package.get_digest_as_string(generation_stderr.value) or ''
-                )
-
-            raise typer.Exit(1)
-
-        # Run validator, if it is available.
-        if validator is not None:
-            ok, message, *_ = validators.validate_test(input_path, *validator)
-            if not ok:
-                console.console.print(
-                    f'[error]Failed validating testcase for stress test [item]{name}[/item] with args [info]{call.name} {expanded_args_str}[/info].[/error]'
-                )
-                console.console.print(f'[error]Message:[/error] {message}')
-                console.console.print(f'Testcase written at [item]{input_path}[/item]')
-                raise typer.Exit(1)
 
         @functools.cache
         def run_solution_fn(
@@ -249,7 +219,7 @@ def run_stress(
 
         if internal_error_results:
             console.console.print(
-                f'[error]Checkers failed during stress test [item]{name}[/item] with args [info]{call.name} {expanded_args_str}[/info].[/error]'
+                f'[error]Checkers failed during stress test [item]{name}[/item] with args [info]{expanded_generator_call.name} {expanded_generator_call.args}[/info].[/error]'
             )
             for internal_error_result in internal_error_results:
                 assert internal_error_result.checker is not None
@@ -266,7 +236,7 @@ def run_stress(
 
         if progress:
             console.console.print(
-                f'[error]FINDING[/error] Generator args are "[status]{generator.name} {expanded_args_str}[/status]"'
+                f'[error]FINDING[/error] Generator args are "[status]{expanded_generator_call.name} {expanded_generator_call.args}[/status]"'
             )
             seen_finder_results = set()
             for finder_result in finder_outcome.results:
@@ -284,7 +254,7 @@ def run_stress(
 
         findings.append(
             StressFinding(
-                generator=GeneratorCall(name=generator.name, args=expanded_args_str),
+                generator=expanded_generator_call,
             )
         )
 
