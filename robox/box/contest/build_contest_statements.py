@@ -197,6 +197,7 @@ def build_contest_only(
     input: bytes,
     input_type: StatementType,
     output_type: Optional[StatementType] = None,
+    is_editorial: bool = False,
 ) -> Tuple[bytes, StatementType]:
     bdrs = get_builders(
         contest.name,
@@ -221,6 +222,7 @@ def build_contest_only(
                     languages=get_environment_languages_for_statement(),
                     params=params,
                     root=pathlib.Path(td),
+                    editorial=is_editorial,
                 ),
                 item=get_statement_builder_contest(statement, extracted_problems),
                 verbose=False,
@@ -265,6 +267,7 @@ def build_statement_rooted(
         statement.path.read_bytes(),
         statement.type,
         output_type=joiner.joined_type(),
+        is_editorial=is_editorial,
     )
 
     # Join statements.
@@ -294,6 +297,7 @@ def build_statement_rooted(
         last_content,
         last_output,
         output_type=output_type,
+        is_editorial=is_editorial,
     )
 
     return last_content, last_output

@@ -17,13 +17,14 @@ def create(
         ),
     ],
     preset: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             help='Which preset to use to create this package. Can be a named of an already installed preset, or an URI, in which case the preset will be downloaded.'
         ),
-    ] = 'default',
+    ] = None,
     path: Optional[pathlib.Path] = None,
 ):
+    preset = preset or 'default'
     console.console.print(f'Creating new problem [item]{name}[/item]...')
 
     fetch_info = get_preset_fetch_info(preset)
