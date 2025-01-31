@@ -19,8 +19,9 @@ class Options:
     stdout_file: Optional[str] = None
     stderr_file: Optional[str] = None
     time_limit: Optional[float] = None
-    wall_time_limit: Optional[float] = None
-    memory_limit: Optional[int] = None
+    wall_time_limit: Optional[float] = None  # seconds
+    memory_limit: Optional[int] = None  # kb, but passed in args as mb
+    fs_limit: Optional[int] = None  # kb
 
 
 def exit_with(code: int):
@@ -47,6 +48,8 @@ def parse_opts() -> Options:
             options.stderr_file = opt[2:]
         elif opt.startswith('-c'):
             options.chdir = opt[2:]
+        elif opt.startswith('-f'):
+            options.fs_limit = int(opt[2:])
         else:
             raise Exception(f'Invalid option {opt}')
         num_opts += 1
@@ -63,11 +66,27 @@ def get_cpu_time(ru: resource.struct_rusage) -> float:
     return ru.ru_utime + ru.ru_stime
 
 
+def _get_file_size(filename: Optional[str]) -> int:
+    if filename is None:
+        return 0
+    path = pathlib.Path(filename)
+    if not path.is_file():
+        return 0
+    return path.stat().st_size
+
+
+def get_file_sizes(options: Options):
+    return _get_file_size(options.stdout_file) + _get_file_size(options.stderr_file)
+
+
 def set_rlimits(options: Options):
     if options.time_limit is not None:
         time_limit_in_ms = int(options.time_limit * 1000)
         rlimit_cpu = int((time_limit_in_ms + 999) // 1000)
         resource.setrlimit(resource.RLIMIT_CPU, (rlimit_cpu, rlimit_cpu + 1))
+    if options.fs_limit is not None:
+        fs_limit = options.fs_limit * 1024  # in bytes
+        resource.setrlimit(resource.RLIMIT_FSIZE, (fs_limit + 1, fs_limit * 2))
 
 
 def redirect_fds(options: Options):
@@ -101,6 +120,7 @@ def wait_and_finish(
     wall_time = monotonic() - start_time
     cpu_time = get_cpu_time(ru)
     memory_used = get_memory_usage(ru)
+    file_sizes = get_file_sizes(options)
 
     entries = []
     exitcode = os.waitstatus_to_exitcode(exitstatus)
@@ -123,6 +143,8 @@ def wait_and_finish(
         status.add('TO')
     if options.memory_limit is not None and memory_used > options.memory_limit:
         status.add('ML')
+    if options.fs_limit is not None and file_sizes > options.fs_limit * 1024:
+        status.add('OL')
 
     if status:
         status_str = ','.join(status)
@@ -136,6 +158,7 @@ def wait_and_finish(
     entries.append(f'time: {cpu_time:.3f}')
     entries.append(f'time-wall: {wall_time:.3f}')
     entries.append(f'mem: {memory_used}')
+    entries.append(f'file: {file_sizes}')
 
     output_file = pathlib.Path(sys.argv[1])
     output_file.parent.mkdir(parents=True, exist_ok=True)

@@ -129,6 +129,7 @@ def _run_solution_on_testcase(
         timelimit * 2 if actual_sandbox.use_soft_timeout() else sandbox.timeLimit
     )
     sandbox.memoryLimit = pkg.memorylimit_for_language(solution.language)
+    sandbox.fileSizeLimit = pkg.outputLimit
     extra_config = ExecutionConfig(sandbox=sandbox)
 
     output_path = output_dir / testcase.inputPath.with_suffix('.out').name

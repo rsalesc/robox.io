@@ -2,6 +2,7 @@
 name: "test-problem"
 timeLimit: 1000
 memoryLimit: 256
+outputLimit: 100 # 100 kb
 generators:
   - name: "gen1"
     path: "gen1.cpp"
@@ -34,3 +35,5 @@ solutions:
     outcome: "tle"
   - path: "hard-tle.sol.cpp"
     outcome: "tle"
+  - path: "ole.cpp"
+    outcome: "ole"

@@ -117,13 +117,14 @@ class BocaPackager(BasePackager):
         raise typer.Exit(1)
 
     def _get_limits(self, language: BocaLanguage) -> str:
+        pkg = package.find_problem_package_or_die()
         no_of_runs = self._get_number_of_runs(language)
         return (
             '#!/bin/bash\n'
             f'echo {test_time(self._get_pkg_timelimit(language) / 1000 * no_of_runs)}\n'
             f'echo {no_of_runs}\n'
             f'echo {self._get_pkg_memorylimit(language)}\n'
-            f'echo 4096\n'
+            f'echo {pkg.outputLimit}\n'
             f'exit 0\n'
         )
 

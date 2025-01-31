@@ -84,6 +84,10 @@ class PolygonPackager(BasePackager):
                 '[warning]Polygon packages do not support language-based limit modifiers, so they will not be applied to the supplied limits.[/warning]'
             )
 
+        console.console.print(
+            f'[warning]Polygon packages cannot honor the {pkg.outputLimit}kb output limit.'
+        )
+
         testcases = self.get_flattened_built_testcases()
 
         return polygon_schema.Testset(

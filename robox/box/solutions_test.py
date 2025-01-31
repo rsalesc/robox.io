@@ -35,3 +35,7 @@ def test_solutions(pkg_from_testdata: pathlib.Path):
     # hard TLE
     assert res[5]['gen1'][4].result.outcome == Outcome.TIME_LIMIT_EXCEEDED
     assert res[5]['gen1'][4].result.no_tle_outcome is None
+    # OLE
+    assert all(
+        chk.result.outcome == Outcome.OUTPUT_LIMIT_EXCEEDED for chk in res[6]['gen1']
+    )

@@ -184,6 +184,7 @@ class SandboxBase(abc.ABC):
     EXIT_TIMEOUT_WALL = 'wall timeout'
     EXIT_NONZERO_RETURN = 'nonzero return'
     EXIT_MEMORY_LIMIT_EXCEEDED = 'memory limit exceeded'
+    EXIT_OUTPUT_LIMIT_EXCEEDED = 'output limit exceeded'
 
     file_cacher: cacher.FileCacher
     name: str

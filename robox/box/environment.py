@@ -74,6 +74,9 @@ class EnvironmentSandbox(BaseModel):
     # Memory limit in MiB.
     memoryLimit: Optional[int] = None
 
+    # File size limit in KiB
+    fileSizeLimit: Optional[int] = None
+
     # Stack limit in MiB.
     stackLimit: Optional[int] = None
 
@@ -283,6 +286,7 @@ def get_sandbox_params_from_config(
     params.wallclock_timeout = config.wallTimeLimit
     params.address_space = config.memoryLimit
     params.max_processes = config.maxProcesses
+    params.fsize = config.fileSizeLimit
     if config.preserveEnv:
         params.preserve_env = True
     if config.mirrorDirs:

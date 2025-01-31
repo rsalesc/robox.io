@@ -110,6 +110,7 @@ def generate_output_for_testcase(
     sandbox.timeLimit = timelimit * 2
     sandbox.wallTimeLimit = timelimit * 2
     sandbox.memoryLimit = pkg.memorylimit_for_language(main_solution.language)
+    sandbox.fileSizeLimit = pkg.outputLimit
     extra_config = ExecutionConfig(sandbox=sandbox)
 
     try:

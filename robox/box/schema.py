@@ -69,6 +69,9 @@ class ExpectedOutcome(AutoEnum):
     MEMORY_LIMIT_EXCEEDED = alias('memory limit exceeded', 'mle')  # type: ignore
     """Expected outcome for solutions that use more memory than allowed."""
 
+    OUTPUT_LIMIT_EXCEEDED = alias('output limit exceeded', 'ole')  # type: ignore
+    """Expected outcome for solutions that use more output than allowed."""
+
     TLE_OR_RTE = alias('tle or rte', 'tle/rte', 'tle+rte')  # type: ignore
     """Expected outcome for solutions that finish with either TLE or RTE.
     
@@ -103,6 +106,7 @@ class ExpectedOutcome(AutoEnum):
                 Outcome.RUNTIME_ERROR,
                 Outcome.MEMORY_LIMIT_EXCEEDED,
                 Outcome.TIME_LIMIT_EXCEEDED,
+                Outcome.OUTPUT_LIMIT_EXCEEDED,
             }
         if self == ExpectedOutcome.RUNTIME_ERROR:
             return outcome == Outcome.RUNTIME_ERROR
@@ -112,6 +116,8 @@ class ExpectedOutcome(AutoEnum):
             return outcome == Outcome.MEMORY_LIMIT_EXCEEDED
         if self == ExpectedOutcome.TLE_OR_RTE:
             return outcome in {Outcome.TIME_LIMIT_EXCEEDED, Outcome.RUNTIME_ERROR}
+        if self == ExpectedOutcome.OUTPUT_LIMIT_EXCEEDED:
+            return outcome == Outcome.OUTPUT_LIMIT_EXCEEDED
         return False
 
 
@@ -287,6 +293,10 @@ class Package(BaseModel):
     timeLimit: int = Field(description='Time limit of the problem, in milliseconds.')
 
     memoryLimit: int = Field(description='Memory limit of the problem, in MB.')
+
+    outputLimit: int = Field(
+        4 * 1024, description='Output limit of the problem, in KB.'
+    )
 
     modifiers: Dict[str, LimitModifiers] = Field(
         {},

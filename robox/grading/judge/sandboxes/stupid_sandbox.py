@@ -97,6 +97,8 @@ class StupidSandbox(SandboxBase):
             args.append(f'-o{self.params.stdout_file}')
         if self.params.stderr_file:
             args.append(f'-e{self.params.stderr_file}')
+        if self.params.fsize:
+            args.append(f'-f{self.params.fsize}')
         if self.chdir:
             args.append(f'-c{self.chdir}')
         return args
@@ -183,6 +185,8 @@ class StupidSandbox(SandboxBase):
             return self.EXIT_TIMEOUT_WALL
         if 'TO' in status_list:
             return self.EXIT_TIMEOUT
+        if 'OL' in status_list:
+            return self.EXIT_OUTPUT_LIMIT_EXCEEDED
         if 'ML' in status_list:
             return self.EXIT_MEMORY_LIMIT_EXCEEDED
         if 'SG' in status_list:
@@ -224,6 +228,8 @@ class StupidSandbox(SandboxBase):
             return 'Execution killed with signal %s' % self.get_killing_signal()
         elif status == self.EXIT_NONZERO_RETURN:
             return 'Execution failed because the return code was nonzero'
+        elif status == self.EXIT_OUTPUT_LIMIT_EXCEEDED:
+            return 'Execution exceeded output limit'
         return ''
 
     def get_current_log_name(self) -> pathlib.Path:

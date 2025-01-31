@@ -48,6 +48,8 @@ def _check_pre_output(run_log: Optional[RunLog]) -> CheckerResult:
         return CheckerResult(outcome=Outcome.MEMORY_LIMIT_EXCEEDED)
     if run_log.exitstatus == SandboxBase.EXIT_SANDBOX_ERROR:
         return CheckerResult(outcome=Outcome.INTERNAL_ERROR)
+    if run_log.exitstatus == SandboxBase.EXIT_OUTPUT_LIMIT_EXCEEDED:
+        return CheckerResult(outcome=Outcome.OUTPUT_LIMIT_EXCEEDED)
     return CheckerResult(outcome=Outcome.ACCEPTED)
 
 
@@ -84,6 +86,14 @@ def check(
         result = _check_pre_output(run_log)
         if result.outcome != Outcome.ACCEPTED:
             return _convert_tle(result, run_log)
+
+    pkg = package.find_problem_package_or_die()
+    output_size = program_output.stat().st_size
+    if output_size > pkg.outputLimit * 1024:
+        return CheckerResult(
+            outcome=Outcome.OUTPUT_LIMIT_EXCEEDED,
+            message=f'Output size {pkg.outputLimit}kb, limit is {output_size // 1024}kb.',
+        )
 
     error = DigestHolder()
     inputs = [
