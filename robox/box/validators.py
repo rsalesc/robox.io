@@ -50,7 +50,6 @@ def _process_bounds(log: str) -> HitBounds:
         if len(items) != 2:
             continue
         k, v = items
-        k = k[1:-1]
         v = v.strip()
 
         hit = ('min-value-hit' in v, 'max-value-hit' in v)
