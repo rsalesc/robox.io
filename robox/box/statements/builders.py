@@ -29,6 +29,7 @@ from robox.box.statements.schema import (
 
 @dataclasses.dataclass
 class StatementCodeLanguage:
+    id: str
     name: str
     command: str
 
