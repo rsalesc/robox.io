@@ -9,7 +9,7 @@ import typer.core
 from typing_extensions import Annotated
 
 from robox import config, metadata
-from robox.config import _RESOURCES_PKG, get_config
+from robox.config import get_config
 
 
 def _get_language_options():
@@ -38,7 +38,7 @@ def _list_files(path: pathlib.Path) -> List[str]:
 def _get_checker_options():
     options = set()
     with importlib.resources.as_file(
-        importlib.resources.files('robox') / 'resources'/ 'checkers'
+        importlib.resources.files('robox') / 'resources' / 'checkers'
     ) as file:
         options.update(_list_files(file))
 

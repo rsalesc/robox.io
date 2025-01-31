@@ -120,6 +120,12 @@ class ExpectedOutcome(AutoEnum):
             return outcome == Outcome.OUTPUT_LIMIT_EXCEEDED
         return False
 
+    def get_matches(self) -> List[Outcome]:
+        return [outcome for outcome in Outcome if self.match(outcome)]
+
+    def intersect(self, rhs: 'ExpectedOutcome') -> bool:
+        return bool(set(self.get_matches()) & set(rhs.get_matches()))
+
 
 class CodeItem(BaseModel):
     model_config = ConfigDict(extra='forbid')

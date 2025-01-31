@@ -7,7 +7,7 @@ import shlex
 import sys
 import typing
 
-from robox.box.schema import CodeItem
+from robox.box.schema import CodeItem, ExpectedOutcome
 
 
 import pathlib
@@ -34,6 +34,7 @@ from robox.box.contest import main as contest
 from robox.box.environment import VerificationLevel, get_environment_path
 from robox.box.packaging import main as packaging
 from robox.box.solutions import (
+    get_matching_solutions,
     print_run_report,
     run_and_print_interactive_solutions,
     run_solutions,
@@ -105,6 +106,12 @@ def run(
             help='Path to solution to run. If not specified, will run all solutions.'
         ),
     ] = None,
+    outcome: Optional[str] = typer.Option(
+        None,
+        '--outcome',
+        '-o',
+        help='Include only solutions whose expected outcomes intersect with this.',
+    ),
     check: bool = typer.Option(
         True,
         '--nocheck',
@@ -129,6 +136,11 @@ def run(
 
     with utils.StatusProgress('Running solutions...') as s:
         tracked_solutions = None
+        if outcome is not None:
+            tracked_solutions = {
+                str(solution.path)
+                for solution in get_matching_solutions(ExpectedOutcome(outcome))
+            }
         if solution:
             tracked_solutions = {solution}
         solution_result = run_solutions(
@@ -160,6 +172,12 @@ def irun(
             help='Path to solution to run. If not specified, will run all solutions.'
         ),
     ] = None,
+    outcome: Optional[str] = typer.Option(
+        None,
+        '--outcome',
+        '-o',
+        help='Include only solutions whose expected outcomes intersect with this.',
+    ),
     check: bool = typer.Option(
         True,
         '--nocheck',
@@ -175,6 +193,11 @@ def irun(
         check = False
 
     tracked_solutions = None
+    if outcome is not None:
+        tracked_solutions = {
+            str(solution.path)
+            for solution in get_matching_solutions(ExpectedOutcome(outcome))
+        }
     if solution:
         tracked_solutions = {solution}
     run_and_print_interactive_solutions(

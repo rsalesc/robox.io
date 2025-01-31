@@ -18,7 +18,7 @@ from robox.box import checkers, environment, package
 from robox.box.code import compile_item, run_item
 from robox.box.environment import EnvironmentSandbox, ExecutionConfig, VerificationLevel
 from robox.box.generators import generate_output_for_testcase
-from robox.box.schema import Solution, Testcase, TestcaseGroup
+from robox.box.schema import ExpectedOutcome, Solution, Testcase, TestcaseGroup
 from robox.box.testcases import find_built_testcases
 from robox.grading.steps import (
     DigestOrDest,
@@ -77,6 +77,15 @@ class RunSolutionResult:
 def is_fast(solution: Solution) -> bool:
     # If solution has TLE tag, it is considered slow.
     return not solution.outcome.match(Outcome.TIME_LIMIT_EXCEEDED)
+
+
+def get_matching_solutions(expected_outcome: ExpectedOutcome) -> List[Solution]:
+    res = []
+    for solution in package.get_solutions():
+        if not solution.outcome.intersect(expected_outcome):
+            continue
+        res.append(solution)
+    return res
 
 
 def compile_solutions(
