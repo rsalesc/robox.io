@@ -234,6 +234,13 @@ def run_stress(
         if not finder_outcome.truth_value:
             continue
 
+        findings_dir = stress_dir / 'findings'
+        findings_dir.mkdir(parents=True, exist_ok=True)
+        finding_index = len(findings)
+
+        finding_path = findings_dir / f'{finding_index}.in'
+        finding_path.write_bytes(input_path.read_bytes())
+
         if progress:
             console.console.print(
                 f'[error]FINDING[/error] Generator args are "[status]{expanded_generator_call.name} {expanded_generator_call.args}[/status]"'
@@ -272,6 +279,9 @@ def print_stress_report(report: StressReport):
         console.console.print('No stress test findings.')
         return
     console.console.print(f'Found [item]{len(report.findings)}[/item] testcases.')
+
+    findings_dir = package.get_problem_runs_dir() / '.stress' / 'findings'
+    console.console.print(f'Findings: {findings_dir.resolve()}')
     console.console.print()
 
     for i, finding in enumerate(report.findings):
