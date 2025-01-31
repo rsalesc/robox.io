@@ -10,7 +10,12 @@ import typer
 
 from robox import console
 from robox.box.schema import Package, Testcase
-from robox.box.statements.latex import MAX_PDFLATEX_RUNS, Latex, should_rerun
+from robox.box.statements.latex import (
+    MAX_PDFLATEX_RUNS,
+    Latex,
+    decode_latex_output,
+    should_rerun,
+)
 from robox.box.statements.latex_jinja import (
     JinjaDictWrapper,
     render_latex_template,
@@ -102,12 +107,13 @@ class StatementBuilderContest(StatementBuilderItem):
         return res
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
-        return {
+        res = {
             'contest': self.build_inner_jinja_kwargs(),
             'problems': [
                 problem.build_inner_jinja_kwargs() for problem in self.problems
             ],
         }
+        return res
 
 
 @dataclasses.dataclass
@@ -325,7 +331,7 @@ class TeX2PDFBuilder(StatementBuilder):
         latex = Latex(input.decode())
         latex_result = latex.build_pdf(context.root)
         pdf = latex_result.pdf
-        logs = latex.decode_latex_output(latex_result.result.stdout)
+        logs = decode_latex_output(latex_result.result.stdout)
         runs = 1
 
         while pdf is not None and should_rerun(logs) and runs < MAX_PDFLATEX_RUNS:
@@ -334,7 +340,7 @@ class TeX2PDFBuilder(StatementBuilder):
             )
             latex_result = latex.build_pdf(context.root)
             pdf = latex_result.pdf
-            logs = latex.decode_latex_output(latex_result.result.stdout)
+            logs = decode_latex_output(latex_result.result.stdout)
             runs += 1
 
         if pdf is None:

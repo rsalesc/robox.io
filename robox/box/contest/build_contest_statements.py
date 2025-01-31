@@ -82,7 +82,9 @@ def get_statement_builder_contest(
 
 
 def get_problems_for_statement(
-    contest: Contest, language: str
+    contest: Contest,
+    language: str,
+    requires_matching_statement: bool = True,
 ) -> List[ExtractedProblem]:
     pkgs = get_problems(contest)
     if not pkgs:
@@ -95,7 +97,7 @@ def get_problems_for_statement(
     for pkg, problem in zip(pkgs, contest.problems):
         found = False
         for statement in pkg.statements:
-            if statement.language == language:
+            if statement.language == language or not requires_matching_statement:
                 found = True
                 res.append(
                     ExtractedProblem(
@@ -249,27 +251,36 @@ def build_statement_rooted(
         )
         raise typer.Exit(1)
 
-    # Build problem-level statements.
-    joiner = get_joiner(statement.joiner.type)
-    extracted_problems = _build_problem_statements(
-        statement,
-        contest,
-        root,
-        output_type=joiner.joined_type(),
-        use_samples=use_samples,
-        is_editorial=is_editorial,
-    )
+    if statement.joiner is None:
+        joiner = None
+        extracted_problems = get_problems_for_statement(
+            contest, statement.language, requires_matching_statement=False
+        )
+    else:
+        # Build problem-level statements.
+        joiner = get_joiner(statement.joiner.type)
+        extracted_problems = _build_problem_statements(
+            statement,
+            contest,
+            root,
+            output_type=joiner.joined_type(),
+            use_samples=use_samples,
+            is_editorial=is_editorial,
+        )
 
     # Build contest-level statement into joiner input type.
-    last_content, _ = build_contest_only(
+    last_content, last_output = build_contest_only(
         statement,
         contest,
         extracted_problems,
         statement.path.read_bytes(),
         statement.type,
-        output_type=joiner.joined_type(),
+        output_type=joiner.joined_type() if joiner is not None else output_type,
         is_editorial=is_editorial,
     )
+
+    if joiner is None:
+        return last_content, last_output
 
     # Join statements.
     console.console.print('Joining statements...')

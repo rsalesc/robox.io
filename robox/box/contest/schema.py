@@ -49,11 +49,12 @@ class ContestStatement(BaseModel):
 
     type: StatementType = Field(description='Type of the input statement file.')
 
-    joiner: Joiner = Field(
+    joiner: Optional[Joiner] = Field(
+        None,
         description="""
 Joiner to be used to build the statement.
                            
-This determines how problem statements will be joined into a single contest statement."""
+This determines how problem statements will be joined into a single contest statement.""",
     )
 
     steps: List[ConversionStep] = Field(
