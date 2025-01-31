@@ -199,6 +199,7 @@ def build_contest_only(
     output_type: Optional[StatementType] = None,
     is_editorial: bool = False,
 ) -> Tuple[bytes, StatementType]:
+    console.console.print('Building contest-level statement.')
     bdrs = get_builders(
         contest.name,
         statement.steps,

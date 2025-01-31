@@ -324,7 +324,7 @@ class TeX2PDFBuilder(StatementBuilder):
         latex = Latex(input.decode())
         latex_result = latex.build_pdf(context.root)
         pdf = latex_result.pdf
-        logs = latex_result.result.stdout.decode()
+        logs = latex.decode_latex_output(latex_result.result.stdout)
         runs = 1
 
         while pdf is not None and should_rerun(logs) and runs < MAX_PDFLATEX_RUNS:
@@ -333,7 +333,7 @@ class TeX2PDFBuilder(StatementBuilder):
             )
             latex_result = latex.build_pdf(context.root)
             pdf = latex_result.pdf
-            logs = latex_result.result.stdout.decode()
+            logs = latex.decode_latex_output(latex_result.result.stdout)
             runs += 1
 
         if pdf is None:

@@ -3,6 +3,8 @@ import pathlib
 import subprocess
 from typing import Optional
 
+import chardet
+
 MAX_PDFLATEX_RUNS = 3
 
 
@@ -14,6 +16,12 @@ def should_rerun(logs: str) -> bool:
         if 'rerun' in line and 'warning' in line:
             return True
     return False
+
+
+def decode_latex_output(output: bytes) -> str:
+    # Latex output can be tricky with decoding
+    encoding = chardet.detect(output)['encoding'] or 'utf-8'
+    return output.decode(encoding)
 
 
 @dataclasses.dataclass
