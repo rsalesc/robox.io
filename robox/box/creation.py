@@ -65,6 +65,6 @@ def create(
     shutil.rmtree(str(dest_path / 'build'), ignore_errors=True)
     shutil.rmtree(str(dest_path / '.box'), ignore_errors=True)
     for lock in dest_path.rglob('.preset-lock.yml'):
-        (dest_path / lock).unlink(missing_ok=True)
+        lock.unlink(missing_ok=True)
 
     presets.generate_lock(preset, root=dest_path)
