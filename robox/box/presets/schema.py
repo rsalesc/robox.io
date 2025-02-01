@@ -14,7 +14,7 @@ def NameField(**kwargs):
 
 class TrackedAsset(BaseModel):
     # Path of the asset relative to the root of the problem/contest that should
-    # be tracked.
+    # be tracked. Can also be a glob, when specified in the preset config.
     path: pathlib.Path
 
 

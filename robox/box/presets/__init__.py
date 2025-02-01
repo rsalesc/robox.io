@@ -1,7 +1,7 @@
 import pathlib
 import shutil
 import tempfile
-from typing import Annotated, List, Optional, Sequence, Union
+from typing import Annotated, Iterable, List, Optional, Sequence, Union
 
 import git
 import rich
@@ -94,19 +94,35 @@ def _get_preset_package_path(name: str, is_contest: bool) -> pathlib.Path:
     return preset_path / preset.problem
 
 
+def _process_globbing(
+    assets: Iterable[TrackedAsset], preset_dir: pathlib.Path
+) -> List[TrackedAsset]:
+    res = []
+    for asset in assets:
+        if '*' in str(asset.path):
+            glb = str(asset.path)
+            files = preset_dir.glob(glb)
+            relative_files = [file.relative_to(preset_dir) for file in files]
+            res.extend([TrackedAsset(path=path) for path in relative_files])
+            continue
+        res.append(asset)
+    return res
+
+
 def _get_preset_tracked_assets(name: str, is_contest: bool) -> List[TrackedAsset]:
     preset = get_installed_preset(name)
+    preset_path = get_preset_installation_path(name)
 
     if is_contest:
         assert (
             preset.contest is not None
         ), 'Preset does not have a contest package definition.'
-        return preset.tracking.contest
+        return _process_globbing(preset.tracking.contest, preset_path)
 
     assert (
         preset.problem is not None
     ), 'Preset does not have a problem package definition,'
-    return preset.tracking.problem
+    return _process_globbing(preset.tracking.problem, preset_path)
 
 
 def _build_package_locked_assets(
