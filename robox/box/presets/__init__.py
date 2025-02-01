@@ -61,7 +61,7 @@ def _find_nested_preset(root: pathlib.Path) -> Optional[pathlib.Path]:
         problem_yaml_path = root / 'preset.rbx.yml'
     if not problem_yaml_path.is_file():
         return None
-    return problem_yaml_path.parent.relative_to(root)
+    return problem_yaml_path.parent
 
 
 def _find_local_preset(root: pathlib.Path) -> Optional[pathlib.Path]:
@@ -72,7 +72,7 @@ def _find_local_preset(root: pathlib.Path) -> Optional[pathlib.Path]:
         problem_yaml_path = root / '.local.rbx' / 'preset.rbx.yml'
     if not problem_yaml_path.is_file():
         return _find_nested_preset(root)
-    return problem_yaml_path.parent.relative_to(root)
+    return problem_yaml_path.parent
 
 
 def get_preset_installation_path(

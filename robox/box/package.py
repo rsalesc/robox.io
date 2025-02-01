@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple
 
 import typer
 
-from robox import console, utils
+from robox import config, console, utils
 from robox.box import environment
 from robox.box.environment import get_sandbox_type
 from robox.box.presets import get_installed_preset_or_null, get_preset_lock
@@ -43,13 +43,14 @@ def warn_preset_deactivated(root: pathlib.Path = pathlib.Path()):
         console.console.print()
         return
 
-    if (
-        preset.env is not None
-        and not environment.get_environment_path(preset.name).is_file()
+    if preset.env is not None and (
+        not environment.get_environment_path(preset.name).is_file()
+        or config.get_config().boxEnvironment != preset.name
     ):
         console.console.print(
-            '[warning]WARNING: This package uses a preset that configures a custom environment. '
-            'Run [item]rbx activate[/item] to use it.'
+            '[warning]WARNING: This package uses a preset that configures a custom environment, '
+            f' but instead you are using the environment [item]{config.get_config().boxEnvironment}[/item]. '
+            'Run [item]rbx activate[/item] to use the environment configured by your preset.'
         )
         console.console.print()
         return

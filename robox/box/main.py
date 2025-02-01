@@ -343,13 +343,16 @@ def stress(
 @app.command('environment, env', help='Set or show the current box environment.')
 def environment_command(
     env: Annotated[Optional[str], typer.Argument()] = None,
-    install_from: Optional[str] = typer.Option(
-        None,
-        '--install',
-        '-i',
-        help='Whether to install this environment from the given file.',
-    ),
+    install_from: Annotated[
+        Optional[str],
+        typer.Option(
+            '--install',
+            '-i',
+            help='Whether to install this environment from the given file.',
+        ),
+    ] = None,
 ):
+    print(env, install_from)
     if env is None:
         cfg = config.get_config()
         console.console.print(f'Current environment: [item]{cfg.boxEnvironment}[/item]')

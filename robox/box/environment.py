@@ -170,13 +170,14 @@ class Environment(BaseModel):
     extensions: Extensions
 
 
-def get_environment_path(env: str) -> pathlib.Path:
+def get_environment_path(env: Optional[str] = None) -> pathlib.Path:
+    env = env or config.get_config().boxEnvironment
     return config.get_app_file(pathlib.PosixPath('envs') / f'{env}.rbx.yml')
 
 
 @functools.cache
 def get_environment(env: Optional[str] = None) -> Environment:
-    env_path = get_environment_path(env or config.get_config().boxEnvironment)
+    env_path = get_environment_path(env)
     if not env_path.is_file():
         console.console.print(
             f'Environment file [item]{env_path}[/item] not found.', style='error'
