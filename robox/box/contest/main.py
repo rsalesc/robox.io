@@ -104,6 +104,9 @@ def add(name: str, short_name: str, preset: Optional[str] = None):
         )
         raise typer.Exit(1)
 
+    preset_lock = presets.get_preset_lock()
+    if preset is None and preset_lock is not None:
+        preset = preset_lock.preset_name
     creation.create(name, preset=preset, path=pathlib.Path(short_name))
 
     contest = find_contest_package_or_die()
