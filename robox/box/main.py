@@ -406,6 +406,22 @@ def activate():
     console.console.print(f'[success]Preset [item]{preset.name}[/item] is activated.')
 
 
+@app.command('languages', help='List the languages available in this environment')
+def languages():
+    env = environment.get_environment()
+
+    console.console.print(
+        f'[success]There are [item]{len(env.languages)}[/item] language(s) available.'
+    )
+
+    for language in env.languages:
+        console.console.print(
+            f'[item]{language.name}[/item], aka [item]{language.readable_name or language.name}[/item]:'
+        )
+        console.console.print(language)
+        console.console.print()
+
+
 @app.command('clear, clean', help='Clears cache and build directories.')
 def clear():
     console.console.print('Cleaning cache and build directories...')
