@@ -471,10 +471,10 @@ def get_testcase_markup_verdict(eval: Evaluation) -> str:
         res = '✗'
     style = get_outcome_style_verdict(eval.result.outcome)
     res = f'[{style}]{res}[/{style}]'
-    if eval.log.stdout_absolute_path:
-        output_path = eval.log.stdout_absolute_path.resolve()
-        output_link = f'file://{output_path}'
-        res = f'[link={output_link}]{res}[/link]'
+    # if eval.log.stdout_absolute_path:
+    #     output_path = eval.log.stdout_absolute_path.resolve()
+    #     output_link = f'file://{output_path}'
+    #     res = f'[link={output_link}]{res}[/link]'
     return res
 
 
