@@ -19,6 +19,8 @@ from robox.grading.judge.digester import digest_cooperatively
 
 app = typer.Typer(no_args_is_help=True)
 
+LOCAL = 'local'
+
 
 def find_preset_yaml(root: pathlib.Path = pathlib.Path()) -> Optional[pathlib.Path]:
     found = root / 'preset.rbx.yml'
@@ -51,7 +53,42 @@ def get_preset_lock(root: pathlib.Path = pathlib.Path()) -> Optional[PresetLock]
     return utils.model_from_yaml(PresetLock, found.read_text())
 
 
-def get_preset_installation_path(name: str) -> pathlib.Path:
+def _find_nested_preset(root: pathlib.Path) -> Optional[pathlib.Path]:
+    root = root.resolve()
+    problem_yaml_path = root / 'preset.rbx.yml'
+    while root != pathlib.PosixPath('/') and not problem_yaml_path.is_file():
+        root = root.parent
+        problem_yaml_path = root / 'preset.rbx.yml'
+    if not problem_yaml_path.is_file():
+        return None
+    return problem_yaml_path.parent.relative_to(root)
+
+
+def _find_local_preset(root: pathlib.Path) -> Optional[pathlib.Path]:
+    root = root.resolve()
+    problem_yaml_path = root / '.local.rbx' / 'preset.rbx.yml'
+    while root != pathlib.PosixPath('/') and not problem_yaml_path.is_file():
+        root = root.parent
+        problem_yaml_path = root / '.local.rbx' / 'preset.rbx.yml'
+    if not problem_yaml_path.is_file():
+        return _find_nested_preset(root)
+    return problem_yaml_path.parent.relative_to(root)
+
+
+def get_preset_installation_path(
+    name: str, root: pathlib.Path = pathlib.Path()
+) -> pathlib.Path:
+    if name == LOCAL:
+        local_path = _find_local_preset(root)
+        if local_path is None:
+            console.console.print('[error]Local preset was not found.[/error]')
+            raise typer.Exit(1)
+        return local_path
+    nested_preset_path = _find_nested_preset(root)
+    if nested_preset_path is not None:
+        nested_preset = utils.model_from_yaml(Preset, nested_preset_path.read_text())
+        if nested_preset.name == name:
+            return nested_preset_path
     return utils.get_app_path() / 'presets' / name
 
 
@@ -59,6 +96,8 @@ def _find_installed_presets() -> List[str]:
     folder = utils.get_app_path() / 'presets'
 
     res = []
+    if get_preset_installation_path('local'):
+        res.append('local')
     for yml in folder.glob('*/preset.rbx.yml'):
         res.append(yml.parent.name)
     return res
@@ -78,9 +117,11 @@ def _check_is_valid_package(root: pathlib.Path = pathlib.Path()):
         raise typer.Exit(1)
 
 
-def _get_preset_package_path(name: str, is_contest: bool) -> pathlib.Path:
-    preset_path = get_preset_installation_path(name)
-    preset = get_installed_preset(name)
+def _get_preset_package_path(
+    name: str, is_contest: bool, root: pathlib.Path = pathlib.Path()
+) -> pathlib.Path:
+    preset_path = get_preset_installation_path(name, root)
+    preset = get_installed_preset(name, root)
 
     if is_contest:
         assert (
@@ -206,6 +247,8 @@ def _copy_updated_assets(
 
 
 def _try_installing_from_resources(name: str) -> bool:
+    if name == LOCAL:
+        return False
     rsrc_preset_path = get_default_app_path() / 'presets' / name
     if not rsrc_preset_path.exists():
         return False
@@ -224,8 +267,10 @@ def _install_from_resources_just_once(name: str) -> bool:
         return _try_installing_from_resources(name)
 
 
-def get_installed_preset_or_null(name: str) -> Optional[Preset]:
-    installation_path = get_preset_installation_path(name) / 'preset.rbx.yml'
+def get_installed_preset_or_null(
+    name: str, root: pathlib.Path = pathlib.Path()
+) -> Optional[Preset]:
+    installation_path = get_preset_installation_path(name, root) / 'preset.rbx.yml'
     if not installation_path.is_file():
         if not _try_installing_from_resources(name):
             return None
@@ -235,8 +280,8 @@ def get_installed_preset_or_null(name: str) -> Optional[Preset]:
     return utils.model_from_yaml(Preset, installation_path.read_text())
 
 
-def get_installed_preset(name: str) -> Preset:
-    preset = get_installed_preset_or_null(name)
+def get_installed_preset(name: str, root: pathlib.Path = pathlib.Path()) -> Preset:
+    preset = get_installed_preset_or_null(name, root)
     if preset is None:
         console.console.print(
             f'[error]Preset [item]{name}[/item] is not installed.[/error]'
@@ -247,6 +292,9 @@ def get_installed_preset(name: str) -> Preset:
 
 def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
     preset = get_preset_yaml(root)
+
+    if preset.name == LOCAL:
+        console.console.print('[error]Naming a preset "local" is prohibited.[/error]')
 
     console.console.print(f'Installing preset [item]{preset.name}[/item]...')
 
@@ -317,11 +365,11 @@ def generate_lock(
             raise typer.Exit(1)
         preset_name = preset_lock.preset_name
 
-    preset = get_installed_preset(preset_name)
+    preset = get_installed_preset(preset_name, root)
 
     tracked_assets = _get_preset_tracked_assets(preset_name, is_contest=_is_contest())
     preset_lock = PresetLock(
-        name=preset.name,
+        name=preset.name if preset_name != LOCAL else LOCAL,
         uri=preset.uri,
         assets=_build_package_locked_assets(tracked_assets, root),
     )

@@ -7,7 +7,7 @@ import typer
 
 from robox import annotations, console, utils
 from robox.box import creation, presets
-from robox.box.contest import statements
+from robox.box.contest import contest_utils, statements
 from robox.box.contest.contest_package import (
     find_contest,
     find_contest_package_or_die,
@@ -46,6 +46,12 @@ def create(
             help='Which preset to use to create this package. Can be a named of an already installed preset, or an URI, in which case the preset will be downloaded.',
         ),
     ] = 'default',
+    local: bool = typer.Option(
+        False,
+        '--local',
+        '-l',
+        help='Whether to inline the installed preset within the contest folder.',
+    ),
 ):
     console.console.print(f'Creating new contest [item]{name}[/item]...')
 
@@ -60,6 +66,11 @@ def create(
         preset = presets.install_from_remote(fetch_info)
 
     preset_cfg = presets.get_installed_preset(preset)
+    preset_path = (
+        presets.get_preset_installation_path(preset)
+        if preset_cfg.contest is not None
+        else presets.get_preset_installation_path('default')
+    )
 
     contest_path = (
         presets.get_preset_installation_path(preset) / preset_cfg.contest
@@ -88,7 +99,12 @@ def create(
     for lock in dest_path.rglob('.preset-lock.yml'):
         lock.unlink(missing_ok=True)
 
-    presets.generate_lock(preset, root=dest_path)
+    if local:
+        shutil.copytree(str(preset_path), str(dest_path / '.local.rbx'))
+
+    with utils.new_cd(dest_path):
+        contest_utils.clear_all_caches()
+        presets.generate_lock(preset if not local else presets.LOCAL)
 
 
 @app.command('edit, e', help='Open contest.rbx.yml in your default editor.')
