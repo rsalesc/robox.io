@@ -40,6 +40,8 @@ def create(
     name: str,
     preset: Annotated[
         str,
+        '--preset',
+        '-p',
         typer.Option(
             help='Which preset to use to create this package. Can be a named of an already installed preset, or an URI, in which case the preset will be downloaded.'
         ),
