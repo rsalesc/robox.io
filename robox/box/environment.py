@@ -182,6 +182,19 @@ def get_language(name: str) -> EnvironmentLanguage:
     raise typer.Exit()
 
 
+def install_environment(name: str, file: pathlib.Path):
+    if not file.is_file():
+        console.console.print(
+            f'[error]Environment file [item]{file}[/item] could not be found.'
+        )
+        raise typer.Exit(1)
+
+    get_environment_path(name).write_bytes(file.read_bytes())
+    console.console.print(
+        f'[success]Environment [item]{name}[/item] was installed from [item]{file}[/item].'
+    )
+
+
 def _merge_shallow_models(model: Type[T], base: T, override: T) -> T:
     return model(
         **{

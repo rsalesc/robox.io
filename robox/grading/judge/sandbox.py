@@ -603,6 +603,12 @@ class SandboxBase(abc.ABC):
         """
         self.relative_path(path).unlink(missing_ok=True)
 
+    def glob(self, glob_expr: str) -> List[pathlib.Path]:
+        return [
+            path.relative_to(self.get_root_path())
+            for path in self.get_root_path().glob(glob_expr)
+        ]
+
     @abc.abstractmethod
     def execute_without_std(
         self,

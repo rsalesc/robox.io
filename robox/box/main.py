@@ -341,11 +341,21 @@ def stress(
 
 
 @app.command('environment, env', help='Set or show the current box environment.')
-def environment_command(env: Annotated[Optional[str], typer.Argument()] = None):
+def environment_command(
+    env: Annotated[Optional[str], typer.Argument()] = None,
+    install_from: Optional[str] = typer.Option(
+        None,
+        '--install',
+        '-i',
+        help='Whether to install this environment from the given file.',
+    ),
+):
     if env is None:
         cfg = config.get_config()
         console.console.print(f'Current environment: [item]{cfg.boxEnvironment}[/item]')
         return
+    if install_from is not None:
+        environment.install_environment(env, pathlib.Path(install_from))
     if not get_environment_path(env).is_file():
         console.console.print(
             f'[error]Environment [item]{env}[/item] does not exist.[/error]'

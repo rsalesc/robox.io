@@ -235,6 +235,21 @@ def jngen_grading_input() -> GradingFileInput:
     return GradingFileInput(src=get_jngen(), dest=pathlib.Path('jngen.h'))
 
 
+def _expand_part(part: str, sandbox: SandboxBase) -> List[str]:
+    part = part.strip()
+    if part.startswith('@glob:'):
+        return [shlex.quote(str(path)) for path in sandbox.glob(part[6:])]
+    return [part]
+
+
+def _split_and_expand(command: str, sandbox: SandboxBase) -> List[str]:
+    res = []
+    parts = shlex.split(command.format(memory=sandbox.params.address_space))
+    for part in parts:
+        res.extend(_expand_part(part, sandbox))
+    return res
+
+
 def _is_cpp_command(exe_command: str) -> bool:
     return exe_command.endswith('g++') or exe_command.endswith('clang++')
 
@@ -292,7 +307,7 @@ def compile(
     sandbox.set_params(params)
 
     for i, command in enumerate(commands):
-        cmd = shlex.split(command)
+        cmd = _split_and_expand(command, sandbox)
         stdout_file = pathlib.PosixPath(f'compile-{i}.stdout')
         stderr_file = pathlib.PosixPath(f'compile-{i}.stderr')
         sandbox.params.set_stdall(stdout=stdout_file, stderr=stderr_file)
@@ -349,7 +364,7 @@ def run(
     metadata: Optional[RunLogMetadata] = None,
 ) -> Optional[RunLog]:
     _process_input_artifacts(artifacts, sandbox)
-    cmd = shlex.split(command)
+    cmd = _split_and_expand(command, sandbox)
     sandbox.set_params(params)
 
     if not sandbox.execute_without_std(cmd):
