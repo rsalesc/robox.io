@@ -35,7 +35,7 @@ def get_environment_languages_for_statement() -> List[StatementCodeLanguage]:
     for language in env.languages:
         cmd = ''
         compilation_cfg = environment.get_compilation_config(language.name)
-        cmd = ' & '.join(compilation_cfg.commands or [])
+        cmd = ' && '.join(compilation_cfg.commands or [])
         if not cmd:
             execution_cfg = environment.get_execution_config(language.name)
             cmd = execution_cfg.command
