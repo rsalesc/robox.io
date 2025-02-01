@@ -80,6 +80,11 @@ def create(
         raise typer.Exit(1)
 
     shutil.copytree(str(contest_path), str(dest_path))
+    shutil.rmtree(str(dest_path / 'build'), ignore_errors=True)
+    shutil.rmtree(str(dest_path / '.box'), ignore_errors=True)
+    # TODO: consider clearing build and .box recursively for nested problem directories
+    for lock in dest_path.rglob('.preset-lock.yml'):
+        (dest_path / lock).unlink(missing_ok=True)
 
     presets.generate_lock(preset, root=dest_path)
 
