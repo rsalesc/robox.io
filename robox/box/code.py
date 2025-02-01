@@ -5,7 +5,6 @@ from pathlib import PosixPath
 from typing import List, Optional
 
 import typer
-from pydantic import BaseModel
 
 from robox.box import download, package
 from robox.box.environment import (
@@ -20,6 +19,7 @@ from robox.box.environment import (
     get_sandbox_params_from_config,
     merge_execution_configs,
 )
+from robox.box.extensions import MacExtension
 from robox.box.schema import CodeItem
 from robox.grading import steps_with_caching
 from robox.grading.steps import (
@@ -32,10 +32,6 @@ from robox.grading.steps import (
     RunLog,
     RunLogMetadata,
 )
-
-
-class MacExtension(BaseModel):
-    gpp_alternative: Optional[str] = None
 
 
 def normalize_for_macos(commands: List[str]) -> List[str]:

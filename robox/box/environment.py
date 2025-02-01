@@ -1,12 +1,13 @@
 import functools
 import pathlib
 from enum import Enum
-from typing import Annotated, Any, Dict, List, Optional, Type, TypeVar
+from typing import Annotated, List, Optional, Type, TypeVar
 
 import typer
 from pydantic import BaseModel, ConfigDict
 
 from robox import config, console, utils
+from robox.box.extensions import Extensions, LanguageExtensions
 from robox.grading.judge.sandbox import SandboxBase, SandboxParams
 from robox.grading.judge.sandboxes.isolate import IsolateSandbox
 from robox.grading.judge.sandboxes.stupid_sandbox import StupidSandbox
@@ -129,6 +130,17 @@ class EnvironmentLanguage(BaseModel):
     # for the environment will be used.
     fileMapping: Optional[FileMapping] = None
 
+    # Exntensions to apply for this language.
+    extensions: Optional[LanguageExtensions] = None
+
+    def get_extension(self, name: str, _: Type[T]) -> Optional[T]:
+        if hasattr(self.extensions, name):
+            return None
+        return getattr(self.extensions, name)
+
+    def get_extension_or_default(self, name: str, cls: Type[T]) -> T:
+        return self.get_extension(name, cls) or cls()
+
 
 class Environment(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -155,7 +167,7 @@ class Environment(BaseModel):
     preset: str = 'default'
 
     # Extensions to be added to the environment.
-    extensions: Dict[str, Any] = {}
+    extensions: Extensions
 
 
 def get_environment_path(env: str) -> pathlib.Path:
@@ -309,11 +321,11 @@ def get_sandbox_params_from_config(
     return params
 
 
-def get_extension(name: str, cls: Type[T]) -> Optional[T]:
+def get_extension(name: str, _: Type[T]) -> Optional[T]:
     pkg = get_environment()
-    if name not in pkg.extensions:
+    if hasattr(pkg.extensions, name):
         return None
-    return cls.model_validate(pkg.extensions[name])
+    return getattr(pkg.extensions, name)
 
 
 def get_extension_or_default(name: str, cls: Type[T]) -> T:

@@ -1,32 +1,22 @@
 import pathlib
 import shutil
-import typing
 from math import fabs
-from typing import List, Literal
+from typing import List
 
 import typer
-from pydantic import BaseModel
 
 from robox import console
 from robox.box import package
 from robox.box.environment import get_extension_or_default
+from robox.box.packaging.boca.extension import BocaExtension, BocaLanguage
 from robox.box.packaging.packager import BasePackager, BuiltStatement
 from robox.box.statements.schema import Statement
 from robox.config import get_default_app_path, get_testlib
-
-BocaLanguage = Literal['c', 'cpp', 'cc', 'kt', 'java', 'py2', 'py3']
 
 _MAX_REP_TIME = (
     7  # TL to allow for additional rounding reps should be < _MAX_REP_TIME in seconds
 )
 _MAX_REPS = 10  # Maximum number of reps to add
-_MAX_REP_ERROR = 0.2  # 20% error allowed in time limit when adding reps
-
-
-class BocaExtension(BaseModel):
-    stdcpp: str = 'c++17'
-    languages: List[BocaLanguage] = list(typing.get_args(BocaLanguage))
-    maximumTimeError: float = _MAX_REP_ERROR
 
 
 def test_time(time):
@@ -170,10 +160,9 @@ class BocaPackager(BasePackager):
             'umask 0022', 'umask 0022\n\n' + self._get_checker()
         )
 
-        if language == 'cc':
-            compile_text = compile_text.replace(
-                '{{stdcpp}}', f'-std={extension.stdcpp}'
-            )
+        flags = extension.flags_with_defaults()
+        if language in flags:
+            compile_text = compile_text.replace('{{roboxFlags}}', flags[language])
         return compile_text
 
     def name(self) -> str:
