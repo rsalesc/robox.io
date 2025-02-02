@@ -1,5 +1,5 @@
 <p align="center">
-   <img src="docs/robox_transparent.png" width="240px">
+   <img src="docs/rbx_transparent.png" width="240px">
 </p>
 <p align="center">
     <em>The go-to CLI tool for competitive programmers and setters.</em>
@@ -26,13 +26,13 @@
 
 ##  Overview
 
-<!--[![Usage video]](https://github.com/rsalesc/robox.io/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)-->
+<!--[![Usage video]](https://github.com/rsalesc/rbx/assets/4999965/111de01e-6cbd-495e-b8c2-4293921e49b3)-->
 
-[![GitHub license](https://img.shields.io/github/license/rsalesc/robox.io.svg)](https://github.com/rsalesc/robox.io/blob/master/LICENSE)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/robox.svg)](https://pypi.python.org/pypi/robox.io/)
-[![PyPI version shields.io](https://img.shields.io/pypi/v/robox.svg)](https://pypi.python.org/pypi/robox.io/)
+[![GitHub license](https://img.shields.io/github/license/rsalesc/rbx.svg)](https://github.com/rsalesc/rbx/blob/master/LICENSE)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/rbx.svg)](https://pypi.python.org/pypi/rbx/)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/rbx.svg)](https://pypi.python.org/pypi/rbx/)
 
-robox is a CLI tool and library that aims to help contestants and setters from the competitive programming community to have an easier time.
+rbx is a CLI tool and library that aims to help contestants and setters from the competitive programming community to have an easier time.
 
 Although trying to solve the issues of these two audiences seems to be too much for a single tool to handle, we exploit the fact that the journeys of contestants and setters have a lot in common.
 
@@ -40,7 +40,7 @@ Although trying to solve the issues of these two audiences seems to be too much 
 
 ##  Documentation
 
-You can read the docs [here](https://rsalesc.github.io/robox.io/).
+You can read the docs [here](https://rsalesc.github.io/rbx/).
 
 ---
 

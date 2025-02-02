@@ -1,17 +1,17 @@
 # Getting started
 
 <figure markdown="span">
-  ![Image title](robox_transparent.png){ width="300" }
+  ![Image title](rbx_transparent.png){ width="300" }
   <figcaption>The go-to CLI tool for competitive programmers and setters.</figcaption>
 </figure>
 
 ---
 
-{{robox}} is a CLI tool and library that aims to help setters and contestants from the competitive programming community to have an easier time.
+{{rbx}} is a CLI tool and library that aims to help setters and contestants from the competitive programming community to have an easier time.
 
 Although trying to solve the issues of these two audiences seems to be too much for a single tool to handle, we exploit the fact that the journeys of setters and contestants have a lot in common.
 
-That's why {{robox}} packages two CLI solutions: `rbx` (short for {{robox}} for setters) and `rbc` (short for {{robox}} for contestants).
+That's why {{rbx}} packages two CLI solutions: `rbx` (short for {{rbx}} for setters) and `rbc` (short for {{rbx}} for contestants).
 
 ## Features
 

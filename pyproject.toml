@@ -1,9 +1,9 @@
 [tool.poetry]
-name = "robox.io"
+name = "rbx"
 version = "0.3.8"
 description = ""
 packages = [
-  {include = "robox"}
+  {include = "rbx"}
 ]
 authors = ["Roberto Sales"]
 readme = "README.md"
@@ -32,8 +32,8 @@ lark = "^1.2.2"
 chardet = "^5.2.0"
 
 [tool.poetry.scripts]
-rbc = "robox.main:app"
-rbx = "robox.box.main:app"
+rbc = "rbx.main:app"
+rbx = "rbx.box.main:app"
 
 
 [tool.poetry.group.dev.dependencies]

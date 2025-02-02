@@ -1,6 +1,6 @@
 # Installation
 
-You can install {{robox}} with a single command, either using `pip` or `pipx`. Prefer using `pipx` to have a better isolation between the dependencies. Read more about `pipx` [here](https://pipx.pypa.io/stable/installation/).
+You can install {{rbx}} with a single command, either using `pip` or `pipx`. Prefer using `pipx` to have a better isolation between the dependencies. Read more about `pipx` [here](https://pipx.pypa.io/stable/installation/).
 
 ## Requirements
 
@@ -14,14 +14,14 @@ You can install {{robox}} with a single command, either using `pip` or `pipx`. P
 ## From PyPI
 
 ```bash
-$ pipx install robox.io
+$ pipx install rbx
 ```
 
 ## From the repository
 
 ```bash
-$ git clone https://github.com/rsalesc/robox.io
-$ cd robox.io
+$ git clone https://github.com/rsalesc/rbx
+$ cd rbx
 $ pipx install .
 ```
 
@@ -30,7 +30,7 @@ $ pipx install .
 <!-- termynal -->
 ```bash
 $ rbx --help
-# Robox help string should show up here
+# rbx help string should show up here
 ```
 
 ---

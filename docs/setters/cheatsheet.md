@@ -2,29 +2,29 @@
 
 ## CLI
 
-| Task                                            | Command                                                |
-| ----------------------------------------------- | ----------------------------------------------         |
-| Show help message                               | `rbx --help`                                           |
-| Create a new package in folder `package`        | `rbx create package`                                   |
-| Compile a file given its path                   | `rbx compile any my/file.cpp`                          |
-| Open the problem configuration in a text editor | `rbx edit`                                             |
-| Generate all testcases                          | `rbx build`                                            |
-| Generate all testcases and run validators       | `rbx verify`                                           |
-| Run all solutions and check their tags          | `rbx run`                                              |
-| Run all solutions except the slow ones          | `rbx run -v2`                                          |
-| Run all solutions without checking              | `rbx run --nocheck`                                    |
-| Run all solutions interactively                 | `rbx irun`                                             |
-| Run a stress test with name `break`             | `rbx stress break`                                     |
-| Run a stress test for a generator               | `rbx stress gen -g "[1..10]" -s sols/main.cpp`         |
-| Download {{testlib}} to the current folder      | `rbx download testlib`                                 |
-| Download {{jngen}} to the current folder        | `rbx download jngen`                                   |
-| Download a built-in {{testlib}} checker         | `rbx download checker wcmp.cpp`                        |
-| Build PDF statements                            | `rbx statements build --output=pdf`                    |
-| Build PDF statements for English                | `rbx statements build en --output=pdf`                 |
-| Package problem for {{polygon}}                 | `rbx package polygon`                                  |
-| Package problem for {{boca}}                    | `rbx package boca`                                     |
-| List all languages available in the environment | `rbx languages`                                        |
-| Clear cache                                     | `rbx clear`                                            |
+| Task                                            | Command                                        |
+| ----------------------------------------------- | ---------------------------------------------- |
+| Show help message                               | `rbx --help`                                   |
+| Create a new package in folder `package`        | `rbx create package`                           |
+| Compile a file given its path                   | `rbx compile any my/file.cpp`                  |
+| Open the problem configuration in a text editor | `rbx edit`                                     |
+| Generate all testcases                          | `rbx build`                                    |
+| Generate all testcases and run validators       | `rbx verify`                                   |
+| Run all solutions and check their tags          | `rbx run`                                      |
+| Run all solutions except the slow ones          | `rbx run -v2`                                  |
+| Run all solutions without checking              | `rbx run --nocheck`                            |
+| Run all solutions interactively                 | `rbx irun`                                     |
+| Run a stress test with name `break`             | `rbx stress break`                             |
+| Run a stress test for a generator               | `rbx stress gen -g "[1..10]" -s sols/main.cpp` |
+| Download {{testlib}} to the current folder      | `rbx download testlib`                         |
+| Download {{jngen}} to the current folder        | `rbx download jngen`                           |
+| Download a built-in {{testlib}} checker         | `rbx download checker wcmp.cpp`                |
+| Build PDF statements                            | `rbx statements build --output=pdf`            |
+| Build PDF statements for English                | `rbx statements build en --output=pdf`         |
+| Package problem for {{polygon}}                 | `rbx package polygon`                          |
+| Package problem for {{boca}}                    | `rbx package boca`                             |
+| List all languages available in the environment | `rbx languages`                                |
+| Clear cache                                     | `rbx clear`                                    |
 
 ### Contest CLI
 
@@ -107,7 +107,7 @@ solutions:
     outcome: WRONG_ANSWER
 ```
 
-You can see the list of possible expected outcomes [here][robox.box.schema.ExpectedOutcome].
+You can see the list of possible expected outcomes [here][rbx.box.schema.ExpectedOutcome].
 
 ### Add testcases
 
@@ -228,14 +228,14 @@ vars:
 
 ### Add statements
 
-#### Add a {{roboxTeX}} statement
+#### Add a {{rbxTeX}} statement
 
 ```yaml
 statements:
   # ...other statements
   - title: "My problem"
     path: "statement/statement.rbx.tex"
-    type: roboxTeX
+    type: rbxTeX
     language: 'en'
     pipeline:
       - type: 'rbx-tex'
@@ -243,8 +243,8 @@ statements:
     assets: ['statement/olymp.sty', 'statement/*.png'] # (2)!
 ```
 
-1. Defines how a {{roboxTeX}} file will be converted to a normal TeX file. Here, we link
-     the template where our {{roboxTeX}} sections such as *legend*, *input* and *output*
+1. Defines how a {{rbxTeX}} file will be converted to a normal TeX file. Here, we link
+     the template where our {{rbxTeX}} sections such as *legend*, *input* and *output*
      will be inserted into.
 
 2. Defines assets that should be linked when the resulting statement is being compiled.

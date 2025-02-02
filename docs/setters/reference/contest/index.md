@@ -4,7 +4,7 @@ This documentation goes over how each field (or group of fields) in `contest.rbx
 
 ## Contest definition
 
-**Schema**: [robox.box.contest.schema.Contest][]
+**Schema**: [rbx.box.contest.schema.Contest][]
 
 The only required field of a contest is its `name`.
 
@@ -15,7 +15,7 @@ name: "my-problem"
 ```
 ## Contest problem
 
-**Schema**: `List[`[`ContestProblem`][robox.box.contest.schema.ContestProblem]`]`
+**Schema**: `List[`[`ContestProblem`][rbx.box.contest.schema.ContestProblem]`]`
 
 ```yaml
 name: "my-contest"

@@ -90,7 +90,7 @@
     "variant": "cpp"
   },
   "python.analysis.extraPaths": [
-    "./robox"
+    "./rbx"
   ],
   "editor.defaultFormatter": "charliermarsh.ruff",
   "python.analysis.autoImportCompletions": true,

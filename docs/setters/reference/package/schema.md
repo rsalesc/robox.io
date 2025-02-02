@@ -2,7 +2,7 @@
 
 ## `problem.rbx.yml`
 
-::: robox.box.schema
+::: rbx.box.schema
     options:
       show_root_heading: false
       show_root_toc_entry: false
@@ -11,13 +11,13 @@
 
 ## Statements
 
-::: robox.box.statements.schema.Statement
+::: rbx.box.statements.schema.Statement
     options:
       show_root_heading: true
       show_root_full_path: false
       heading_level: 3
 
-::: robox.box.statements.schema.StatementType
+::: rbx.box.statements.schema.StatementType
     options:
       show_root_heading: true
       show_root_full_path: false
@@ -27,7 +27,7 @@
 
 ### Conversion nodes
 
-::: robox.box.statements.schema
+::: rbx.box.statements.schema
     options:
       filters: ["!^Statement(Type)?$",]
       show_root_heading: false

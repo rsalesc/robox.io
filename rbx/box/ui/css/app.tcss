@@ -1,0 +1,48 @@
+Screen {
+        background: $background;
+        color: $text;
+}
+
+rbxApp > Screen {
+        align: center middle;
+}
+
+SelectionList {
+        border-title-color: $accent;
+}
+
+Button {
+        width: 1fr;
+        background: $accent;
+}
+
+#report-grid {
+        layout: grid;
+        grid-size: 2 2;
+}
+
+DataTable {
+        border: solid $accent 100%;
+}
+
+DataTable > .datatable--cursor {
+        color: $text;
+        background: $accent;
+}
+
+DataTable:blur > .datatable--cursor {
+        color: $text;
+        background: transparent;
+}
+
+RunScreen {
+        align: center middle;
+        #run-settings {
+                border: thick $background 40%;
+        }
+        LogDisplay {
+                width: 1fr;
+                padding: 0 1;
+                border: solid $accent;
+        }
+}

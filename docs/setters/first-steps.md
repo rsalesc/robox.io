@@ -1,6 +1,6 @@
 # First steps
 
-`rbx` (short for {{robox}} for setters) is the CLI tool {{robox}} provides for setters to prepare contests and problems.
+`rbx` (short for {{rbx}} for setters) is the CLI tool {{rbx}} provides for setters to prepare contests and problems.
 
 You can start creating a new problem from a pre-initialized template by running `rbx create [name]`.
 
@@ -120,7 +120,7 @@ You can see this command prints a full run report: it shows for each testcase of
 
 !!! tip
     You can notice when you called {{rbx.run}}, the testcases were built really fast.
-    That's because {{robox}} caches certain calls based on the hash tree of your package
+    That's because {{rbx}} caches certain calls based on the hash tree of your package
     (similar to Makefile). You can explicitly clear this cache by calling {{rbx.clean}}.
 
 <figure markdown="span">
@@ -186,7 +186,7 @@ solutions:
     outcome: WRONG_ANSWER
 ```
 
-You can find the full list of expected outcomes [here][robox.box.schema.ExpectedOutcome].
+You can find the full list of expected outcomes [here][rbx.box.schema.ExpectedOutcome].
 
 ### Write the validator
 
@@ -284,8 +284,8 @@ Now, if we run {{rbx.build}}, we'd get our brand new generated tests.
 
 ### Update the statement
 
-Of course, last but not least, we have to update the statement of our problem. {{robox}}
-has its own statement format, called {{roboxTeX}}.
+Of course, last but not least, we have to update the statement of our problem. {{rbx}}
+has its own statement format, called {{rbxTeX}}.
 
 In `statement/statement.rbx.tex` you will find something like the following:
 
@@ -311,13 +311,13 @@ In `statement/statement.rbx.tex` you will find something like the following:
     %- endblock
     ```
 
-    1.  Notice the use of `\VAR` here, which is a command {{roboxTeX}} exposes for
+    1.  Notice the use of `\VAR` here, which is a command {{rbxTeX}} exposes for
         you to access variables defined in `problem.rbx.yml`, similar to how you
         accessed these in the {{testlib}} validator.
 
         The template engine used to expand `\VAR{...}` is Jinja2. This means we can also
         use filters. Here in particular, we're using a pre-defined filter implemented
-        by {{roboxTeX}} called `sci`. This filter converts numbers with lots of zeroes (for instance, 100000), into their scientific notations (`10^5`).
+        by {{rbxTeX}} called `sci`. This filter converts numbers with lots of zeroes (for instance, 100000), into their scientific notations (`10^5`).
 
 As you can see, similar to {{polygon}}, you write a few blocks of LaTeX that are expanded into a template. Here, the `%` delimits those pre-defined blocks. Your statement needs at least a _legend_, an _input_ and an _output_.
 

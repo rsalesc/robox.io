@@ -1,11 +1,11 @@
-site_name: robox
-repo_url: https://github.com/rsalesc/robox.io
+site_name: rbx
+repo_url: https://github.com/rsalesc/rbx
 nav:
   - 'index.md'
   - 'Introduction':
     - 'intro/installation.md'
     - 'intro/configuration.md'
-  - 'rbx: robox for setters':
+  - 'rbx: rbx for setters':
     - 'setters/first-steps.md'
     - 'setters/cheatsheet.md'
     - 'Reference':
@@ -47,8 +47,8 @@ plugins:
             extensions:
             - griffe_fieldz
 extra:
-  robox: "[robox](){:.robox}"
-  roboxTeX: "[roboxTeX](){:.robox}"
+  rbx: "[rbx](){:.rbx}"
+  rbxTeX: "[rbxTeX](){:.rbx}"
   polygon: "[Polygon](https://polygon.codeforces.com)"
   boca: "[BOCA](https://github.com/cassiopc/boca)"
   testlib: "[testlib](https://github.com/MikeMirzayanov/testlib)"

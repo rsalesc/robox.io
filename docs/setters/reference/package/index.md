@@ -4,7 +4,7 @@ This documentation goes over how each field (or group of fields) in `problem.rbx
 
 ## Problem definition
 
-**Schema**: [robox.box.schema.Package][]
+**Schema**: [rbx.box.schema.Package][]
 
 The three main required fields in a `problem.rbx.yml` package are:
 
@@ -37,13 +37,13 @@ modifiers:
 ## Checker
 
 **Field**: `checker`
-**Schema**: [robox.box.schema.CodeItem][]
+**Schema**: [rbx.box.schema.CodeItem][]
 
 Checkers are also a very important part of your problem package, and define how the output of a solution will be judged.
 
-The checker is controlled through the top-level parameter `checker`, and is optional. In the case it is not specified, {{robox}} falls back to {{testlib}}'s [wcmp.cpp](https://github.com/MikeMirzayanov/testlib/blob/master/checkers/wcmp.cpp), which is a token-based checker that compares the output of the solution with the expected answer.
+The checker is controlled through the top-level parameter `checker`, and is optional. In the case it is not specified, {{rbx}} falls back to {{testlib}}'s [wcmp.cpp](https://github.com/MikeMirzayanov/testlib/blob/master/checkers/wcmp.cpp), which is a token-based checker that compares the output of the solution with the expected answer.
 
-{{robox}} is **tightly integrated** with {{testlib}}, and thus you can either specify:
+{{rbx}} is **tightly integrated** with {{testlib}}, and thus you can either specify:
 
 1. The name of any checker in defined in [testlib's checkers folder](https://github.com/MikeMirzayanov/testlib/tree/master/checkers). The checker will be automatically downloaded when running solutions and building the package.
 
@@ -63,7 +63,7 @@ The checker is controlled through the top-level parameter `checker`, and is opti
     ```
 
     !!! tip
-        {{robox}} automatically places `testlib.h` together with your code when compiling it, but you can explicitly download it with `rbx download testlib` if you want.
+        {{rbx}} automatically places `testlib.h` together with your code when compiling it, but you can explicitly download it with `rbx download testlib` if you want.
 
     !!! success "Recommended"
         This is usually the recommended solution when building a custom checker.
@@ -85,7 +85,7 @@ The checker is controlled through the top-level parameter `checker`, and is opti
 ## Generators
 
 **Field**: `generators`
-**Schema**: `List[`[`Generator`][robox.box.schema.Generator]`]`
+**Schema**: `List[`[`Generator`][rbx.box.schema.Generator]`]`
 
 You can also specify a set of testcase generators that can be re-used in different places in your package (testgroup generation, stress tests to name a couple).
 
@@ -104,7 +104,7 @@ Notice also how the `generators` field is a list, and as such you can define mul
 ## Solutions
 
 **Field**: `solutions`
-**Schema**: `List[`[`Solution`][robox.box.schema.Solution]`]`
+**Schema**: `List[`[`Solution`][rbx.box.schema.Solution]`]`
 
 You can specify multiple solutions to your problem, including incorrect ones to check that your testset is strong enough.
 
@@ -122,12 +122,12 @@ solutions:
 
 Also, you **have to define** an accepted solution. The first accepted solution in this list will be considered the main solution to generate answers for the testcases.
 
-For a full list of expected outcomes, see [here][robox.box.schema.ExpectedOutcome].
+For a full list of expected outcomes, see [here][rbx.box.schema.ExpectedOutcome].
 
 ## Testcase groups
 
 **Field**: `testcases`
-**Schema**: `List[`[`TestcaseGroup`][robox.box.schema.TestcaseGroup]`]`
+**Schema**: `List[`[`TestcaseGroup`][rbx.box.schema.TestcaseGroup]`]`
 
 You can define multiple testgroups for you problem. For each testgroup, you can define tests for it in five (5) different ways:
 
@@ -187,7 +187,7 @@ You can define multiple testgroups for you problem. For each testgroup, you can 
         ```
 
     !!! note
-        The `.txt` extension is necessary for {{robox}} to identify this is a static
+        The `.txt` extension is necessary for {{rbx}} to identify this is a static
         script.
 
     !!! success "Recommended"
@@ -247,7 +247,7 @@ vars:
 ## Validators
 
 **Field**: `validator`, `testcases.validator`
-**Schema**: [robox.box.schema.CodeItem][]
+**Schema**: [rbx.box.schema.CodeItem][]
 
 You can specify {{testlib}} validators that check whether both manual and generated testcases are in the correct format.
 
@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
 ## Stress tests
 
 **Field**: `stresses`
-**Schema**: `List[`[`Stress`][robox.box.schema.Stress]`]`
+**Schema**: `List[`[`Stress`][rbx.box.schema.Stress]`]`
 
 You can pre-define stress tests with a few applications in mind, such as:
 
@@ -326,7 +326,7 @@ stresses:
 
 ### Finder expressions
 
-Finder expressions are domain-specific expressions evaluated by robox that helps you finding tests that meet
+Finder expressions are domain-specific expressions evaluated by rbx that helps you finding tests that meet
 certain conditions.
 
 Below, we list a few finder expressions, with an explanation on what they do. They should give a rough understanding

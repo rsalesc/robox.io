@@ -2,7 +2,7 @@
 
 ## `contest.rbx.yml`
 
-::: robox.box.contest.schema
+::: rbx.box.contest.schema
     options:
       show_root_heading: false
       show_root_toc_entry: false
