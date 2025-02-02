@@ -9,7 +9,7 @@ You can install {{rbx}} with a single command, either using `pip` or `pipx`. Pre
 - Optional:
     - Compilers/interpreters that you need to run your solutions on (e.g. `g++`, `java`).
     - [Competitive Companion](https://github.com/jmerle/competitive-companion) for contestants
-    - pdfLaTeX and other additional packages to convert TeX files into PDF
+    - pdfLaTeX and other additional packages to convert TeX files into PDF (see https://www.latex-project.org/get/)
 
 ## From PyPI
 
