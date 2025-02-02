@@ -37,7 +37,6 @@ app.add_typer(
 
 
 @app.command('create, c', help='Create a new contest package.')
-@within_contest
 def create(
     name: str,
     preset: Annotated[

@@ -233,7 +233,6 @@ def irun(
 
 
 @app.command('create, c', help='Create a new problem package.')
-@package.within_problem
 def create(
     name: str,
     preset: Annotated[
