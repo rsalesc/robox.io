@@ -134,6 +134,8 @@ class EnvironmentLanguage(BaseModel):
     extensions: Optional[LanguageExtensions] = None
 
     def get_extension(self, name: str, _: Type[T]) -> Optional[T]:
+        if self.extensions is None:
+            return None
         if hasattr(self.extensions, name):
             return None
         return getattr(self.extensions, name)
@@ -167,7 +169,7 @@ class Environment(BaseModel):
     preset: str = 'default'
 
     # Extensions to be added to the environment.
-    extensions: Extensions
+    extensions: Optional[Extensions] = None
 
 
 def get_environment_path(env: Optional[str] = None) -> pathlib.Path:
@@ -324,6 +326,8 @@ def get_sandbox_params_from_config(
 
 def get_extension(name: str, _: Type[T]) -> Optional[T]:
     pkg = get_environment()
+    if pkg.extensions is None:
+        return None
     if hasattr(pkg.extensions, name):
         return None
     return getattr(pkg.extensions, name)
