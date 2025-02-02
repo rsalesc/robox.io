@@ -172,14 +172,22 @@ class Environment(BaseModel):
     extensions: Optional[Extensions] = None
 
 
-def get_environment_path(env: Optional[str] = None) -> pathlib.Path:
-    env = env or config.get_config().boxEnvironment
+def get_environment_path(env: str) -> pathlib.Path:
     return config.get_app_file(pathlib.PosixPath('envs') / f'{env}.rbx.yml')
+
+
+def get_local_environment_path() -> Optional[pathlib.Path]:
+    # TODO: implement logic to get env from local preset
+    return None
 
 
 @functools.cache
 def get_environment(env: Optional[str] = None) -> Environment:
-    env_path = get_environment_path(env)
+    env_path = (
+        get_environment_path(env) if env is not None else get_local_environment_path()
+    )
+    if env_path is None:
+        env_path = get_environment_path(config.get_config().boxEnvironment)
     if not env_path.is_file():
         console.console.print(
             f'Environment file [item]{env_path}[/item] not found.', style='error'
