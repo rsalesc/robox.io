@@ -10,6 +10,7 @@ import typer
 from iso639.language import functools
 
 from robox import console, utils
+from robox.box import cd
 from robox.box.environment import get_environment_path
 from robox.box.presets.fetch import PresetFetchInfo, get_preset_fetch_info
 from robox.box.presets.lock_schema import LockedAsset, PresetLock
@@ -40,10 +41,11 @@ def get_preset_yaml(root: pathlib.Path = pathlib.Path()) -> Preset:
 
 
 def find_preset_lock(root: pathlib.Path = pathlib.Path()) -> Optional[pathlib.Path]:
-    found = root / '.preset-lock.yml'
-    if found.exists():
-        return found
-    return None
+    root = root.resolve()
+    problem_yaml_path = root / '.preset-lock.yml'
+    if not problem_yaml_path.is_file():
+        return None
+    return problem_yaml_path
 
 
 def get_preset_lock(root: pathlib.Path = pathlib.Path()) -> Optional[PresetLock]:
@@ -86,7 +88,9 @@ def get_preset_installation_path(
         return local_path
     nested_preset_path = _find_nested_preset(root)
     if nested_preset_path is not None:
-        nested_preset = utils.model_from_yaml(Preset, nested_preset_path.read_text())
+        nested_preset = utils.model_from_yaml(
+            Preset, (nested_preset_path / 'preset.rbx.yml').read_text()
+        )
         if nested_preset.name == name:
             return nested_preset_path
     return utils.get_app_path() / 'presets' / name
@@ -463,6 +467,7 @@ def update(
     'sync',
     help='Sync current package assets with those provided by the installed preset.',
 )
+@cd.within_closest_package
 def sync(
     update: Annotated[
         bool,
@@ -480,6 +485,7 @@ def sync(
 @app.command(
     'lock', help='Generate a lock for this package, based on a existing preset.'
 )
+@cd.within_closest_package
 def lock(
     preset: Annotated[
         Optional[str],

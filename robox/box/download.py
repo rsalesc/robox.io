@@ -39,18 +39,21 @@ def maybe_add_jngen(code: CodeItem, artifacts: steps.GradingArtifacts):
 
 
 @app.command('testlib', help='Download testlib.h')
+@package.within_problem
 def testlib():
     shutil.copyfile(get_testlib(), pathlib.Path('testlib.h'))
     console.console.print('Downloaded [item]testlib.h[/item] into current package.')
 
 
 @app.command('jngen', help='Download jngen.h')
+@package.within_problem
 def jngen():
     shutil.copyfile(get_jngen(), pathlib.Path('jngen.h'))
     console.console.print('Downloaded [item]jngen.h[/item] into current package.')
 
 
 @app.command('checker', help='Download a built-in checker from testlib GH repo.')
+@package.within_problem
 def checker(name: str):
     if not name.endswith('.cpp'):
         name = f'{name}.cpp'

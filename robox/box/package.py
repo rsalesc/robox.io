@@ -58,8 +58,9 @@ def warn_preset_deactivated(root: pathlib.Path = pathlib.Path()):
 
 @functools.cache
 def find_problem_yaml(root: pathlib.Path = pathlib.Path()) -> Optional[pathlib.Path]:
+    root = root.resolve()
     problem_yaml_path = root / YAML_NAME
-    while root != pathlib.PosixPath('.') and not problem_yaml_path.is_file():
+    while root != pathlib.PosixPath('/') and not problem_yaml_path.is_file():
         root = root.parent
         problem_yaml_path = root / YAML_NAME
     if not problem_yaml_path.is_file():
@@ -90,6 +91,15 @@ def find_problem(root: pathlib.Path = pathlib.Path()) -> pathlib.Path:
         console.console.print(f'[error]Problem not found in {root.absolute()}[/error]')
         raise typer.Exit(1)
     return found.parent
+
+
+def within_problem(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with utils.new_cd(find_problem()):
+            return func(*args, **kwargs)
+
+    return wrapper
 
 
 def save_package(

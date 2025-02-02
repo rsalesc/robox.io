@@ -71,6 +71,7 @@ def run_contest_packager(
 
 
 @app.command('polygon', help='Build a contest package for Polygon.')
+@contest_package.within_contest
 def polygon(
     verification: environment.VerificationParam,
 ):

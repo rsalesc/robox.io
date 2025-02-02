@@ -22,6 +22,7 @@ import questionary
 from robox import annotations, config, console, utils
 from robox.box import (
     builder,
+    cd,
     creation,
     download,
     environment,
@@ -74,11 +75,13 @@ app.add_typer(
 
 
 @app.command('ui', hidden=True)
+@package.within_problem
 def ui():
     ui_pkg.start()
 
 
 @app.command('edit, e', help='Open problem.rbx.yml in your default editor.')
+@package.within_problem
 def edit():
     console.console.print('Opening problem definition in editor...')
     # Call this function just to raise exception in case we're no in
@@ -88,17 +91,20 @@ def edit():
 
 
 @app.command('build, b', help='Build all tests for the problem.')
+@package.within_problem
 def build(verification: environment.VerificationParam):
     builder.build(verification=verification)
 
 
 @app.command('verify, v', help='Build and verify all the tests for the problem.')
+@package.within_problem
 def verify(verification: environment.VerificationParam):
     if not builder.verify(verification=verification):
         console.console.print('[error]Verification failed, check the report.[/error]')
 
 
 @app.command('run, r', help='Build and run solution(s).')
+@package.within_problem
 def run(
     verification: environment.VerificationParam,
     solution: Annotated[
@@ -165,6 +171,7 @@ def run(
 @app.command(
     'irun, ir', help='Build and run solution(s) by passing testcases in the CLI.'
 )
+@package.within_problem
 def irun(
     verification: environment.VerificationParam,
     solution: Annotated[
@@ -226,6 +233,7 @@ def irun(
 
 
 @app.command('create, c', help='Create a new problem package.')
+@package.within_problem
 def create(
     name: str,
     preset: Annotated[
@@ -239,6 +247,7 @@ def create(
 
 
 @app.command('stress', help='Run a stress test.')
+@package.within_problem
 def stress(
     name: str,
     generator_args: Annotated[
@@ -341,6 +350,7 @@ def stress(
 
 
 @app.command('environment, env', help='Set or show the current box environment.')
+@package.within_problem
 def environment_command(
     env: Annotated[Optional[str], typer.Argument()] = None,
     install_from: Annotated[
@@ -352,7 +362,6 @@ def environment_command(
         ),
     ] = None,
 ):
-    print(env, install_from)
     if env is None:
         cfg = config.get_config()
         console.console.print(f'Current environment: [item]{cfg.boxEnvironment}[/item]')
@@ -385,6 +394,7 @@ def environment_command(
     'activate',
     help='Activate the environment of the current preset used by the package.',
 )
+@cd.within_closest_package
 def activate():
     preset_lock = presets.get_preset_lock()
     if preset_lock is None:
@@ -410,6 +420,7 @@ def activate():
 
 
 @app.command('languages', help='List the languages available in this environment')
+@package.within_problem
 def languages():
     env = environment.get_environment()
 
@@ -426,6 +437,7 @@ def languages():
 
 
 @app.command('clear, clean', help='Clears cache and build directories.')
+@package.within_problem
 def clear():
     console.console.print('Cleaning cache and build directories...')
     shutil.rmtree('.box', ignore_errors=True)

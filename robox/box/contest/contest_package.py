@@ -14,8 +14,9 @@ YAML_NAME = 'contest.rbx.yml'
 
 @functools.cache
 def find_contest_yaml(root: pathlib.Path = pathlib.Path()) -> Optional[pathlib.Path]:
+    root = root.resolve()
     contest_yaml_path = root / YAML_NAME
-    while root != pathlib.PosixPath('.') and not contest_yaml_path.is_file():
+    while root != pathlib.PosixPath('/') and not contest_yaml_path.is_file():
         root = root.parent
         contest_yaml_path = root / YAML_NAME
     if not contest_yaml_path.is_file():
@@ -46,6 +47,15 @@ def find_contest(root: pathlib.Path = pathlib.Path()) -> pathlib.Path:
         console.console.print(f'Contest not found in {root.absolute()}', style='error')
         raise typer.Exit(1)
     return found.parent
+
+
+def within_contest(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with utils.new_cd(find_contest()):
+            return func(*args, **kwargs)
+
+    return wrapper
 
 
 def save_contest(

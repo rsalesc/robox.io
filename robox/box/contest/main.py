@@ -13,6 +13,7 @@ from robox.box.contest.contest_package import (
     find_contest_package_or_die,
     find_contest_yaml,
     save_contest,
+    within_contest,
 )
 from robox.box.contest.schema import ContestProblem
 from robox.box.packaging import contest_main as packaging
@@ -36,6 +37,7 @@ app.add_typer(
 
 
 @app.command('create, c', help='Create a new contest package.')
+@within_contest
 def create(
     name: str,
     preset: Annotated[
@@ -108,6 +110,7 @@ def create(
 
 
 @app.command('edit, e', help='Open contest.rbx.yml in your default editor.')
+@within_contest
 def edit():
     console.console.print('Opening contest definition in editor...')
     # Call this function just to raise exception in case we're no in
@@ -117,6 +120,7 @@ def edit():
 
 
 @app.command('add, a', help='Add new problem to contest.')
+@within_contest
 def add(name: str, short_name: str, preset: Optional[str] = None):
     utils.validate_field(ContestProblem, 'short_name', short_name)
     utils.validate_field(Package, 'name', name)
@@ -151,6 +155,7 @@ def add(name: str, short_name: str, preset: Optional[str] = None):
     help='Run a command for each problem in the contest.',
     context_settings={'allow_extra_args': True, 'ignore_unknown_options': True},
 )
+@within_contest
 def each(ctx: typer.Context) -> None:
     command = ' '.join(['rbx'] + ctx.args)
     contest = find_contest_package_or_die()

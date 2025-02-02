@@ -6,13 +6,17 @@ from robox import annotations, console, utils
 from robox.box import builder, environment
 from robox.box.contest import contest_utils
 from robox.box.contest.build_contest_statements import build_statement
-from robox.box.contest.contest_package import find_contest_package_or_die
+from robox.box.contest.contest_package import (
+    find_contest_package_or_die,
+    within_contest,
+)
 from robox.box.statements.schema import StatementType
 
 app = typer.Typer(no_args_is_help=True, cls=annotations.AliasGroup)
 
 
 @app.command('build, b', help='Build statements.')
+@within_contest
 def build(
     verification: environment.VerificationParam,
     languages: Annotated[

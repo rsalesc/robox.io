@@ -303,6 +303,7 @@ def build_statement(
 
 
 @app.command('build, b', help='Build statements.')
+@package.within_problem
 def build(
     verification: environment.VerificationParam,
     languages: Annotated[
