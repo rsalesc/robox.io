@@ -14,9 +14,9 @@ class BocaExtension(BaseModel):
 
     def flags_with_defaults(self) -> typing.Dict[BocaLanguage, str]:
         res: typing.Dict[BocaLanguage, str] = {
-            'c': '-std=gnu11 -O2 -static -lm',
-            'cpp': '-O2 -static -lm',
-            'cc': '-std=c++20 -O2 -static -lm',
+            'c': '-std=gnu11 -O2 -lm -static',
+            'cpp': '-O2 -lm -static',
+            'cc': '-std=c++20 -O2 -lm -static',
         }
         res.update(self.flags)
         return res

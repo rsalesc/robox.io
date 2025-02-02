@@ -363,6 +363,9 @@ def environment_command(
     if env is None:
         cfg = config.get_config()
         console.console.print(f'Current environment: [item]{cfg.boxEnvironment}[/item]')
+        console.console.print(
+            f'Location: {environment.get_environment_path(cfg.boxEnvironment)}'
+        )
         return
     if install_from is not None:
         environment.install_environment(env, pathlib.Path(install_from))

@@ -48,13 +48,13 @@ class BocaPackager(BasePackager):
 
     def _get_problem_name(self) -> str:
         pkg = package.find_problem_package_or_die()
-        return pkg.name
+        # BOCA forces Java class names to be the name of the problem.
+        return pkg.name.replace('-', '_')
 
     def _get_problem_info(self) -> str:
-        pkg = package.find_problem_package_or_die()
         statement = self._get_main_statement()
         return (
-            f'basename={pkg.name}\n'
+            f'basename={self._get_problem_name()}\n'
             f'fullname={statement.title}\n'
             f'descfile={self._get_problem_name()}.pdf\n'
         )
@@ -128,6 +128,8 @@ class BocaPackager(BasePackager):
         return compare_path.read_text()
 
     def _get_checker(self) -> str:
+        extension = get_extension_or_default('boca', BocaExtension)
+
         checker_path = get_default_app_path() / 'packagers' / 'boca' / 'checker.sh'
         if not checker_path.exists():
             console.console.print(
@@ -137,8 +139,10 @@ class BocaPackager(BasePackager):
         checker_text = checker_path.read_text()
         testlib = get_testlib().read_text()
         checker = package.get_checker().path.read_text()
-        return checker_text.replace('{{testlib_content}}', testlib).replace(
-            '{{checker_content}}', checker
+        return (
+            checker_text.replace('{{rbxFlags}}', extension.flags_with_defaults()['cc'])
+            .replace('{{testlib_content}}', testlib)
+            .replace('{{checker_content}}', checker)
         )
 
     def _get_compile(self, language: BocaLanguage) -> str:
@@ -164,6 +168,33 @@ class BocaPackager(BasePackager):
         if language in flags:
             compile_text = compile_text.replace('{{rbxFlags}}', flags[language])
         return compile_text
+
+    def _copy_solutions(self, into_path: pathlib.Path):
+        for solution in package.get_solutions():
+            dest_path = (
+                into_path
+                / solution.path.stem
+                / pathlib.Path(self._get_problem_name()).with_suffix(
+                    solution.path.suffix
+                )
+            )
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(str(solution.path), dest_path)
+
+            if solution.path.suffix == '.java':
+                java_content = dest_path.read_text()
+                if (
+                    'class Main ' not in java_content
+                    and f'class {self._get_problem_name()} ' not in java_content
+                ):
+                    console.console.print(
+                        '[error]For BOCA packaging, Java solutions must be named `class Main` or `class <ProblemName>`.[/error]'
+                    )
+                dest_path.write_text(
+                    java_content.replace(
+                        'class Main ', f'class {self._get_problem_name()} '
+                    )
+                )
 
     def name(self) -> str:
         return 'boca'
@@ -222,6 +253,11 @@ class BocaPackager(BasePackager):
             self._get_main_built_statement(built_statements).path,
             (description_path / self._get_problem_name()).with_suffix('.pdf'),
         )
+
+        # Copy solutions
+        solutions_path = into_path / 'solutions'
+        solutions_path.mkdir(parents=True, exist_ok=True)
+        self._copy_solutions(solutions_path)
 
         # Prepare IO
         inputs_path = into_path / 'input'
