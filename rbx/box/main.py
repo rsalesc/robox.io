@@ -349,7 +349,6 @@ def stress(
 
 
 @app.command('environment, env', help='Set or show the current box environment.')
-@package.within_problem
 def environment_command(
     env: Annotated[Optional[str], typer.Argument()] = None,
     install_from: Annotated[
@@ -419,7 +418,6 @@ def activate():
 
 
 @app.command('languages', help='List the languages available in this environment')
-@package.within_problem
 def languages():
     env = environment.get_environment()
 
@@ -436,7 +434,7 @@ def languages():
 
 
 @app.command('clear, clean', help='Clears cache and build directories.')
-@package.within_problem
+@cd.within_closest_package
 def clear():
     console.console.print('Cleaning cache and build directories...')
     shutil.rmtree('.box', ignore_errors=True)
