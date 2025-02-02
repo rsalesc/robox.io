@@ -980,21 +980,21 @@ colorama = ">=0.4"
 
 [[package]]
 name = "griffe-fieldz"
-version = "0.1.2"
+version = "0.2.1"
 description = "Griffe extension adding support for data-class like things (pydantic, attrs, etc...)"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "griffe_fieldz-0.1.2-py3-none-any.whl", hash = "sha256:2528af30f5a1ff91c3a34e73225e3d173b80c28b3ba019bcadfde119b6344d98"},
-    {file = "griffe_fieldz-0.1.2.tar.gz", hash = "sha256:7a109c0f3fc38cce2107f1ae6270045f937406587bd6c20a1d1e7565c9d8c57d"},
+    {file = "griffe_fieldz-0.2.1-py3-none-any.whl", hash = "sha256:04ae78b487c832a38b0495f971784d513da413b867c51e429f39d74f76d4f941"},
+    {file = "griffe_fieldz-0.2.1.tar.gz", hash = "sha256:7371693cdd045ac95aaebd16a81586d8dfa72c30e2d4519e0dde0d80f8ef0dc7"},
 ]
 
 [package.dependencies]
-fieldz = ">=0.0.2"
-griffe = ">=0.35"
+fieldz = ">=0.1.0"
+griffe = ">=1.0"
 
 [package.extras]
-dev = ["black", "ipython", "mypy", "pdbpp", "pre-commit", "rich", "ruff"]
+dev = ["ipython", "mypy", "pdbpp", "pre-commit", "rich", "ruff"]
 test = ["pytest", "pytest-cov"]
 
 [[package]]
@@ -3529,4 +3529,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "b1e238e00fe74793616600d898b3c9332f17ec80b2ee51783b57f9db51d570b8"
+content-hash = "7ce5fe43ed76011ba9fd95f6e05ad01de63d361df5b5f9ab2b998ebe70958b9e"
