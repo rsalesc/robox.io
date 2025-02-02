@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "rbx"
-version = "0.3.8"
+name = "rbx.cp"
+version = "0.5.0"
 description = ""
 packages = [
   {include = "rbx"}

@@ -14,7 +14,7 @@ You can install {{rbx}} with a single command, either using `pip` or `pipx`. Pre
 ## From PyPI
 
 ```bash
-$ pipx install rbx
+$ pipx install rbx.cp
 ```
 
 ## From the repository
