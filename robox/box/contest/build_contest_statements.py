@@ -334,7 +334,7 @@ def build_statement(
         )
 
     statement_path = pathlib.Path(
-        f'{statement.path.stem}{last_output.get_file_suffix()}'
+        f'build/{statement.path.stem}{last_output.get_file_suffix()}'
     )
     statement_path.parent.mkdir(parents=True, exist_ok=True)
     statement_path.write_bytes(typing.cast(bytes, last_content))
