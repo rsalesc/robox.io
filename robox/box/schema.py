@@ -32,7 +32,7 @@ def _check_oneof(model_obj: BaseModel, fields: List[str]):
     )
 
 
-def _expand_var(value: Primitive) -> Primitive:
+def expand_var(value: Primitive) -> Primitive:
     if not isinstance(value, str):
         return value
     if value.startswith('\\'):
@@ -346,7 +346,7 @@ that is correct and used as reference -- and should have the `accepted` outcome.
 
     @property
     def expanded_vars(self) -> Dict[str, Primitive]:
-        return {key: _expand_var(value) for key, value in self.vars.items()}
+        return {key: expand_var(value) for key, value in self.vars.items()}
 
     def timelimit_for_language(self, language: Optional[str]) -> int:
         res = self.timeLimit

@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import typer
 
 from robox import console
-from robox.box.schema import Package, Testcase
+from robox.box.schema import Package, Primitive, Testcase
 from robox.box.statements.latex import (
     MAX_PDFLATEX_RUNS,
     Latex,
@@ -45,13 +45,17 @@ class StatementBuilderContext:
     params: ConversionStep
     root: pathlib.Path
     editorial: bool
+    vars: Optional[Dict[str, Primitive]] = None
 
     def build_jinja_kwargs(self) -> Dict[str, Any]:
-        return {
+        res = {
             'languages': self.languages,
             'keyed_languages': {lang.id: lang for lang in self.languages},
             'is_editorial': self.editorial,
         }
+        if self.vars is not None:
+            res['vars'] = self.vars
+        return res
 
 
 class StatementBuilderItem(ABC):

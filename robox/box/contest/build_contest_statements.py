@@ -226,6 +226,7 @@ def build_contest_only(
                     params=params,
                     root=pathlib.Path(td),
                     editorial=is_editorial,
+                    vars={**contest.expanded_vars, **statement.expanded_vars},
                 ),
                 item=get_statement_builder_contest(statement, extracted_problems),
                 verbose=False,

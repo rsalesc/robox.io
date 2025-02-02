@@ -1,9 +1,9 @@
 import pathlib
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from robox.box.schema import NameField
+from robox.box.schema import NameField, Primitive, expand_var
 from robox.box.statements.schema import (
     ConversionStep,
     Joiner,
@@ -95,6 +95,16 @@ Can be glob pattern as well, such as `imgs/*.png`.
         default=None, description='Override configuration for problem statements.'
     )
 
+    # Vars to be re-used in the statement.
+    #   - It will be available as \VAR{vars} variable in the contest-level box statement.
+    vars: Dict[str, Primitive] = Field(
+        {}, description='Variables to be re-used across the package.'
+    )
+
+    @property
+    def expanded_vars(self) -> Dict[str, Primitive]:
+        return {key: expand_var(value) for key, value in self.vars.items()}
+
 
 class ContestProblem(BaseModel):
     short_name: str = ShortNameField(
@@ -133,3 +143,13 @@ class Contest(BaseModel):
         default=None,
         description='Configure statements in this contest, per language.',
     )
+
+    # Vars to be re-used in the statements.
+    #   - It will be available as \VAR{vars} variable in the contest-level box statement.
+    vars: Dict[str, Primitive] = Field(
+        {}, description='Variables to be re-used across the package.'
+    )
+
+    @property
+    def expanded_vars(self) -> Dict[str, Primitive]:
+        return {key: expand_var(value) for key, value in self.vars.items()}
