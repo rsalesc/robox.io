@@ -23,6 +23,7 @@
 | Build PDF statements for English                | `rbx statements build en --output=pdf`                 |
 | Package problem for {{polygon}}                 | `rbx package polygon`                                  |
 | Package problem for {{boca}}                    | `rbx package boca`                                     |
+| List all languages available in the environment | `rbx languages`                                        |
 | Clear cache                                     | `rbx clear`                                            |
 
 ### Contest CLI
@@ -46,6 +47,9 @@
 ```yaml
 timeLimit: 1000  # In milliseconds
 memoryLimit: 256  # In megabytes
+modifiers:
+  java:
+    time: 5000  # Override time for Java
 ```
 
 ### Add testlib assets
@@ -266,8 +270,7 @@ stresses:
     generator:
       name: 'gen'
       args: '[1..<MAX_N>] @' # (1)!
-    solutions:
-      - path: "sols/my-potentially-wrong-sol.cpp"
+    finder: "sols/my-wa-solution.cpp ~ INCORRECT" # (2)!
 ```
 
 1. The `<MAX_N>` variable expands into the `vars.MAX_N` value that could be declared in
@@ -277,6 +280,8 @@ stresses:
 
     The `@` appends a few extra random characters to the end of the generator call to re-seed the generator.
 
+2. Expression that refers to solution `sols/my-wa-solution.cpp` and check whether it returns an incorrect outcome.
+
 #### Add a stress to look for a test that causes TLE in a solution
 
 ```yaml
@@ -285,9 +290,7 @@ stresses:
     generator:
       name: 'gen'
       args: '1000000 @' # (1)!
-    solutions:
-      - path: "sols/my-potentially-slow-sol.cpp"
-    outcome: TLE
+    finder: "sols/my-potentially-slow-sol.cpp ~ TLE"
 ```
 
 1. The `@` at the end of the `args` string appends a random string to it. This is necessary here because `gen 100000` would return the same testcase over and over, since {{testlib}} rng is seeded from its command line argc and argv.
