@@ -56,11 +56,6 @@ extra:
   YAML: "[YAML](https://yaml.org)"
   regex:
     name: "^[a-zA-Z0-9][a-zA-Z0-9\\-]{2,32}$"
-  # Commands
-  rbx:
-    build: '`rbx build`'
-    run: '`rbx run`'
-    clean: '`rbx clean`'
   tags:
     accepted: '<span style="color: green">accepted</span>'
     wrong_answer: '<span style="color: red">wrong answer</span>'

@@ -110,7 +110,7 @@ You can notice it created several folders inside a `tests` directory, each of wh
 
 ## Run
 
-Now, let's execute {{rbx.run}}. This command **builds** all testcases and **executes** each solution against them, evaluating whether each solution had the expected outcome.
+Now, let's execute `rbx run`. This command **builds** all testcases and **executes** each solution against them, evaluating whether each solution had the expected outcome.
 
 ```bash
 $ rbx run
@@ -119,9 +119,9 @@ $ rbx run
 You can see this command prints a full run report: it shows for each testcase of each testgroup whether a certain solution passed or not. There are also links for the outputs of each problem.
 
 !!! tip
-    You can notice when you called {{rbx.run}}, the testcases were built really fast.
+    You can notice when you called `rbx run`, the testcases were built really fast.
     That's because {{rbx}} caches certain calls based on the hash tree of your package
-    (similar to Makefile). You can explicitly clear this cache by calling {{rbx.clean}}.
+    (similar to Makefile). You can explicitly clear this cache by calling `rbx clean`.
 
 <figure markdown="span">
   ![rbx run](rbx_run.png)
@@ -280,7 +280,7 @@ Let's delete the existing test groups in `problem.rbx.yml`, except for the `samp
     
     1.  Here, `main_tests` would contain the 10 tests defined in `random.py`.
 
-Now, if we run {{rbx.build}}, we'd get our brand new generated tests.
+Now, if we run `rbx build`, we'd get our brand new generated tests.
 
 ### Update the statement
 
