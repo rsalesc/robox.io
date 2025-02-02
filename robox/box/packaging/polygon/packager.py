@@ -1,3 +1,4 @@
+import functools
 import pathlib
 import shutil
 from typing import List
@@ -32,6 +33,19 @@ def langs_to_code(langs: List[str]) -> List[str]:
 
 def code_to_langs(langs: List[str]) -> List[str]:
     return [iso639.Language.from_part1(lang).name.lower() for lang in langs]
+
+
+@functools.cache
+def _is_valid_lang_code(lang: str) -> bool:
+    try:
+        code_to_langs([lang])
+    except iso639.LanguageNotFoundError:
+        console.console.print(
+            f'[warning]Language [item]{lang}[/item] is being skipped because it is not a iso639 language.[/warning]'
+        )
+        return False
+
+    return True
 
 
 class PolygonPackager(BasePackager):
@@ -148,6 +162,7 @@ class PolygonPackager(BasePackager):
             checker=self._get_checker(),
             judging=self._get_judging(),
             files=self._get_files(),
+            # TODO: revisit polygon problem statements
             # statements=self._process_statements(built_statements, into_path),
         )
 
@@ -203,6 +218,7 @@ class PolygonContestPackager(BaseContestPackager):
                 value=self.get_statement_for_language(lang).title,
             )
             for lang in self.languages()
+            if _is_valid_lang_code(lang)
         ]
         if names:
             names[0].main = True
@@ -265,6 +281,12 @@ class PolygonContestPackager(BaseContestPackager):
         into_path: pathlib.Path,
         built_statements: List[BuiltContestStatement],
     ) -> pathlib.Path:
+        filtered_statements = []
+        for built_statement in built_statements:
+            if not _is_valid_lang_code(built_statement.statement.language):
+                continue
+            filtered_statements.append(built_statement)
+
         for built_package in built_packages:
             pkg_path = into_path / 'problems' / built_package.problem.short_name
             pkg_path.mkdir(parents=True, exist_ok=True)
@@ -274,7 +296,7 @@ class PolygonContestPackager(BaseContestPackager):
         # Build contest descriptor.
         contest = polygon_schema.Contest(
             names=self._get_names(),
-            statements=self._process_statements(built_statements, into_path),
+            statements=self._process_statements(filtered_statements, into_path),
             problems=self._get_problems(built_packages),
         )
         descriptor: str = contest.to_xml(
