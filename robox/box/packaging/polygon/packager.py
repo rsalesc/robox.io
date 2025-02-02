@@ -261,6 +261,7 @@ class PolygonContestPackager(BaseContestPackager):
     def package(
         self,
         built_packages: List[BuiltProblemPackage],
+        build_path: pathlib.Path,
         into_path: pathlib.Path,
         built_statements: List[BuiltContestStatement],
     ) -> pathlib.Path:
@@ -292,6 +293,6 @@ class PolygonContestPackager(BaseContestPackager):
         (into_path / 'contest.dat').write_text(self._get_dat(built_packages))
 
         # Zip all.
-        shutil.make_archive('contest', 'zip', into_path)
+        shutil.make_archive(str(build_path / 'contest'), 'zip', into_path)
 
         return pathlib.Path('contest.zip')

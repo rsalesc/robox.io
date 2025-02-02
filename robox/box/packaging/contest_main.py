@@ -63,7 +63,9 @@ def run_contest_packager(
 
     # Build contest-level package.
     with tempfile.TemporaryDirectory() as td:
-        packager.package(built_packages, pathlib.Path(td), built_statements)
+        packager.package(
+            built_packages, pathlib.Path('build'), pathlib.Path(td), built_statements
+        )
 
     console.console.print(
         f'[success]Contest packaged for [item]{packager.name()}[/item]![/success]'

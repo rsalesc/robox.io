@@ -92,6 +92,7 @@ class BaseContestPackager(ABC):
     def package(
         self,
         built_packages: List[BuiltProblemPackage],
+        build_path: pathlib.Path,
         into_path: pathlib.Path,
         built_statements: List[BuiltContestStatement],
     ) -> pathlib.Path:
