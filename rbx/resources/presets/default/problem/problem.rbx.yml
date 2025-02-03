@@ -38,7 +38,7 @@ stresses:
     generator:
       name: 'gen'
       args: '[1..<MAX_N>] @' # `@` generates a random string
-    finder: 'sols/wa.cpp ~ INCORRECT'
+    finder: '[sols/wa.cpp] ~ INCORRECT'
 vars:
   "MAX_N": 1000000000  # Can be used in the validator, in stress tests and in the statement.
 

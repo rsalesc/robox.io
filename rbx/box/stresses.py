@@ -1,4 +1,3 @@
-import dataclasses
 import functools
 import time
 from shutil import rmtree
@@ -175,11 +174,13 @@ def run_stress(
 
         @functools.cache
         def run_solution_and_checker_fn(
-            solution: str,
-            checker: Optional[finder_parser.FinderChecker],
+            call: finder_parser.FinderCall,
             input_path=input_path,
             expected_output_path=expected_output_path,
         ) -> finder_parser.FinderResult:
+            solution = call.solution
+            checker = call.checker
+
             solution_result = run_solution_fn(solution)
 
             if checker is None:
@@ -196,19 +197,11 @@ def run_stress(
                 solution=solution,
                 outcome=checker_result.outcome,
                 checker=checker,
-                truth_value=True,
                 solution_result=solution_result,
                 checker_result=checker_result,
             )
 
-        def run_fn(
-            call: finder_parser.FinderCall,
-        ) -> finder_parser.FinderResult:
-            finder_result = run_solution_and_checker_fn(call.solution, call.checker)
-            truth_value = call.expected_outcome.match(finder_result.outcome)
-            return dataclasses.replace(finder_result, truth_value=truth_value)
-
-        runner = finder_parser.FinderTreeRunner(runner=run_fn)
+        runner = finder_parser.FinderTreeRunner(runner=run_solution_and_checker_fn)
         finder_outcome: finder_parser.FinderOutcome = runner.transform(parsed_finder)
 
         internal_error_results = [

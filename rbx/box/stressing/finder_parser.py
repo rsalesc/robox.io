@@ -2,7 +2,7 @@ import dataclasses
 import pathlib
 import typing
 from enum import Enum
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 import lark
 import typer
@@ -20,23 +20,34 @@ disjunction: conjunction | disjunction _OR conjunction
 
 conjunction: _atom | conjunction _AND _atom
 
-_atom: statement | "(" disjunction ")" | negation
+_atom: logical | "(" disjunction ")" | negation
 negation: _NOT "(" disjunction ")"
 
-statement: solution matcher outcome checking?
+// Expressions
+logical: eval matcher expected_outcome -> matching
+       | eval equality (eval | outcome) -> equating
 
+eval: "[" solution checking? "]"
+
+// Eval
 solution: _filename | WILDCARD
-outcome: CNAME
 checking: "ON"i (checking_mode? checker | ":nil")
 checking_mode: MODE ":"
 MODE: "2" | "3"
 checker: _filename | WILDCARD
 
+// Outcomes
+expected_outcome: CNAME
+outcome: CNAME
+
 // Operators
 matcher: MATCHES | NOT_MATCHES
+equality: EQUALS | NOT_EQUALS
 
 MATCHES: "~"
 NOT_MATCHES: "!~"
+EQUALS: "=="
+NOT_EQUALS: "!="
 _OR: "||"
 _AND: "&&"
 _NOT: "!"
@@ -46,7 +57,14 @@ WILDCARD: "$"
 _filename: FILENAME | "\"" FILENAME "\""
 FILENAME: /[\/A-Za-z0-9\-_\.]/+
 
-%import common.CNAME
+// Names (Variables)
+LCASE_LETTER: "a".."z"
+UCASE_LETTER: "A".."Z"
+DIGIT: "0".."9"
+LETTER: UCASE_LETTER | LCASE_LETTER
+WORD: LETTER+
+CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT|"+")*
+
 %ignore " "
 """
 
@@ -67,7 +85,6 @@ class FinderChecker:
 @dataclasses.dataclass(frozen=True)
 class FinderCall:
     solution: str
-    expected_outcome: ExpectedOutcome
     checker: Optional[FinderChecker]
 
 
@@ -83,7 +100,6 @@ class FinderResult:
     solution: str
     outcome: Outcome
     checker: Optional[FinderChecker]
-    truth_value: bool
 
     # Auxiliary information.
     solution_result: Optional[FinderSolutionResult] = None
@@ -155,8 +171,8 @@ def _get_checker_from_token(token: lark.Token) -> str:
     return path
 
 
-def _get_statement_checker(statement: lark.ParseTree) -> Optional[FinderChecker]:
-    checking_nodes = list(statement.find_data('checking'))
+def _get_eval_checker(eval: lark.ParseTree) -> Optional[FinderChecker]:
+    checking_nodes = list(eval.find_data('checking'))
     if not checking_nodes:
         return _get_default_checker_for_finder()
     (checking,) = checking_nodes
@@ -227,11 +243,11 @@ def get_all_solution_items(tree: lark.ParseTree) -> List[CodeItem]:
 
 
 def _get_all_finder_checkers(tree: lark.ParseTree) -> List[FinderChecker]:
-    statement_nodes = tree.find_data('statement')
+    eval_nodes = tree.find_data('eval')
     res = []
 
-    for statement_node in statement_nodes:
-        finder_checker = _get_statement_checker(statement_node)
+    for eval_node in eval_nodes:
+        finder_checker = _get_eval_checker(eval_node)
         if finder_checker is not None:
             res.append(finder_checker)
 
@@ -299,8 +315,6 @@ def validate(tree: lark.ParseTree):
 
 @lark.v_args(inline=True)
 class FinderTreeRunner(lark.Transformer):
-    outcome = ExpectedOutcome
-
     def __init__(
         self,
         runner: Callable[[FinderCall], FinderResult],
@@ -310,27 +324,72 @@ class FinderTreeRunner(lark.Transformer):
     def solution(self, token: lark.Token) -> str:
         return _get_solution_from_token(token)
 
+    def outcome(self, token: lark.Token) -> Outcome:
+        try:
+            outcome = Outcome(token.value)
+        except ValueError:
+            try:
+                expected_outcome = self.expected_outcome(token)
+            except ValueError:
+                raise ValueError(f'"{token.value}" is not a valid Outcome.') from None
+            outcomes = expected_outcome.get_matches()
+            if len(outcomes) != 1:
+                raise ValueError(
+                    f'"{token.value}" is not a valid Outcome. You are trying to specify an ExpectedOutcome, instead of a single Outcome.'
+                ) from None
+            return outcomes[0]
+        return outcome
+
+    def expected_outcome(self, token: lark.Token) -> ExpectedOutcome:
+        return ExpectedOutcome(token.value)
+
     def matcher(self, op: lark.Token) -> bool:
         return op.value == '~'
 
+    def equality(self, op: lark.Token) -> bool:
+        return op.value == '=='
+
     @lark.v_args(inline=False, tree=True)
-    def statement(
-        self,
-        tree: lark.ParseTree,
-    ) -> FinderOutcome:
+    def eval(self, tree: lark.ParseTree) -> FinderResult:
         solution = typing.cast(str, tree.children[0])
-        is_positive = typing.cast(bool, tree.children[1])
-        expected_outcome = typing.cast(ExpectedOutcome, tree.children[2])
+        checker: Optional[FinderChecker] = _get_eval_checker(tree)
 
-        checker: Optional[FinderChecker] = _get_statement_checker(tree)
+        call = FinderCall(solution, checker=checker)
+        return self.run_fn(call)
 
-        call = FinderCall(solution, expected_outcome=expected_outcome, checker=checker)
-        result = self.run_fn(call)
-        truth_value = result.truth_value
+    def matching(
+        self,
+        eval_result: FinderResult,
+        is_positive: bool,
+        expected_outcome: ExpectedOutcome,
+    ) -> FinderOutcome:
+        truth_value = expected_outcome.match(eval_result.outcome)
         if not is_positive:
             truth_value = not truth_value
 
-        return FinderOutcome(truth_value=truth_value, results=[result])
+        return FinderOutcome(truth_value=truth_value, results=[eval_result])
+
+    def equating(
+        self,
+        eval_result: FinderResult,
+        is_positive: bool,
+        result_or_outcome: Union[FinderResult, Outcome],
+    ) -> FinderOutcome:
+        results = [eval_result]
+        truth_value = True
+
+        if isinstance(result_or_outcome, Outcome):
+            outcome: Outcome = result_or_outcome
+            truth_value = eval_result.outcome == outcome
+        else:
+            result: FinderResult = result_or_outcome
+            truth_value = eval_result.outcome == result.outcome
+            results.append(result)
+
+        if not is_positive:
+            truth_value = not truth_value
+
+        return FinderOutcome(truth_value=truth_value, results=results)
 
     def negation(self, value: FinderOutcome) -> FinderOutcome:
         return dataclasses.replace(value, truth_value=not value.truth_value)
