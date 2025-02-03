@@ -316,6 +316,7 @@ def _install(root: pathlib.Path = pathlib.Path(), force: bool = False):
                 should_copy_env = False
 
         if should_copy_env:
+            get_environment_path(preset.name).parent.mkdir(parents=True, exist_ok=True)
             shutil.rmtree(get_environment_path(preset.name), ignore_errors=True)
             shutil.copyfile(str(root / preset.env), get_environment_path(preset.name))
 
