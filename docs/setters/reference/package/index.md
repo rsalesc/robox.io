@@ -311,7 +311,7 @@ stresses:
     generator:
       name: "gen"
       args: "--MAX_N=[1..1000] @"
-    finder: "sols/wa.cpp ~ INCORRECT"
+    finder: "[sols/wa.cpp] ~ INCORRECT"
 ```
 
 - `name`: a name for the stress test. Useful when calling this test through `rbx stress [name]`.

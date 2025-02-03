@@ -270,7 +270,7 @@ stresses:
     generator:
       name: 'gen'
       args: '[1..<MAX_N>] @' # (1)!
-    finder: "sols/my-wa-solution.cpp ~ INCORRECT" # (2)!
+    finder: "[sols/my-wa-solution.cpp] ~ INCORRECT" # (2)!
 ```
 
 1. The `<MAX_N>` variable expands into the `vars.MAX_N` value that could be declared in
@@ -290,7 +290,7 @@ stresses:
     generator:
       name: 'gen'
       args: '1000000 @' # (1)!
-    finder: "sols/my-potentially-slow-sol.cpp ~ TLE"
+    finder: "[sols/my-potentially-slow-sol.cpp] ~ TLE"
 ```
 
 1. The `@` at the end of the `args` string appends a random string to it. This is necessary here because `gen 100000` would return the same testcase over and over, since {{testlib}} rng is seeded from its command line argc and argv.
